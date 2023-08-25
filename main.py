@@ -39,12 +39,12 @@ pca = pipeline.named_steps['pca']
 pca_loading = pca.components_
 
 plt.plot(pca.explained_variance_ratio_)
-fplot.plot_pca_scMix(pca_scores, 2, 
+fplot.plot_pca_scMix(pca_scores, 4, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                covariate='protocol',
                title='PCA of the data matrix')
 
-fplot.plot_pca_scMix(pca_scores, 2, 
+fplot.plot_pca_scMix(pca_scores, 4, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
                covariate='cell_line',
                title='PCA of the data matrix')
@@ -68,6 +68,7 @@ mean_importance_df_cell_line = fmatch.get_mean_importance_all_levels(y_cell_line
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
 mean_importance_df = pd.concat([mean_importance_df_protocol, mean_importance_df_cell_line], axis=0)
 mean_importance_df.shape
+import functions_plotting as fplot
 fplot.plot_fc_match_heatmap(mean_importance_df)
 
 
@@ -102,8 +103,8 @@ all_covariate_levels = np.concatenate((y_protocol.unique(), y_cell_line.unique()
 
 fplot.plot_scaled_variance_heatmap(SV_all_factors, all_covariate_levels, title='Scaled variance for all the factors')
 
-ASV_protocol_all = fmet.get_ASV_all(factor_scores, y_protocol)
-ASV_cell_line_all = fmet.get_ASV_all(factor_scores, y_cell_line)
+ASV_protocol_all = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='arithmetic')
+ASV_cell_line_all = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='arithmetic')
 fplot.plot_factor_scatter(factor_scores, 0, np.argmax(ASV_protocol_all), colors_dict_scMix['protocol'], 
                           covariate='protocol', title='factor with maximum ASV of protocol')
 
@@ -125,8 +126,9 @@ factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
 silhouette_score_all = fmet.get_kmeans_silhouette_scores(factor_scores)['silhouette']
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 
+
 ### label dependent factor metrics
-ASV_protocol_all = fmet.get_ASV_all(factor_scores, y_protocol)
+ASV_protocol_all = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='arithmetic')
 ASV_cell_line_all = fmet.get_ASV_all(factor_scores, y_cell_line)
 factor_specificity_all = fmet.get_all_factors_specificity(mean_importance_df)
 

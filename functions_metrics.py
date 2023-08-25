@@ -118,6 +118,7 @@ def get_a_factor_ASV(a_factor, covariate_vector, mean_type='geometric') -> float
 
     ### calculate the relative scaled variance for all the levels in a covariate
     scaled_variance_all = get_SV_all_levels(a_factor, covariate_vector)
+    print('mean type: ', mean_type)
     ### calculate the geometric mean of the scaled variance for all levels of the covariate
     if mean_type == 'geometric':
         RSV = np.exp(np.mean(np.log(scaled_variance_all)))
@@ -129,17 +130,18 @@ def get_a_factor_ASV(a_factor, covariate_vector, mean_type='geometric') -> float
     return RSV
 
 
-def get_ASV_all(factor_scores, covariate_vector) -> list:
+def get_ASV_all(factor_scores, covariate_vector, mean_type='geometric') -> list:
     '''
     calculate the average scaled variance for all the factors
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     covariate_vector: numpy array of the covariate values for all the cells (n_cells, 1)
+    mean_type: the type of mean to calculate the average scaled variance
     '''
 
     ASV_all = []
     for i in range(const.num_components):
         a_factor = factor_scores[:,i]
-        ASV = get_a_factor_ASV(a_factor, covariate_vector)
+        ASV = get_a_factor_ASV(a_factor, covariate_vector, mean_type)
         ASV_all.append(ASV)
     return ASV_all
 

@@ -15,11 +15,14 @@ import constants as const
 
 
 # training classifiers for feature importance on a classification problem
+# matching pca factors to different covariates in the data
 
-
-### matching pca factors to different covariates in the data
-
-def get_importance_df(factor_scores, a_binary_cov):
+def get_importance_df(factor_scores, a_binary_cov) -> pd.DataFrame:
+    '''
+    calculate the importance of each factor for each covariate level
+    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+    a_binary_cov: numpy array of the binary covariate for a covariate level (n_cells, )
+    '''
 
     models = {'LogisticRegression': LogisticRegression(), 
               'DecisionTree': DecisionTreeClassifier(), 'RandomForest': RandomForestClassifier(), 
@@ -46,9 +49,11 @@ def get_importance_df(factor_scores, a_binary_cov):
     return importance_df
 
 
-
-#### calculate the mean importance of one level of a given covariate and returns a vector of length const.num_components
-def get_mean_importance_level(importance_df_a_level):
+def get_mean_importance_level(importance_df_a_level) -> np.array:
+    ''' 
+    calculate the mean importance of one level of a given covariate and returns a vector of length of number of factors
+    importance_df_a_level: a dataframe of the importance of each factor for a given covariate level
+    '''
     importance_df_np = np.asarray(importance_df_a_level)
     ### scale each row of the importance_df_np to be positive
     importance_df_np = importance_df_np - importance_df_np.min(axis=1, keepdims=True)
@@ -60,9 +65,12 @@ def get_mean_importance_level(importance_df_a_level):
 
 
 
-
-#### calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, const.num_components)
-def get_mean_importance_all_levels(covariate_vec, factor_scores):
+def get_mean_importance_all_levels(covariate_vec, factor_scores) -> pd.DataFrame:
+    '''
+    calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, num_components)
+    covariate_vec: numpy array of the covariate vector (n_cells, )
+    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+    '''
 
     mean_importance_df = pd.DataFrame(columns=['PC'+str(i) for i in range(1, const.num_components+1)])
 

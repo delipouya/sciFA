@@ -24,6 +24,11 @@ plt_legend_dict = {'protocol': plt_legend_protocol, 'cell_line': plt_legend_cl}
 
 
 def get_colors_dict_scMix(y_protocol, y_cell_line):
+    '''
+    generate a dictionary of colors for each cell in the scMix dataset
+    y_protocol: the protocol for each cell
+    y_cell_line: the cell line for each cell
+    '''
 
     ### generating the list of colors for samples
     my_color = {b'sc_10X': 'palegreen', b'CELseq2':'yellow', b'Dropseq':'pink'}
@@ -42,7 +47,15 @@ def plot_pca_scMix(pca_scores,
                    num_components_to_plot, 
                    cell_color_vec, 
                    covariate='protocol',
-                   title='PCA of the data matrix'):
+                   title='PCA of the data matrix') -> None:
+    '''
+    plot the PCA components with PC1 on the x-axis and other PCs on the y-axis
+    pca_scores: the PCA scores for all the cells
+    num_components_to_plot: the number of PCA components to plot as the y-axis
+    cell_color_vec: the color vector for each cell
+    covariate: the covariate to color the cells
+    title: the title of the plot
+    '''
     
     for i in range(1, num_components_to_plot):
         ## color PCA based on strain
@@ -84,10 +97,11 @@ def plot_fc_match_heatmap(mean_importance_df,
     '''
     fig, ax = plt.subplots(figsize=(23, 4))
     ### change the column names as 'factor1', 'factor2', ...
-    mean_importance_df.columns = ['F'+str(i) for i in range(1, mean_importance_df.shape[0]+1)]
+    mean_importance_df.columns = ['F'+str(i) for i in range(1, mean_importance_df.shape[1]+1)]
     sns.heatmap(mean_importance_df, cmap='coolwarm', ax=ax, annot=True, fmt=f'.1g')
     ax.set_title(title)
     plt.show()
+
 
 
 
