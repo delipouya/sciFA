@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 import sklearn.cluster as cluster
 from sklearn import metrics
+import scipy as sp
 
 import functions_processing as fproc
 import constants as const
-
 
 ### calculating specificity of a single factor
 def get_factor_specificity(factor_i, mean_importance_df, p_all_factors) -> float:
@@ -205,3 +205,74 @@ def get_scaled_metrics(all_metrics_df) -> np.array:
                                 ),axis=1)
 
     return all_metrics_scaled
+
+
+
+
+
+def get_AUC_alevel(a_factor, covariate_vector, covariate_level) -> float:
+    '''
+    calculate the AUC of a factor for a covariate level
+    return the AUC and the p-value of the U test
+    a_factor: a factor score
+    covariate_vector: a vector of the covariate
+    covariate_level: a level of the covariate
+
+    '''
+    n1 = np.sum(covariate_vector==covariate_level)
+    n0 = len(a_factor)-n1
+    
+    ### U score manual calculation
+    #order = np.argsort(a_factor)
+    #rank = np.argsort(order)
+    #rank += 1   
+    #U1 = np.sum(rank[covariate_vector == covariate_level]) - n1*(n1+1)/2
+
+    ### calculate the U score using scipy
+    scipy_U = sp.stats.mannwhitneyu(a_factor[covariate_vector == covariate_level] , 
+                                    a_factor[covariate_vector != covariate_level] , 
+                                    alternative="two-sided", use_continuity=False)
+    
+    AUC1 = scipy_U.statistic/ (n1*n0)
+    return AUC1, scipy_U.pvalue
+
+def get_AUC_all_levels(a_factor, covariate_vector) -> list:
+    '''
+    calculate the AUC of a factor for all the covariate levels
+    return a list of AUCs for all the covariate levels
+    a_factor: a factor score
+    covariate_vector: a vector of the covariate
+    '''
+    AUC_all = []
+    for covariate_level in np.unique(covariate_vector):
+        AUC1, pvalue = get_AUC_alevel(a_factor, covariate_vector, covariate_level)
+        AUC_all.append(AUC1)
+    return AUC_all
+
+def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
+    '''
+    calculate the AUC of all the factors for all the covariate levels
+    return a list of AUCs for all the factors
+    factor_scores: a matrix of factor scores
+    covariate_vector: a vector of the covariate
+    '''
+    AUC_all_factors = []
+    for i in range(const.num_components):
+        a_factor = factor_scores[:,i]
+        AUC_all = get_AUC_all_levels(a_factor, covariate_vector)
+        AUC_all_factors.append(AUC_all)
+    return AUC_all_factors
+
+def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
+    '''
+    calculate the AUC of all the factors for all the covariate levels
+    return a dataframe of AUCs for all the factors
+    factor_scores: a matrix of factor scores
+    covariate_vector: a vector of the covariate
+    '''
+    AUC_all_factors = get_AUC_all_factors(factor_scores, covariate_vector)
+    AUC_all_factors_df = pd.DataFrame(AUC_all_factors).T
+    AUC_all_factors_df.columns = ['F'+str(i+1) for i in range(const.num_components)]
+    AUC_all_factors_df.index = np.unique(covariate_vector)
+    return AUC_all_factors_df
+

@@ -6,6 +6,7 @@ import matplotlib.patches as mpatches
 import seaborn as sns
 import pandas as pd
 
+
 import constants as const
 
 
@@ -162,7 +163,7 @@ def plot_scaled_variance_heatmap(SV_all_factors, covariate_levels, title='Scaled
     SV_all_factors: the scaled variance of all the factors for each covariate level
     covariate_levels: the list of covariate levels
     '''
-    plt.figure(figsize=(13, 3))
+    plt.figure(figsize=(16, 3))
     plt.imshow(SV_all_factors, cmap='RdPu', interpolation='nearest')
     plt.xticks(np.arange(len(SV_all_factors[0])), np.arange(len(SV_all_factors[0]))+1)
     plt.yticks(np.arange(len(covariate_levels)), covariate_levels)
@@ -198,15 +199,13 @@ def plot_metric_correlation(all_metrics_df) -> None:
     plt.show()
 
 
-
-
 def plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled factor metrics for all factors'):
     '''
     plot the heatmap of the scaled factor metrics for all the factors
     all_metrics_scaled: the scaled factor metrics for all the factors 
     factor_metrics: the list of factor metric names
     '''
-    plt.figure(figsize=(15, 3))
+    plt.figure(figsize=(18, 3))
     plt.imshow(all_metrics_scaled.T, cmap='YlGnBu', interpolation='nearest') #'YlOrRd'
     plt.yticks(np.arange(len(factor_metrics)), factor_metrics)
     plt.xticks(np.arange(all_metrics_scaled.shape[0]), np.arange(all_metrics_scaled.shape[0])+1)
@@ -214,7 +213,6 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled factor
     plt.xlabel('factor metrics')
     plt.ylabel('factors')
     plt.title(title)
-
 
 
 def plot_metric_heatmap_sb(all_metrics_scaled, factor_metrics, title='Scaled factor metrics for all factors'):
@@ -228,3 +226,18 @@ def plot_metric_heatmap_sb(all_metrics_scaled, factor_metrics, title='Scaled fac
     plt.figure(figsize=(25,4))
     sns.heatmap(df, cmap='YlGnBu', annot=True, fmt=f'.2g') #
     plt.show()
+
+
+
+def plot_AUC_all_factors_df(AUC_all_factors_df, title=''):
+    '''
+    plot the AUC of all the factors for all the covariate levels
+    AUC_all_factors_df: a dataframe of AUCs for all the factors
+    '''
+    fig, ax = plt.subplots(figsize=(20,5))
+    ax = sns.heatmap(AUC_all_factors_df, cmap="YlGnBu", linewidths=.5, annot=True)
+    ax.set_title(title)
+    ax.set_xlabel('factor')
+    ax.set_ylabel('covariate level')
+    plt.show()
+

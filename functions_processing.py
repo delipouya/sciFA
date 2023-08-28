@@ -165,3 +165,5 @@ def get_scaled_vector(a_vector):
     ### scale the vector to be between 0 and 1
     a_vector_scaled = (a_vector - np.min(a_vector))/(np.max(a_vector) - np.min(a_vector))
     return a_vector_scaled
+
+

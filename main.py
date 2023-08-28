@@ -17,6 +17,7 @@ import constants as const
 np.random.seed(10)
 
 
+
 data = fproc.import_AnnData('/home/delaram/scLMM/sc_mixology/scMix_3cl_merged.h5ad')
 y_cell_line, y_sample, y_protocol = fproc.get_metadata_scMix(data)
 y, num_cells, num_genes = fproc.get_data_array(data)
@@ -117,6 +118,14 @@ fplot.plot_factor_scatter(factor_scores, 0, np.argmax(silhouette_score_all), col
                             covariate='protocol', title='factor with maximum silhouette score')
 
 fplot.plot_histogram(factor_scores[:,np.argmin(silhouette_score_all)], title='factor with the minimum silhouette score')
+
+
+#### AUC score
+#### calculate the AUC of all the factors for all the covariate levels
+AUC_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
+AUC_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
+AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
+fplot.plot_AUC_all_factors_df(AUC_all_factors_df, title='AUC of all the factors for all the covariate levels')
 
 ####################################
 
