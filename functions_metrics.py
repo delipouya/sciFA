@@ -8,7 +8,7 @@ import functions_processing as fproc
 import constants as const
 
 from sklearn.mixture import GaussianMixture
-from sklearn.mixture import BayesianGaussianMixture
+#from sklearn.mixture import BayesianGaussianMixture
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import davies_bouldin_score
@@ -245,7 +245,7 @@ def get_kmeans_scores(factor_scores, num_groups=2) -> list:
 
     '''
     bic_scores = []
-    aic_scores = []
+    #aic_scores = []
     silhouette_scores = []
     calinski_harabasz_scores = []
     davies_bouldin_scores = []
@@ -257,7 +257,7 @@ def get_kmeans_scores(factor_scores, num_groups=2) -> list:
         labels = kmeans.labels_
 
         bic_scores.append(kmeans.inertia_)
-        aic_scores.append(kmeans.inertia_)
+        #aic_scores.append(kmeans.inertia_)
         silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
         calinski_harabasz_scores.append(calinski_harabasz_score(factor_scores[:,i].reshape(-1,1), labels))
         davies_bouldin_scores.append(davies_bouldin_score(factor_scores[:,i].reshape(-1,1), labels))
@@ -275,7 +275,6 @@ def get_gmm_scores(factor_scores, num_groups=2) -> list:
     num_groups: number of groups to fit the gaussian mixture model
     '''
     bic_scores = []
-    aic_scores = []
     silhouette_scores = []
     vrs = []
     wvrs = []
@@ -283,7 +282,6 @@ def get_gmm_scores(factor_scores, num_groups=2) -> list:
     cov_list = []
     weights = []
     
-
     for i in range(factor_scores.shape[1]):
         gmm = GaussianMixture(n_components=num_groups, covariance_type='full', random_state=0)
         gmm.fit(factor_scores[:,i].reshape(-1,1))
@@ -296,12 +294,12 @@ def get_gmm_scores(factor_scores, num_groups=2) -> list:
         labels = gmm.predict(factor_scores[:,i].reshape(-1,1))
 
         bic_scores.append(gmm.bic(factor_scores[:,i].reshape(-1,1)))
-        aic_scores.append(gmm.aic(factor_scores[:,i].reshape(-1,1)))
+        #aic_scores.append(gmm.aic(factor_scores[:,i].reshape(-1,1)))
         silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
         vrs.append(get_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
         wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
 
-    return bic_scores, aic_scores, silhouette_scores, vrs, wvrs
+    return bic_scores, silhouette_scores, vrs, wvrs
 
 
 
@@ -342,6 +340,7 @@ def get_likelihood_ratio_test_all(factor_scores, num_groups=2) -> list:
         lrt_all.append(lrt)
     return lrt_all
 
+
 def get_bimodality_index(a_factor, num_groups=2) -> float:
     '''
     calculate the bimodality index for a factor
@@ -370,8 +369,9 @@ def get_bimodality_index_all(factor_scores, num_groups=2) -> list:
     for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         bi_index = get_bimodality_index(a_factor, num_groups)
-        bi_index_all.append(bi_index)
+        bi_index_all.append(float(bi_index))
     return bi_index_all
+
 
 
 def get_dip_test_all(factor_scores) -> list:
@@ -443,6 +443,8 @@ def get_interquartile_range(a_factor) -> float:
 def get_outlier_sum_statistic(a_factor) -> float:
     '''
     calculate the outlier sum statistic of a factor
+    Wi is large if there are many outliers in the data or few extreme outliers with high values, 
+    and Wi is zero if there are no outliers. 
     a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
     '''
     mad = median_absolute_deviation(a_factor)
@@ -530,10 +532,12 @@ def get_AUC_all_levels(a_factor, covariate_vector) -> list:
     covariate_vector: a vector of the covariate
     '''
     AUC_all = []
+    wilcoxon_pvalue_all = []
     for covariate_level in np.unique(covariate_vector):
         AUC1, pvalue = get_AUC_alevel(a_factor, covariate_vector, covariate_level)
         AUC_all.append(AUC1)
-    return AUC_all
+        wilcoxon_pvalue_all.append(pvalue)
+    return AUC_all, wilcoxon_pvalue_all
 
 def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
     '''
@@ -543,11 +547,13 @@ def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
     covariate_vector: a vector of the covariate
     '''
     AUC_all_factors = []
+    wilcoxon_pvalue_all_factors = []
     for i in range(const.num_components):
         a_factor = factor_scores[:,i]
-        AUC_all = get_AUC_all_levels(a_factor, covariate_vector)
+        AUC_all, wilcoxon_pvalue_all = get_AUC_all_levels(a_factor, covariate_vector)
         AUC_all_factors.append(AUC_all)
-    return AUC_all_factors
+        wilcoxon_pvalue_all_factors.append(wilcoxon_pvalue_all)
+    return AUC_all_factors, wilcoxon_pvalue_all_factors
 
 def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
     '''
@@ -556,11 +562,18 @@ def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
     factor_scores: a matrix of factor scores
     covariate_vector: a vector of the covariate
     '''
-    AUC_all_factors = get_AUC_all_factors(factor_scores, covariate_vector)
+    AUC_all_factors, wilcoxon_pvalue_all_factors = get_AUC_all_factors(factor_scores, covariate_vector)
+
     AUC_all_factors_df = pd.DataFrame(AUC_all_factors).T
     AUC_all_factors_df.columns = ['F'+str(i+1) for i in range(const.num_components)]
     AUC_all_factors_df.index = np.unique(covariate_vector)
-    return AUC_all_factors_df
+
+    wilcoxon_pvalue_all_factors_df = pd.DataFrame(wilcoxon_pvalue_all_factors).T
+    wilcoxon_pvalue_all_factors_df.columns = ['F'+str(i+1) for i in range(const.num_components)]
+    wilcoxon_pvalue_all_factors_df.index = np.unique(covariate_vector)
+
+
+    return AUC_all_factors_df, wilcoxon_pvalue_all_factors_df
 
 
 

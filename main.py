@@ -141,13 +141,17 @@ all_covariate_levels = mean_importance_df.index.values
 ####################################
 ##### Factor metrics #####
 ####################################
-
 #### AUC score
 #### calculate the AUC of all the factors for all the covariate levels
-AUC_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
-AUC_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
+AUC_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
+AUC_all_factors_df_cell_line, wilcoxon_pvalue_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
+
 AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
-fplot.plot_AUC_all_factors_df(AUC_all_factors_df, title='AUC of all the factors for all the covariate levels')
+wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_cell_line], axis=0)
+
+fplot.plot_all_factors_levels_df(AUC_all_factors_df, title='AUC of all the factors for all the covariate levels')
+fplot.plot_all_factors_levels_df(wilcoxon_pvalue_all_factors_df, 
+                                 title='Wilcoxon pvalue of all the factors for all the covariate levels')
 
 #### Specificity 
 factor_specificity_all = fmet.get_all_factors_specificity(mean_importance_df)
@@ -194,15 +198,14 @@ fplot.plot_metric_barplot(calinski_harabasz_scores_km, 'Calinski Harabasz score 
 fplot.plot_metric_barplot(wvrs_km, 'weighted variance ratio score of each factor')
 fplot.plot_factor_scatter(factor_scores, 0, np.argmax(silhouette_scores_km), colors_dict_scMix['protocol'],
                             covariate='protocol', title='factor with maximum silhouette score')
-fplot.plot_histogram(factor_scores[:,np.argmin(silhouette_scores_km)], title='factor with the minimum silhouette score')
+fplot.plot_histogram(factor_scores[:,np.argmin(silhouette_scores_km)], 
+                     title='factor with the minimum silhouette score')
 
 ### plot the correlation of the metrics
-bimodality_metrics = ['bic', 'calinski_harabasz', 'davies_bouldin', 'silhouette', 'vrs', 'wvrs']
+bimodality_metrics = ['bic_km', 'calinski_harabasz', 'davies_bouldin', 'silhouette', 'vrs', 'wvrs']
 bimodality_scores = np.concatenate((bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
                                     silhouette_scores_km, vrs_km, wvrs_km), axis=0).reshape(len(bimodality_metrics), -1)
 fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
-
-fplot.plot_metric_heatmap(bimodality_scores, bimodality_metrics, title='Bimodality scores for all the factors')
 
 
 
@@ -237,11 +240,22 @@ kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
 fplot.plot_metric_barplot(kurtosis_scores, 'Kurtosis score of each factor')
 
 #### outlier sum statistic 
-outlier_sum_scores = fmet.get_outlier_sum_all(factor_scores)
+outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
 fplot.plot_metric_barplot(outlier_sum_scores, 'Outlier sum score of each factor')
 
 
+### plot the correlation of all the bimodality metrics
+bimodality_metrics = ['bic_km', 'calinski_harabasz_km', 'davies_bouldin_km', 'silhouette_km', 'vrs_km', 'wvrs_km',
+                      'bic_gmm', 'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm', 'likelihood_ratio', 'bimodality_index',
+                          'dip_score', 'dip_pval', 'kurtosis', 'outlier_sum']
+bimodality_scores = np.concatenate((bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
+                                    silhouette_scores_km, vrs_km, wvrs_km,
+                                    bic_scores_gmm, silhouette_scores_gmm,
+                                    vrs_gmm, wvrs_gmm, likelihood_ratio_scores, bimodality_index_scores,
+                                    dip_scores, pval_scores, kurtosis_scores, outlier_sum_scores), axis=0).reshape(len(bimodality_metrics), -1)
 
+#fplot.plot_metric_correlation_clustermap(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
+fplot.plot_metric_correlation_dendrogram(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
 
 
 
@@ -249,13 +263,20 @@ fplot.plot_metric_barplot(outlier_sum_scores, 'Outlier sum score of each factor'
 
 #### label free factor metrics
 factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
-silhouette_score_all = fmet.get_kmeans_silhouette_scores(factor_scores)['silhouette']
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
+
+### bimoality metrics
+bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
+      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores)
+bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores)
+likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
+bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
+dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
+kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
+outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
 
 
 ### label dependent factor metrics
-
-
 ASV_protocol_all_arith = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='arithmetic')
 ASV_cell_line_all_arith = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='arithmetic')
 ASV_protocol_all_geo = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='geometric')
@@ -265,18 +286,27 @@ ASV_cell_line_all_geo = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='
 factor_specificity_all = fmet.get_all_factors_specificity(mean_importance_df)
 
 #### make a dictionary of all the metrics
-all_metrics_dict = {'factor_entropy': factor_entropy_all, 
-                    'silhouette_score': silhouette_score_all,
+all_metrics_dict = {'factor_entropy': factor_entropy_all,
                     'factor_variance': factor_variance_all, 
                     'ASV_protocol_arith': ASV_protocol_all_arith, 'ASV_protocol_geo': ASV_protocol_all_geo,
                     'ASV_cell_line_arith': ASV_cell_line_all_arith, 'ASV_cell_line_geo': ASV_cell_line_all_geo,
-                    'factor_specificity': factor_specificity_all}
+                    'factor_specificity': factor_specificity_all, 
+
+                    'bic_km': bic_scores_km, 'calinski_harabasz_km': calinski_harabasz_scores_km,
+                    'davies_bouldin_km': davies_bouldin_scores_km, 'silhouette_km': silhouette_scores_km,
+                    'vrs_km': vrs_km, 'wvrs_km': wvrs_km,
+                    'bic_gmm': bic_scores_gmm, 'silhouette_gmm': silhouette_scores_gmm,
+                    'vrs_gmm': vrs_gmm, 'wvrs_gmm': wvrs_gmm,
+                    'likelihood_ratio': likelihood_ratio_scores, 'bimodality_index': bimodality_index_scores,
+                    'dip_score': dip_scores, 'dip_pval': pval_scores, 'kurtosis': kurtosis_scores,
+                    'outlier_sum': outlier_sum_scores}
 
 all_metrics_df = pd.DataFrame(all_metrics_dict)
 factor_metrics = list(all_metrics_df.columns)
 all_metrics_df.head()
 
 fplot.plot_metric_correlation(all_metrics_df)
+fplot.plot_metric_correlation_dendrogram(all_metrics_df)
 
 ### scale the all_metrics matrix based on each metric 
 all_metrics_scaled = fmet.get_scaled_metrics(all_metrics_df)
