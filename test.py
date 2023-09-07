@@ -136,3 +136,52 @@ print(y_protocol.unique())
 print(np.unique(y_protocol))
 print(np.unique(y_cell_line))
 print(np.concatenate((y_protocol.unique(), y_cell_line.unique()), axis=0))
+
+
+
+
+from rpy2 import robjects
+
+pi = robjects.r['pi']
+pi
+robjects.r('''
+    add_nums <- function(x, y) {
+        return(x + y)
+    }
+    
+    print(add_nums(x = 5, y = 10))
+    print(add_nums(x = 10, y = 20))
+''')
+           
+
+from rpy2.robjects.packages import importr, data
+
+
+datasets = importr('datasets')
+mtcars = data(datasets).fetch('mtcars')['mtcars']
+mtcars
+
+base = importr('base')
+
+
+# import R's "utils" package
+utils = importr('utils')
+names_to_install = 'hexbin'
+names_to_install = "almutlue/CellMixS"
+from rpy2.robjects.vectors import StrVector
+utils.install_packages(StrVector(names_to_install))
+
+# import rpy2's package module
+import rpy2.robjects.packages as rpackages
+
+# import R's utility package
+# R package names
+from rpy2.robjects.packages import importr
+packnames = ("CellMixS")
+CellMixS = importr('CellMixS')
+# R vector of strings
+
+
+utils.install_packages(StrVector(packnames))
+
+

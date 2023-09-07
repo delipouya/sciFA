@@ -7,6 +7,15 @@ import scipy as sp
 import functions_processing as fproc
 import constants as const
 
+from sklearn.mixture import GaussianMixture
+from sklearn.mixture import BayesianGaussianMixture
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.metrics import davies_bouldin_score
+from sklearn.metrics import calinski_harabasz_score
+import diptest
+
+
 ### calculating specificity of a single factor
 def get_factor_specificity(factor_i, mean_importance_df, p_all_factors) -> float:
     '''
@@ -163,29 +172,306 @@ def get_factors_SV_all_levels(factor_scores, covariate_vector) -> np.array:
 
 
 
-def get_silhouette_score(a_factor, kmeans_labels) -> float:
-    ''' calculate the silhouette score for a factor
-    a_factor: numpy array of the one factor scores for all the cells (n_cells, 1)
-    kmeans_labels: numpy array of the kmeans labels for all the cells (n_cells, 1)
+
+def get_total_sum_of_squares(a_factor) -> float:
     '''
-    a_factor_silhouette_score = metrics.silhouette_score(a_factor.reshape(-1, 1), kmeans_labels, metric='euclidean')
-    return a_factor_silhouette_score
+    calculate the total sum of squares for a factor
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    '''
+    a_factor = a_factor.reshape(-1,1)
+    tss = np.sum((a_factor - np.mean(a_factor))**2)
+    return tss
+
+### calculate within cluster sum of squares for each factor based on clustering labels
+def get_factor_wcss(a_factor, labels) -> list:
+    '''
+    calculate the sum of squares error for each factor based on the clustering labels
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    labels: numpy array of the clustering labels for all the cells (n_cells, 1)
+    '''
+    a_factor = a_factor.reshape(-1,1)
+    sse = np.sum((a_factor - np.mean(a_factor[labels==0]))**2) + np.sum((a_factor - np.mean(a_factor[labels==1]))**2)
+        
+    return sse
+
+def get_factor_wcss_weighted(a_factor, labels) -> list:
+    '''
+    calculate the sum of squares error for each factor based on the clustering labels
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    labels: numpy array of the clustering labels for all the cells (n_cells, 1)
+    '''
+    a_factor = a_factor.reshape(-1,1)
+    n0 = a_factor[labels==0].shape[0]
+    n1 = a_factor[labels==1].shape[0]
+    sse = (1/n0)*(np.sum((a_factor - np.mean(a_factor[labels==0]))**2)) + (1/n1)*(np.sum((a_factor - np.mean(a_factor[labels==1]))**2))
+        
+    return sse
+
+def get_variance_reduction_score(a_factor, labels) -> float:
+    '''
+    calculate the variance reduction score for a factor based on the clustering labels
+    VRS measures the proportion of variance reduction when splitting the data into two clusters. 
+    The value of this score lies in the interval [0; 1], and a low score indicates an informative split.
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    labels: numpy array of the clustering labels for all the cells (n_cells, 1)
+    '''
+    tss = get_total_sum_of_squares(a_factor)
+    sse = get_factor_wcss(a_factor, labels)
+    #vrs = 1 - sse/tss
+    vrs = sse/tss
+    return vrs
+
+def get_weighted_variance_reduction_score(a_factor, labels) -> float:
+    '''
+    calculate the weighted variance reduction score for a factor based on the clustering labels
+    The weighted variance reduction score (WVRS) measures the variance reduction independent of the cluster sizes.
+    In the numerator we calculate the mean of the two within cluster variances. 
+    The value of this score can be larger than 1. Low score reflects bimodality. 
+    WVRS has the ability to also identify splits into two clusters with extremely unequal sample sizes.
+    '''
+    tss = get_total_sum_of_squares(a_factor)
+    sse_weighted = get_factor_wcss_weighted(a_factor, labels)
+    n = a_factor.shape[0]
+    wvrs = (n*sse_weighted)/(2*tss)
+    return wvrs
 
 
 
-def get_kmeans_silhouette_scores(factor_scores) -> dict:
-    ''' calculate the silhouette score for all the factors
+def get_kmeans_scores(factor_scores, num_groups=2) -> list:
+    '''
+    fit a kmeans model to each factor and calculate the bic, aic, and silhouette scores for all the factors
+    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+    num_groups: number of groups to fit the kmeans model
+
+    '''
+    bic_scores = []
+    aic_scores = []
+    silhouette_scores = []
+    calinski_harabasz_scores = []
+    davies_bouldin_scores = []
+    vrs = []
+    wvrs = []
+
+    for i in range(factor_scores.shape[1]):
+        kmeans = KMeans(n_clusters=num_groups, random_state=0).fit(factor_scores[:,i].reshape(-1,1))
+        labels = kmeans.labels_
+
+        bic_scores.append(kmeans.inertia_)
+        aic_scores.append(kmeans.inertia_)
+        silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
+        calinski_harabasz_scores.append(calinski_harabasz_score(factor_scores[:,i].reshape(-1,1), labels))
+        davies_bouldin_scores.append(davies_bouldin_score(factor_scores[:,i].reshape(-1,1), labels))
+        vrs.append(get_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
+        wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
+
+    return bic_scores, calinski_harabasz_scores, davies_bouldin_scores, silhouette_scores, vrs, wvrs
+
+
+
+def get_gmm_scores(factor_scores, num_groups=2) -> list:
+    '''
+    fit a gaussian mixture model to each factor and calculate the bic, aic, and silhouette scores for all the factors
+    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+    num_groups: number of groups to fit the gaussian mixture model
+    '''
+    bic_scores = []
+    aic_scores = []
+    silhouette_scores = []
+    vrs = []
+    wvrs = []
+    means = []
+    cov_list = []
+    weights = []
+    
+
+    for i in range(factor_scores.shape[1]):
+        gmm = GaussianMixture(n_components=num_groups, covariance_type='full', random_state=0)
+        gmm.fit(factor_scores[:,i].reshape(-1,1))
+
+        ### save the mean, coc and weight of gmm in lists
+        means.append(gmm.means_)
+        cov_list.append(gmm.covariances_)
+        weights.append(gmm.weights_)
+
+        labels = gmm.predict(factor_scores[:,i].reshape(-1,1))
+
+        bic_scores.append(gmm.bic(factor_scores[:,i].reshape(-1,1)))
+        aic_scores.append(gmm.aic(factor_scores[:,i].reshape(-1,1)))
+        silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
+        vrs.append(get_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
+        wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
+
+    return bic_scores, aic_scores, silhouette_scores, vrs, wvrs
+
+
+
+def get_likelihood_ratio_test(a_factor, num_groups=2) -> float:
+    '''
+    calculate the likelihood ratio test for a factor
+    likelihood ratio of a normal model and a mixture normal model to identify bimodal distributions was suggested by Ertel and Tozeren 
+    Small ratios indicate that the distribution is unimodal, whereas large ratios suggest that the expression values are bimodally distributed.
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    num_groups: number of groups to fit the gaussian mixture model
+    '''
+    gmm = GaussianMixture(n_components=num_groups, covariance_type='full', random_state=0)
+    gmm.fit(a_factor.reshape(-1,1))
+    labels = gmm.predict(a_factor.reshape(-1,1))
+    ### calculate the likelihood of the gaussian model 
+    log_likelihood_normal = np.sum(gmm.score_samples(a_factor.reshape(-1,1)))
+
+    ### calculate the likelihood of the mixture normal model
+    log_likelihood_mixture = np.sum(np.log(gmm.predict_proba(a_factor.reshape(-1,1))))
+
+    ### calculate the likelihood ratio test
+    #lrt = -2*(log_likelihood_normal - log_likelihood_mixture)
+    lrt = log_likelihood_normal - log_likelihood_mixture
+    
+    return lrt
+
+
+def get_likelihood_ratio_test_all(factor_scores, num_groups=2) -> list:
+    '''
+    calculate the likelihood ratio test for all the factors
+    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+    num_groups: number of groups to fit the gaussian mixture model
+    '''
+    lrt_all = []
+    for i in range(factor_scores.shape[1]):
+        a_factor = factor_scores[:,i]
+        lrt = get_likelihood_ratio_test(a_factor, num_groups)
+        lrt_all.append(lrt)
+    return lrt_all
+
+def get_bimodality_index(a_factor, num_groups=2) -> float:
+    '''
+    calculate the bimodality index for a factor
+    distribution of a factor with bimodal values can be expressed as a mixture of two normal distributions with means μ1 and μ2 
+    and equal standard deviation σ. The standardized distance δ between the two populations is given by
+    '''
+    gmm = GaussianMixture(n_components=num_groups, covariance_type='full', random_state=0)
+    gmm.fit(a_factor.reshape(-1,1))
+    ### calculate the standard distance (sigma) by subtracting the means and dividing by the standard deviation
+    sigma = np.abs(gmm.means_[0] - gmm.means_[1])/np.sqrt(gmm.covariances_[0])
+    ### to identify bimodal factors, H0: sigma = 0, H1: sigma > 0
+    ### calculate the bimodality index
+    ### proportion of cells in the first component
+    pi = np.sum(gmm.weights_[0])/np.sum(gmm.weights_)
+    bi_index = np.sqrt(pi*(1-pi))*sigma
+    return bi_index
+    
+    
+def get_bimodality_index_all(factor_scores, num_groups=2) -> list:
+    '''
+    calculate the bimodality index for all the factors
+    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+    num_groups: number of groups to fit the gaussian mixture model
+    '''
+    bi_index_all = []
+    for i in range(factor_scores.shape[1]):
+        a_factor = factor_scores[:,i]
+        bi_index = get_bimodality_index(a_factor, num_groups)
+        bi_index_all.append(bi_index)
+    return bi_index_all
+
+
+def get_dip_test_all(factor_scores) -> list:
+    '''
+    This function calculates the Hartigan's dip test for unimodality for each factor individually.
+    The dip statistic is defined as the maximum difference between an empirical distribution function and 
+    the unimodal distribution function that minimizes that maximum difference.
+    factor_scores: numpy array of shape (num_cells, num_factors)
+    '''
+    dip_scores = []
+    pval_scores = []
+    for i in range(factor_scores.shape[1]):
+        dip, pval = diptest.diptest(factor_scores[:,i])
+        dip_scores.append(dip)
+        pval_scores.append(pval)
+
+    return dip_scores, pval_scores
+
+
+
+def get_factor_kurtosis(a_factor) -> float:
+    '''
+    calculate the kurtosis of a factor
+    A gaussian distribution has kurtosis K = 0, whereas most non-gaussian distributions have either K > 0 or K < 0. 
+    Specifically, a mixture of two approximately equal mass normal distributions must have negative kurtosis since 
+    the two modes on either side of the center of mass effec- tively flatten out the distribution. 
+    A mixture of two nor- mal distributions with highly unequal mass must have positive kurtosis since 
+    the smaller distribution lengthens the tail of the more dominant normal distribution. 
+    If there is an 80%-20% split of the samples into two groups, 
+    then the kurtosis is close to 0 [9]. Therefore biologically interesting genes might be missed.
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    '''
+    kurtosis = sp.stats.kurtosis(a_factor)
+    return kurtosis
+
+
+
+def get_factor_kurtosis_all(factor_scores) -> list:
+    '''
+    calculate the kurtosis of all the factors
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     '''
-    silhouette_score_all = []
-    kmeans_all = []
-    for i in range(const.num_components):
-        ### apply kmeans to all the factors independently
-        kmeans = cluster.KMeans(n_clusters=2, random_state=0).fit(factor_scores[:,i].reshape(-1, 1))
-        a_factor_silhouette_score = get_silhouette_score(factor_scores[:,i], kmeans.labels_)
-        silhouette_score_all.append(a_factor_silhouette_score)
-        kmeans_all.append(kmeans.labels_)
-    return {'silhouette': silhouette_score_all, 'kmeans': kmeans_all}
+    kurtosis_all = []
+    for i in range(factor_scores.shape[1]):
+        a_factor = factor_scores[:,i]
+        kurtosis = get_factor_kurtosis(a_factor)
+        kurtosis_all.append(kurtosis)
+    return kurtosis_all
+
+
+def median_absolute_deviation(a_factor) -> float:
+    '''
+    calculate the median absolute deviation of a factor
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    '''
+    mad = np.median(np.abs(a_factor - np.median(a_factor)))
+    return mad
+
+
+def get_interquartile_range(a_factor) -> float:
+    '''
+    calculate the interquartile range of a factor
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    '''
+    iqr = np.percentile(a_factor, 75) - np.percentile(a_factor, 25)
+    return iqr
+
+
+def get_outlier_sum_statistic(a_factor) -> float:
+    '''
+    calculate the outlier sum statistic of a factor
+    a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
+    '''
+    mad = median_absolute_deviation(a_factor)
+    x_p = (a_factor - np.median(a_factor))/mad
+    
+    q_25 = np.percentile(a_factor, 25)
+    q_75 = np.percentile(a_factor, 75)
+    iqr = get_interquartile_range(a_factor)
+
+    # # W =∑x′ ⋅I[x′ >q (i)+IQR(i)]
+    W_pos = np.sum(x_p[x_p> (q_75+iqr)])
+    W_neg = np.sum(x_p[x_p< (q_25-iqr)])
+    ### abs max of W_pos and W_neg
+    W = np.max([np.abs(W_pos), np.abs(W_neg)])
+    
+    return W
+
+
+def get_outlier_sum_statistic_all(factor_scores) -> list:
+    '''
+    calculate the outlier sum statistic of all the factors
+    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+    '''
+    W_all = []
+    for i in range(factor_scores.shape[1]):
+        a_factor = factor_scores[:,i]
+        W = get_outlier_sum_statistic(a_factor)
+        W_all.append(W)
+    return W_all
 
 
 
@@ -201,12 +487,12 @@ def get_scaled_metrics(all_metrics_df) -> np.array:
                                 fproc.get_scaled_vector(all_metrics_np[:,2]).reshape(-1, 1),
                                 fproc.get_scaled_vector(all_metrics_np[:,3]).reshape(-1, 1),
                                 fproc.get_scaled_vector(all_metrics_np[:,4]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,5]).reshape(-1, 1)
+                                fproc.get_scaled_vector(all_metrics_np[:,5]).reshape(-1, 1),
+                                fproc.get_scaled_vector(all_metrics_np[:,6]).reshape(-1, 1),
+                                fproc.get_scaled_vector(all_metrics_np[:,7]).reshape(-1, 1)
                                 ),axis=1)
 
     return all_metrics_scaled
-
-
 
 
 
@@ -276,3 +562,59 @@ def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
     AUC_all_factors_df.index = np.unique(covariate_vector)
     return AUC_all_factors_df
 
+
+
+def get_factor_binned(factor_scores, num_bins=10):
+    '''
+    bin a factor into 10 bins
+    '''
+    factor_scores_binned = np.zeros(factor_scores.shape)
+    for i in range(num_bins):
+        factor_scores_binned[np.where(factor_scores >= np.percentile(factor_scores, i*10))[0]] = i
+    return factor_scores_binned
+
+
+
+##### using integration metrics to compare the factors
+import scib
+import scib.metrics as smet
+
+### calculate kbet score for all the factors
+def get_kbet_all_factors(factor_scores, covariate_vector) -> list:
+    '''
+    calculate the kbet score for all the factors
+    return a list of kbet scores for all the factors
+    factor_scores: a matrix of factor scores
+    covariate_vector: a vector of the covariate
+    '''
+    kbet_all_factors = []
+    for i in range(const.num_components):
+        a_factor = factor_scores[:,i]
+        kbet_all = scib.kbet(a_factor, covariate_vector)
+        kbet_all_factors.append(kbet_all)
+    return kbet_all_factors
+
+
+'''
+Principal component regression pcr_comparison()
+Batch ASW silhouette()
+K-nearest neighbour batch effect kBET()
+Graph connectivity graph_connectivity()
+Graph iLISI lisi_graph()
+Biological conservation metrics include:
+Normalised mutual information nmi()
+Adjusted Rand Index ari()
+Cell type ASW silhouette_batch()
+Isolated label score F1 isolated_labels()
+Isolated label score ASW isolated_labels()
+Cell cycle conservation cell_cycle()
+Highly variable gene conservation hvg_overlap()
+Trajectory conservation trajectory_conservation()
+Graph cLISI lisi_graph()
+
+### retures all the metrics as a pandas dataframe
+scib.metrics.metrics(adata, adata_int, ari=True, nmi=True)
+scib.me.metrics_fast()
+scib.me.metrics_all()
+
+'''

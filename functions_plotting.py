@@ -235,7 +235,7 @@ def plot_AUC_all_factors_df(AUC_all_factors_df, title=''):
     AUC_all_factors_df: a dataframe of AUCs for all the factors
     '''
     fig, ax = plt.subplots(figsize=(20,5))
-    ax = sns.heatmap(AUC_all_factors_df, cmap="YlGnBu", linewidths=.5, annot=True)
+    ax = sns.heatmap(AUC_all_factors_df, cmap="YlOrBr", linewidths=.5, annot=True)
     ax.set_title(title)
     ax.set_xlabel('factor')
     ax.set_ylabel('covariate level')
