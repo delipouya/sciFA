@@ -398,10 +398,10 @@ def get_factor_kurtosis(a_factor) -> float:
     A gaussian distribution has kurtosis K = 0, whereas most non-gaussian distributions have either K > 0 or K < 0. 
     Specifically, a mixture of two approximately equal mass normal distributions must have negative kurtosis since 
     the two modes on either side of the center of mass effec- tively flatten out the distribution. 
-    A mixture of two nor- mal distributions with highly unequal mass must have positive kurtosis since 
+    A mixture of two normal distributions with highly unequal mass must have positive kurtosis since 
     the smaller distribution lengthens the tail of the more dominant normal distribution. 
     If there is an 80%-20% split of the samples into two groups, 
-    then the kurtosis is close to 0 [9]. Therefore biologically interesting genes might be missed.
+    then the kurtosis is close to 0. Therefore biologically interesting genes might be missed.
     a_factor: numpy array of the factor scores for all the cells (n_cells, 1)
     '''
     kurtosis = sp.stats.kurtosis(a_factor)

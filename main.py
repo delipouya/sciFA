@@ -217,16 +217,30 @@ bimodality_scores = np.concatenate((bic_scores_gmm, silhouette_scores_gmm,
                                     vrs_gmm, wvrs_gmm), axis=0).reshape(len(bimodality_metrics), -1)
 fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
 
+### likelihood test 
+likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
+fplot.plot_metric_barplot(likelihood_ratio_scores, 'Likelihood ratio score of each factor')
+
+### bimodality index metric
+bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
+fplot.plot_metric_barplot(bimodality_index_scores, 'Bimodality index score of each factor')
+
 
 ### dip test based bimodality metrics
-dip_scores, pval_scores = fmet.get_dip_test(factor_scores)
-fplot.plot_histogram(dip_scores, 'Dip test score of each factor')
-fplot.plot_histogram(pval_scores, 'Dip test p value of each factor')
-
+dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
 fplot.plot_metric_barplot(dip_scores, 'Dip test score of each factor')
+fplot.plot_metric_barplot(pval_scores, 'Dip test p values of each factor')
 
-#### kurtosis: measure divergence from normal distribution
-kurtosis_scores = fmet.get_kurtosis_scores(factor_scores)
+
+#### kurtosis
+kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
+fplot.plot_metric_barplot(kurtosis_scores, 'Kurtosis score of each factor')
+
+#### outlier sum statistic 
+outlier_sum_scores = fmet.get_outlier_sum_all(factor_scores)
+fplot.plot_metric_barplot(outlier_sum_scores, 'Outlier sum score of each factor')
+
+
 
 
 
