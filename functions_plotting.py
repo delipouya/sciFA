@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 import pandas as pd
+from scipy.cluster.hierarchy import dendrogram, linkage
 
 
 import constants as const
@@ -89,23 +90,6 @@ def plot_umap_scMix(pca_scores, cell_color_vec ,
 
 
 
-def plot_fc_match_heatmap(mean_importance_df, 
-                          title='Mean importance of each factor for each covariate level')  -> None:
-    '''
-    plot mean_importance_df as a heatmap
-    mean_importance_df: dataframe of mean importance of each factor for each covariate level
-    title: the title of the plot
-    '''
-    fig, ax = plt.subplots(figsize=(23, 4))
-    ### change the column names as 'factor1', 'factor2', ...
-    mean_importance_df.columns = ['F'+str(i) for i in range(1, mean_importance_df.shape[1]+1)]
-    sns.heatmap(mean_importance_df, cmap='coolwarm', ax=ax, annot=True, fmt=f'.1g')
-    ax.set_title(title)
-    plt.show()
-
-
-
-
 def plot_metric_barplot(metric_all, title) -> None:
     '''
     plot the factor metric as a bar plot
@@ -157,24 +141,6 @@ def plot_histogram(a_factor_score, title='') -> None:
 
 
 
-def plot_scaled_variance_heatmap(SV_all_factors, covariate_levels, title='Scaled variance for all the factors'):
-    ''' 
-    plot the scaled variance of all the factors for each covariate level
-    SV_all_factors: the scaled variance of all the factors for each covariate level
-    covariate_levels: the list of covariate levels
-    '''
-    plt.figure(figsize=(16, 3))
-    plt.imshow(SV_all_factors, cmap='RdPu', interpolation='nearest')
-    plt.xticks(np.arange(len(SV_all_factors[0])), np.arange(len(SV_all_factors[0]))+1)
-    plt.yticks(np.arange(len(covariate_levels)), covariate_levels)
-    plt.colorbar()
-    plt.xlabel('Factors')
-    plt.ylabel('Covariate levels')
-    plt.title(title)
-    plt.show()
-
-
-
 def plot_metric_correlation_clustermap(all_metrics_df) -> None:
       '''
       plot correlation plot with columnns sorted by the dendrogram using seaborn clustermap
@@ -187,16 +153,18 @@ def plot_metric_correlation_clustermap(all_metrics_df) -> None:
       ### calculate the correlation matrix
       corr = np.corrcoef(all_metrics_np.T)
       ### calculate the linkage matrix
-      from scipy.cluster.hierarchy import dendrogram, linkage
+      
       Z = linkage(corr, 'ward')
       ### plot the correlation matrix with hierarchical clustering
       
       sns.set(font_scale=2.5)
       
-      g = sns.clustermap(corr, row_linkage=Z, col_linkage=Z, cmap='viridis', figsize=(17, 13),  #viridis, coolwarm
+      g = sns.clustermap(corr, row_linkage=Z, col_linkage=Z, cmap='viridis', figsize=(19, 13),  #viridis, coolwarm
                          linewidths=.5, linecolor='white') # annot=False, fmt='.4g'
-      plt.setp(g.ax_heatmap.get_xticklabels(), rotation=-70)
+      plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right")
       plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
+      
+
       ## add factor metric names to the heatmap column and row labels
       g.ax_heatmap.set_xticklabels(factor_metrics)
       g.ax_heatmap.set_yticklabels(factor_metrics)
@@ -205,34 +173,10 @@ def plot_metric_correlation_clustermap(all_metrics_df) -> None:
 
 
 
-## plot trianular correlation heatmap matrix using mask np.triu with white background
-def plot_metric_correlation_triangular(all_metrics_df) -> None:
+
+def plot_metric_dendrogram(all_metrics_df, distance='ward') -> None:
     '''
-    plot the correlation matrix for the metrics
-    all_metrics_df: a pandas dataframe of the metrics for all the factors
-    '''
-    ### convert to a numpy array
-    all_metrics_np = all_metrics_df.to_numpy()
-    factor_metrics = all_metrics_df.columns
-
-    ### calculate the correlation matrix
-    corr = np.corrcoef(all_metrics_np.T)
-    ### plot the correlation matrix with hierarchical clustering
-    plt.figure(figsize=(15, 10))
-    mask = np.triu(np.ones_like(corr, dtype=bool))
-    
-    sns.heatmap(corr, mask=mask, cmap='coolwarm', vmin=-1, vmax=1,
-                xticklabels=factor_metrics, yticklabels=factor_metrics, linewidths=.5, linecolor='white')
-    plt.xticks(rotation=-70)
-    plt.yticks(rotation=0)
-    plt.title('correlation matrix for factor metrics')
-    plt.show()
-
-
-
-def plot_metric_correlation_dendrogram(all_metrics_df) -> None:
-    '''
-    plot the correlation matrix for the metrics
+    plot a dendogram for the metrics based on the correlation matrix distance
     all_metrics_df: a pandas dataframe of the metrics for all the factors
     '''
     ### convert to a numpy array
@@ -243,87 +187,84 @@ def plot_metric_correlation_dendrogram(all_metrics_df) -> None:
     corr = np.corrcoef(all_metrics_np.T)
     ### calculate the linkage matrix
     from scipy.cluster.hierarchy import dendrogram, linkage
-    Z = linkage(corr, 'ward')
-    ### plot the correlation matrix with hierarchical clustering
-    plt.figure(figsize=(7, 7))
-    plt.imshow(corr, cmap='coolwarm', interpolation='nearest')
-    plt.xticks(np.arange(len(factor_metrics)), factor_metrics, rotation=-70)
-    plt.yticks(np.arange(len(factor_metrics)), factor_metrics)
-    plt.colorbar()
-    plt.xlabel('factor metrics')
-    plt.ylabel('factor metrics')
-    plt.title('correlation matrix for factor metrics')
-    plt.show()
+    Z = linkage(corr, distance)
+    #### make the background white
+    plt.rcParams['axes.facecolor'] = 'white'
+    ### make the y-axis labels forn size smaller
+    plt.rcParams['ytick.labelsize'] = 14
+    plt.rcParams['ytick.labelsize'] = 14
+    ## add a box around the dendrogram
+    plt.rcParams['axes.linewidth'] = 2
+
     plt.figure(figsize=(5, 5))
     dendrogram(Z, labels=factor_metrics, leaf_rotation=90)
     plt.show()
 
 
-def plot_metric_correlation(all_metrics_df) -> None:
-    '''
-    plot the correlation matrix for the metrics
-    all_metrics_df: a pandas dataframe of the metrics for all the factors
-    '''
-    ### convert to a numpy array
-    all_metrics_np = all_metrics_df.to_numpy()
-    factor_metrics = all_metrics_df.columns
-
-    ### calculate the correlation matrix
-    corr = np.corrcoef(all_metrics_np.T)
-    
-    ### plot the correlation matrix with hierarchical clustering
-    plt.figure(figsize=(5, 5))
-    plt.imshow(corr, cmap='coolwarm', interpolation='nearest')
-    plt.xticks(np.arange(len(factor_metrics)), factor_metrics, rotation=-70)
-    plt.yticks(np.arange(len(factor_metrics)), factor_metrics)
-    plt.colorbar()
-    plt.xlabel('factor metrics')
-    plt.ylabel('factor metrics')
-    plt.title('correlation matrix for factor metrics')
-    plt.show()
 
 
-
-
-def plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled factor metrics for all factors'):
-    '''
-    plot the heatmap of the scaled factor metrics for all the factors
-    all_metrics_scaled: the scaled factor metrics for all the factors 
-    factor_metrics: the list of factor metric names
-    '''
-    plt.figure(figsize=(18, 3))
-    plt.imshow(all_metrics_scaled.T, cmap='YlGnBu', interpolation='nearest') #'YlOrRd'
-    plt.yticks(np.arange(len(factor_metrics)), factor_metrics)
-    plt.xticks(np.arange(all_metrics_scaled.shape[0]), np.arange(all_metrics_scaled.shape[0])+1)
-    plt.colorbar()
-    plt.xlabel('factor metrics')
-    plt.ylabel('factors')
-    plt.title(title)
-
-
-def plot_metric_heatmap_sb(all_metrics_scaled, factor_metrics, title='Scaled factor metrics for all factors'):
+def plot_metric_heatmap(all_metrics_scaled, factor_metrics, 
+                           title='Scaled factor metrics for all factors'):
     '''
     plot the heatmap of the scaled factor metrics for all the factors using seaborn
     all_metrics_scaled: the scaled factor metrics for all the factors
     factor_metrics: the list of factor metric names
     '''
-    df = pd.DataFrame(all_metrics_scaled.T, columns=np.arange(all_metrics_scaled.shape[0])+1)
-    df.index = factor_metrics
-    plt.figure(figsize=(25,4))
-    sns.heatmap(df, cmap='YlGnBu', annot=True, fmt=f'.2g') #
+    sns.set(font_scale=1.4)
+    plt.figure(figsize=(27,15))
+    #all_metrics_np = all_metrics_df.T.to_numpy()
+    all_metrics_np = all_metrics_scaled.T
+    
+    ### remove numbers from heatmap cells
+
+    g = sns.clustermap(all_metrics_np, cmap='YlGnBu', figsize=(28, 20),  #viridis, coolwarm
+                            linewidths=.5, linecolor='white',
+                            col_cluster=False, row_cluster=True) # annot=False, fmt='.4g'
+    plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
+    plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = 30)
+    ## add F1, F2, ... to the heatmap x axis
+
+    g.ax_heatmap.set_xticklabels(['F'+str(i+1) for i in range(all_metrics_np.shape[1])])
+
+    g.ax_heatmap.set_yticklabels(factor_metrics)
+
     plt.show()
 
 
 
-def plot_all_factors_levels_df(all_factors_df, title=''):
+def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr"):
     '''
+    colors: SV: 'RdPu', AUC/: 'YlOrBr', wilcoxon: rocket_r, featureImp: coolwarm
     plot the score of all the factors for all the covariate levels
     all_factors_df: a dataframe of a score for all the factors for all the covariate levels
     '''
     fig, ax = plt.subplots(figsize=(20,5))
-    ax = sns.heatmap(all_factors_df, cmap="YlOrBr", linewidths=.5, annot=True)
+    ax = sns.heatmap(all_factors_df, cmap=color, linewidths=.5, annot=False)
     ax.set_title(title)
-    ax.set_xlabel('factor')
-    ax.set_ylabel('covariate level')
+    ax.set_xlabel('Factors')
+    ax.set_ylabel('Covariate level')
+    ## add F1, F2, ... to the x-axis ticks
+    x_axis_label = ['F'+str(i) for i in range(1, all_factors_df.shape[1]+1)]
+    ax.set_xticklabels(x_axis_label, rotation=45, ha="right",)
     plt.show()
+
+
+def plot_all_factors_levels(SV_all_factors, covariate_levels, title='', color='RdPu'):
+    ''' 
+    plot the scaled variance of all the factors for each covariate level
+    SV_all_factors: the scaled variance of all the factors for each covariate level
+    covariate_levels: the list of covariate levels
+    '''
+    plt.figure(figsize=(16, 3))
+    plt.imshow(SV_all_factors, cmap=color, interpolation='nearest')
+    plt.yticks(np.arange(len(covariate_levels)), covariate_levels)
+    ## add F1, F2, ... to the x-axis ticks
+    x_axis_label = ['F'+str(i) for i in range(1, len(SV_all_factors[0])+1)]
+    plt.xticks(np.arange(len(SV_all_factors[0])), x_axis_label, rotation=45, ha="right",)
+    plt.colorbar()
+    plt.xlabel('Factors')
+    plt.ylabel('Covariate levels')
+    plt.title(title)
+    plt.show()
+
 

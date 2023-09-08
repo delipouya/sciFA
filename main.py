@@ -132,8 +132,7 @@ mean_importance_df_cell_line = fmatch.get_mean_importance_all_levels(y_cell_line
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
 mean_importance_df = pd.concat([mean_importance_df_protocol, mean_importance_df_cell_line], axis=0)
 mean_importance_df.shape
-import functions_plotting as fplot
-fplot.plot_fc_match_heatmap(mean_importance_df)
+fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
 ## getting rownnammes of the mean_importance_df
 all_covariate_levels = mean_importance_df.index.values
 
@@ -149,9 +148,10 @@ AUC_all_factors_df_cell_line, wilcoxon_pvalue_all_factors_df_cell_line = fmet.ge
 AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
 wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_cell_line], axis=0)
 
-fplot.plot_all_factors_levels_df(AUC_all_factors_df, title='AUC of all the factors for all the covariate levels')
+fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
+                                 title='F-C Match: AUC scores', color='YlOrBr')
 fplot.plot_all_factors_levels_df(wilcoxon_pvalue_all_factors_df, 
-                                 title='Wilcoxon pvalue of all the factors for all the covariate levels')
+                                 title='Homogeneity: Wilcoxon pvalue', color='rocket_r')
 
 #### Specificity 
 factor_specificity_all = fmet.get_all_factors_specificity(mean_importance_df)
@@ -177,7 +177,8 @@ SV_all_factors_cell_line = fmet.get_factors_SV_all_levels(factor_scores, y_cell_
 SV_all_factors = np.concatenate((SV_all_factors_protocol, SV_all_factors_cell_line), axis=0)
 #all_covariate_levels = np.concatenate((y_protocol.unique(), y_cell_line.unique()), axis=0)
 
-fplot.plot_scaled_variance_heatmap(SV_all_factors, all_covariate_levels, title='Scaled variance for all the factors')
+fplot.plot_all_factors_levels(SV_all_factors, all_covariate_levels, title='Scaled variance for all the factors', color='RdPu')
+
 
 ASV_protocol_all = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='arithmetic')
 ASV_cell_line_all = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='arithmetic')
@@ -205,7 +206,7 @@ fplot.plot_histogram(factor_scores[:,np.argmin(silhouette_scores_km)],
 bimodality_metrics = ['bic_km', 'calinski_harabasz', 'davies_bouldin', 'silhouette', 'vrs', 'wvrs']
 bimodality_scores = np.concatenate((bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
                                     silhouette_scores_km, vrs_km, wvrs_km), axis=0).reshape(len(bimodality_metrics), -1)
-fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
+#fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
 
 
 
@@ -218,7 +219,7 @@ fplot.plot_metric_barplot(bic_scores_gmm, 'BIC score of each factor')
 bimodality_metrics = ['bic', 'silhouette', 'vrs', 'wvrs']
 bimodality_scores = np.concatenate((bic_scores_gmm, silhouette_scores_gmm, 
                                     vrs_gmm, wvrs_gmm), axis=0).reshape(len(bimodality_metrics), -1)
-fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
+#fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
 
 ### likelihood test 
 likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
@@ -253,9 +254,8 @@ bimodality_scores = np.concatenate((bic_scores_km, calinski_harabasz_scores_km, 
                                     bic_scores_gmm, silhouette_scores_gmm,
                                     vrs_gmm, wvrs_gmm, likelihood_ratio_scores, bimodality_index_scores,
                                     dip_scores, pval_scores, kurtosis_scores, outlier_sum_scores), axis=0).reshape(len(bimodality_metrics), -1)
-
-#fplot.plot_metric_correlation_clustermap(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
-fplot.plot_metric_correlation_dendrogram(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
+fplot.plot_metric_correlation_clustermap(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
+fplot.plot_metric_dendrogram(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
 
 
 
@@ -305,10 +305,15 @@ all_metrics_df = pd.DataFrame(all_metrics_dict)
 factor_metrics = list(all_metrics_df.columns)
 all_metrics_df.head()
 
-fplot.plot_metric_correlation(all_metrics_df)
-fplot.plot_metric_correlation_dendrogram(all_metrics_df)
-
-### scale the all_metrics matrix based on each metric 
 all_metrics_scaled = fmet.get_scaled_metrics(all_metrics_df)
+
+fplot.plot_metric_correlation_clustermap(all_metrics_df)
+fplot.plot_metric_dendrogram(all_metrics_df)
+
 fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metrics for all the factors')
-fplot.plot_metric_heatmap_sb(all_metrics_scaled, factor_metrics, title='Scaled metrics for all the factors')
+
+
+### make complex heatmaps: https://github.com/DingWB/PyComplexHeatmap
+#### plot a heatmap of the all_metrics_df with rows clustered
+
+

@@ -483,16 +483,12 @@ def get_scaled_metrics(all_metrics_df) -> np.array:
     all_metrics_df: a pandas dataframe of the metrics for all the factors
     '''
     all_metrics_np = all_metrics_df.to_numpy()
+    
+    ### scale the metrics in a loop
+    all_metrics_scaled = np.zeros(all_metrics_np.shape)
+    for i in range(all_metrics_np.shape[1]):
+        all_metrics_scaled[:,i] = fproc.get_scaled_vector(all_metrics_np[:,i])
 
-    all_metrics_scaled = np.concatenate((fproc.get_scaled_vector(all_metrics_np[:,0]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,1]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,2]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,3]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,4]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,5]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,6]).reshape(-1, 1),
-                                fproc.get_scaled_vector(all_metrics_np[:,7]).reshape(-1, 1)
-                                ),axis=1)
 
     return all_metrics_scaled
 
