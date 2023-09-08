@@ -3,6 +3,8 @@ import pandas as pd
 from scipy.io import mmread
 import matplotlib.pyplot as plt
 
+
+import ssl; ssl._create_default_https_context = ssl._create_unverified_context
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
@@ -315,5 +317,73 @@ fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metr
 
 ### make complex heatmaps: https://github.com/DingWB/PyComplexHeatmap
 #### plot a heatmap of the all_metrics_df with rows clustered
+
+
+
+
+### make a dict from metric annd color columns with metric as key and color as value
+metric_colors_df, category_colors_dict = get_metric_category_color_df()
+metric_colors_dict = dict(zip(metric_colors_df.metric, metric_colors_df.color))
+
+### convert to dataframe
+all_metrics_scaled_df = pd.DataFrame(all_metrics_scaled, columns=factor_metrics).T
+all_metrics_scaled_df.columns = ['F'+str(i) for i in range(1, all_metrics_scaled.shape[0]+1)]
+
+factor_metrics = pd.Series(all_metrics_scaled_df.index.values)
+row_colors = factor_metrics.map(metric_colors_dict) #pd.DataFrame
+
+#row_colors = pd.concat([row_colors,row_colors],axis=1)
+print(row_colors)
+row_colors.columns = ['Metric type']
+
+
+sns.set(font_scale=1.6)
+plt.figure(figsize=(27,15))
+#all_metrics_np = all_metrics_df.T.to_numpy()
+#all_metrics_np = all_metrics_scaled.T
+
+
+### remove numbers from heatmap cells
+g = sns.clustermap(all_metrics_scaled_df.reset_index(drop=True), row_colors=row_colors, cmap='YlGnBu', figsize=(35, 20),  #viridis, coolwarm
+                        linewidths=.5, linecolor='white',
+                        col_cluster=False, row_cluster=True ) # annot=False, fmt='.4g'
+plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
+plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = 30)
+
+g.ax_heatmap.set_xticklabels(['F'+str(i+1) for i in range(all_metrics_scaled_df.shape[1])])
+g.ax_heatmap.set_yticklabels(factor_metrics)
+
+### make a legennd for the row colors
+for label in category_colors_dict:
+      g.ax_row_dendrogram.bar(0, 0, color=category_colors_dict[label],
+                              label=label, linewidth=0)
+g.ax_row_dendrogram.legend(loc="center", ncol=2, bbox_to_anchor=(1.1, 1.1), fontsize=21)
+
+
+plt.show()
+
+
+
+import seaborn as sns; 
+import matplotlib.pyplot as plt
+import pandas as pd
+#df = pd.read_csv('https://raw.githubusercontent.com/mwaskom/seaborn-data/master/raw/titanic.csv')
+iris = sns.load_dataset("iris")
+print(iris)
+species = iris.pop("species")
+
+
+lut1 = dict(zip(species.unique(), ['#ED2323','#60FD00','#808080']))
+row_colors1 = species.map(lut1)
+
+lut2 = dict(zip(species.unique(), "rbg"))
+row_colors2 = species.map(lut2)
+
+row_colors = pd.concat([row_colors1,row_colors2],axis=1)
+print(row_colors)
+
+g = sns.clustermap(iris, row_colors=row_colors, col_cluster=False,cmap="mako", yticklabels=False, xticklabels=False)
+
+plt.show()
 
 

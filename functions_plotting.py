@@ -6,7 +6,7 @@ import matplotlib.patches as mpatches
 import seaborn as sns
 import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, linkage
-
+sns.set(color_codes=True)
 
 import constants as const
 
@@ -268,3 +268,35 @@ def plot_all_factors_levels(SV_all_factors, covariate_levels, title='', color='R
     plt.show()
 
 
+
+def get_metric_category_color_df():
+      '''
+      get a dataframe of metric names and their category annd color annotations
+      '''
+      Homogeneity = ['ASV_protocol_arith', 'ASV_protocol_geo', 'ASV_cell_line_arith', 'ASV_cell_line_geo']
+      Effect_Size = ['factor_variance']
+      Bimodality = ['bic_km', 'calinski_harabasz_km', 'davies_bouldin_km', 'silhouette_km',
+                        'vrs_km', 'wvrs_km', 'bic_gmm', 'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm',
+                        'likelihood_ratio', 'bimodality_index', 'dip_score', 'dip_pval', 'kurtosis', 'outlier_sum']
+      Complexity = ['factor_entropy']
+      Specificity = ['factor_specificity']
+
+
+      ### make a dataframe of metric names and their category annotations
+      metric_category_df = pd.DataFrame({'metric': Homogeneity+Effect_Size+Bimodality+Complexity+Specificity,
+                                          'Group': ['Homogeneity']*len(Homogeneity) + ['Effect_Size']*len(Effect_Size) + ['Bimodality']*len(Bimodality) + ['Complexity']*len(Complexity) + ['Specificity']*len(Specificity)})
+      
+
+      ### make color dictionary for the categories based on hex values. example: '#1E93AE'
+      category_colors_dict = {'Homogeneity': '#1E93AE', 'Effect_Size': '#F9C80E', 
+                              'Bimodality': '#F86624', 'Complexity': '#EA3546', 'Specificity': '#662E9B'}
+
+      #category_colors_dict = {'Homogeneity': '#ED2323', 'Effect_Size': '#60FD00', 
+      #                        'Bimodality': '#808080', 'Complexity': '#EA3546', 'Specificity': '#662E9B'}
+
+      ### make a row annotation dataframe with metric names and their category annd color annotations
+      metric_colors_df = pd.DataFrame({'metric': metric_category_df.metric, 
+                              'Group': metric_category_df.Group, 
+                              'color': metric_category_df.Group.map(category_colors_dict)})
+      
+      return metric_colors_df, category_colors_dict
