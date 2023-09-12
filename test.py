@@ -185,3 +185,48 @@ CellMixS = importr('CellMixS')
 utils.install_packages(StrVector(packnames))
 
 
+'''
+plot_pca(pca_scores_rot, pca,7, title='PCA of varimax rotated pearson residuals')
+plot_umap(pca_scores_rot, pca, title='UMAP of the varimax-PCs on pearson residuals')
+
+
+#### applying ICA to the gene expression data
+num_components = 30
+from sklearn.decomposition import FastICA
+ica = FastICA(n_components=num_components)
+ica_scores = ica.fit_transform(y)
+ica_loading = ica.components_
+
+pca_scores = ica_scores
+pca_loading = ica_loading
+
+
+#### applying ICA to the pearson residuals
+num_components = 30
+from sklearn.decomposition import FastICA
+ica = FastICA(n_components=num_components)
+ica_scores = ica.fit_transform(resid_pearson.T)
+ica_loading = ica.components_
+
+pca_scores = ica_scores
+pca_loading = ica_loading
+
+
+#### applying NMF to the gene expression data
+num_components = 30
+
+from sklearn.decomposition import NMF
+model = NMF(n_components=num_components, init='random', random_state=0)
+nmf_scores = model.fit_transform(y)
+nmf_loading = model.components_
+
+### check the shape of the data
+print('shape of the data: ', y.shape)
+print('shape of the pca scores: ', pca_scores.shape)
+print('shape of the pca loading: ', pca_loading.shape)
+print('shape of the nmf scores: ', nmf_scores.shape)
+print('shape of the nmf loading: ', nmf_loading.shape)
+
+pca_scores = nmf_scores
+pca_loading = nmf_loading
+'''

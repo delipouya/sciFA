@@ -3,7 +3,6 @@ import pandas as pd
 from scipy.io import mmread
 import matplotlib.pyplot as plt
 
-
 import ssl; ssl._create_default_https_context = ssl._create_unverified_context
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -42,7 +41,7 @@ data.obs['cell_line'] = y_cell_line
 pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=const.num_components))])
 pca_scores = pipeline.fit_transform(y)
 pca = pipeline.named_steps['pca']
-pca_loading = pca.components_
+factor_loading = pca.components_
 
 plt.plot(pca.explained_variance_ratio_)
 fplot.plot_pca_scMix(pca_scores, 4, 
@@ -63,62 +62,55 @@ fplot.plot_umap_scMix(pca_scores, colors_dict_scMix['cell_line'] , covariate='ce
 #### Running Varimax PCA on the data 
 ####################################
 ## apply varimax rotation to the loadings
-pca_scores_rot, loadings_rot, rotmat = rot.get_varimax_rotated_scores(pca_scores, pca_loading)
-print('loadings_rot shape: ', loadings_rot.shape)
-print('rotmat shape: ', rotmat.shape)
-print('pca_scores shape: ', pca_scores.shape)
-print('pca_scores_rot shape: ', pca_scores_rot.shape)
+#pca_scores_rot, loadings_rot, rotmat = rot.get_varimax_rotated_scores(pca_scores, factor_loading)
 
-factor_scores = pca_scores_rot
-pca_loading = loadings_rot
-
-'''
-plot_pca(pca_scores_rot, pca,7, title='PCA of varimax rotated pearson residuals')
-plot_umap(pca_scores_rot, pca, title='UMAP of the varimax-PCs on pearson residuals')
+### check the rotation using allclose
+### apply rotation by statsmodels package to the factor loadings and scores
+### orthogonal rotation: quartimax, biquartimax, varimax, equamax, parsimax, parsimony
+### oblique rotation: promax, oblimin, orthobimin, quartimin, biquartimin, varimin, equamin, parsimin
 
 
-#### applying ICA to the gene expression data
-num_components = 30
-from sklearn.decomposition import FastICA
-ica = FastICA(n_components=num_components)
-ica_scores = ica.fit_transform(y)
-ica_loading = ica.components_
+#### apply all the orthogonal rotations to the factor loadings and compare the results
+rotations_ortho = ['quartimax', 'biquartimax', 'varimax', 'equamax', 'parsimax', 'parsimony']
+loadings_rot_dict_ortho, rotmat_dict_ortho, scores_rot_dict_ortho = rot.get_rotation_dicts(factor_loading, rotations_ortho)
 
-pca_scores = ica_scores
-pca_loading = ica_loading
+### plot the rotated scores
+for rotation in rotations_ortho:
+      fplot.plot_pca_scMix(scores_rot_dict_ortho[rotation], 4, 
+               cell_color_vec= colors_dict_scMix['protocol'], 
+               covariate='protocol',
+               title= rotation + ' PCA of the data matrix')
+      fplot.plot_pca_scMix(scores_rot_dict_ortho[rotation], 4, 
+               cell_color_vec= colors_dict_scMix['cell_line'], 
+               covariate='cell_line',
+               title= rotation + ' PCA of the data matrix')
+    
 
-
-#### applying ICA to the pearson residuals
-num_components = 30
-from sklearn.decomposition import FastICA
-ica = FastICA(n_components=num_components)
-ica_scores = ica.fit_transform(resid_pearson.T)
-ica_loading = ica.components_
-
-pca_scores = ica_scores
-pca_loading = ica_loading
-
-
-#### applying NMF to the gene expression data
-num_components = 30
-
-from sklearn.decomposition import NMF
-model = NMF(n_components=num_components, init='random', random_state=0)
-nmf_scores = model.fit_transform(y)
-nmf_loading = model.components_
-
-### check the shape of the data
-print('shape of the data: ', y.shape)
-print('shape of the pca scores: ', pca_scores.shape)
-print('shape of the pca loading: ', pca_loading.shape)
-print('shape of the nmf scores: ', nmf_scores.shape)
-print('shape of the nmf loading: ', nmf_loading.shape)
-
-pca_scores = nmf_scores
-pca_loading = nmf_loading
-'''
+rot_corr_ortho = rot.get_rotation_corr_mat(loadings_rot_dict_ortho, num_factors=4)
+## plot the correlation heatmap using seaborn
+import seaborn as sns
+sns.heatmap(rot_corr_ortho,
+            xticklabels=rot_corr_ortho.columns,
+            yticklabels=rot_corr_ortho.columns, cmap='coolwarm')
 
 
+#rotations_oblique = ['promax', 'oblimin', 'orthobimin', 'quartimin', 'biquartimin', 'varimin', 'equamin', 'parsimin']
+rotations_oblique = ['quartimin']
+loadings_rot_dict_oblique, rotmat_dict_oblique, scores_rot_dict_oblique = rot.get_rotation_dicts(factor_loading, 
+                                                                                             rotations_oblique,
+                                                                                             factor_scores=pca_scores)
+### plot the rotated scores
+for rotation in rotations_oblique:
+      fplot.plot_pca_scMix(scores_rot_dict_oblique[rotation], 4, 
+               cell_color_vec= colors_dict_scMix['protocol'], 
+               covariate='protocol',
+               title= rotation + ' PCA of the data matrix')
+      fplot.plot_pca_scMix(scores_rot_dict_oblique[rotation], 4, 
+               cell_color_vec= colors_dict_scMix['cell_line'], 
+               covariate='cell_line',
+               title= rotation + ' PCA of the data matrix')
+      
+      
 ####################################
 #### Matching between factors and covariates ######
 ####################################
@@ -179,7 +171,8 @@ SV_all_factors_cell_line = fmet.get_factors_SV_all_levels(factor_scores, y_cell_
 SV_all_factors = np.concatenate((SV_all_factors_protocol, SV_all_factors_cell_line), axis=0)
 #all_covariate_levels = np.concatenate((y_protocol.unique(), y_cell_line.unique()), axis=0)
 
-fplot.plot_all_factors_levels(SV_all_factors, all_covariate_levels, title='Scaled variance for all the factors', color='RdPu')
+fplot.plot_all_factors_levels(SV_all_factors, all_covariate_levels, 
+                              title='Scaled variance for all the factors', color='RdPu')
 
 
 ASV_protocol_all = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='arithmetic')
@@ -313,77 +306,13 @@ fplot.plot_metric_correlation_clustermap(all_metrics_df)
 fplot.plot_metric_dendrogram(all_metrics_df)
 
 fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metrics for all the factors')
-
-
-### make complex heatmaps: https://github.com/DingWB/PyComplexHeatmap
-#### plot a heatmap of the all_metrics_df with rows clustered
+fplot.plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics)
 
 
 
-
-### make a dict from metric annd color columns with metric as key and color as value
-metric_colors_df, category_colors_dict = get_metric_category_color_df()
-metric_colors_dict = dict(zip(metric_colors_df.metric, metric_colors_df.color))
-
-### convert to dataframe
-all_metrics_scaled_df = pd.DataFrame(all_metrics_scaled, columns=factor_metrics).T
-all_metrics_scaled_df.columns = ['F'+str(i) for i in range(1, all_metrics_scaled.shape[0]+1)]
-
-factor_metrics = pd.Series(all_metrics_scaled_df.index.values)
-row_colors = factor_metrics.map(metric_colors_dict) #pd.DataFrame
-
-#row_colors = pd.concat([row_colors,row_colors],axis=1)
-print(row_colors)
-row_colors.columns = ['Metric type']
-
-
-sns.set(font_scale=1.6)
-plt.figure(figsize=(27,15))
-#all_metrics_np = all_metrics_df.T.to_numpy()
-#all_metrics_np = all_metrics_scaled.T
-
-
-### remove numbers from heatmap cells
-g = sns.clustermap(all_metrics_scaled_df.reset_index(drop=True), row_colors=row_colors, cmap='YlGnBu', figsize=(35, 20),  #viridis, coolwarm
-                        linewidths=.5, linecolor='white',
-                        col_cluster=False, row_cluster=True ) # annot=False, fmt='.4g'
-plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
-plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = 30)
-
-g.ax_heatmap.set_xticklabels(['F'+str(i+1) for i in range(all_metrics_scaled_df.shape[1])])
-g.ax_heatmap.set_yticklabels(factor_metrics)
-
-### make a legennd for the row colors
-for label in category_colors_dict:
-      g.ax_row_dendrogram.bar(0, 0, color=category_colors_dict[label],
-                              label=label, linewidth=0)
-g.ax_row_dendrogram.legend(loc="center", ncol=2, bbox_to_anchor=(1.1, 1.1), fontsize=21)
-
-
-plt.show()
-
-
-
-import seaborn as sns; 
-import matplotlib.pyplot as plt
-import pandas as pd
-#df = pd.read_csv('https://raw.githubusercontent.com/mwaskom/seaborn-data/master/raw/titanic.csv')
-iris = sns.load_dataset("iris")
-print(iris)
-species = iris.pop("species")
-
-
-lut1 = dict(zip(species.unique(), ['#ED2323','#60FD00','#808080']))
-row_colors1 = species.map(lut1)
-
-lut2 = dict(zip(species.unique(), "rbg"))
-row_colors2 = species.map(lut2)
-
-row_colors = pd.concat([row_colors1,row_colors2],axis=1)
-print(row_colors)
-
-g = sns.clustermap(iris, row_colors=row_colors, col_cluster=False,cmap="mako", yticklabels=False, xticklabels=False)
-
-plt.show()
+fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=50)
+fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=100)
+fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=200)
+fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=500)
 
 

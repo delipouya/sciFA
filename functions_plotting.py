@@ -62,6 +62,9 @@ def plot_pca_scMix(pca_scores,
     for i in range(1, num_components_to_plot):
         ## color PCA based on strain
         plt.figure()
+        ### makke the background white with black axes
+        plt.rcParams['axes.facecolor'] = 'white'
+        
         plt.scatter(pca_scores[:,0], pca_scores[:,i], c=cell_color_vec, s=1) 
         plt.xlabel('PC1')
         plt.ylabel('PC'+str(i+1))
@@ -82,6 +85,7 @@ def plot_umap_scMix(pca_scores, cell_color_vec ,
     
     ### plot the UMAP embedding
     plt.figure()
+    plt.rcParams['axes.facecolor'] = 'white'
     plt.scatter(embedding[:, 0], embedding[:, 1], c=cell_color_vec, s=1)
     plt.title(title)
     plt.legend(handles=plt_legend_dict[covariate])
@@ -170,6 +174,47 @@ def plot_metric_correlation_clustermap(all_metrics_df) -> None:
       g.ax_heatmap.set_yticklabels(factor_metrics)
       
       plt.show()
+
+
+
+def plot_factor_dendogram(factor_loading, distance='ward',num_var=100) -> None:
+    '''
+    plot a dendogram for the factors based on the correlation matrix distance
+    factor_loading: a pandas dataframe of the factor loadings for all the factors
+    distance: the distance metric for the linkage matrix
+    num_var: the number of genes to use for the dendogram
+    '''
+    ### convert to a numpy array
+    ### factor names are F1, F2, ..., Fn
+    
+    factor_names = ['F'+str(i+1) for i in range(factor_loading.shape[1])]
+
+    ## select variable genes
+    var_genes = np.var(factor_loading, axis=1)
+    ## sort the genes based on variance and select the top num_var genes
+    var_genes_idx = np.argsort(var_genes)[::-1][0:num_var]
+
+    ### select the top num_var genes for the factor loading matrix numpy array
+    factor_loading = factor_loading[var_genes_idx,:]
+
+    ### calculate the correlation matrix
+    corr = np.corrcoef(factor_loading.T)
+    ### calculate the linkage matrix
+    from scipy.cluster.hierarchy import dendrogram, linkage
+    Z = linkage(corr, distance)
+    #### make the background white
+    
+    ## add title including the number of genes used for the dendogram
+
+    plt.figure(figsize=(12, 5))
+    dendrogram(Z, labels=factor_names, leaf_rotation=90, leaf_font_size=17)
+    plt.rcParams['axes.facecolor'] = 'white'
+
+    plt.rcParams['ytick.labelsize'] = 14
+    ## add a box around the dendrogram
+    plt.rcParams['axes.linewidth'] = 2
+    plt.title('Dendrogram of the factors using the top '+str(num_var)+' genes')
+    plt.show()
 
 
 
@@ -269,9 +314,10 @@ def plot_all_factors_levels(SV_all_factors, covariate_levels, title='', color='R
 
 
 
-def get_metric_category_color_df():
+def get_metric_category_color_df() -> (pd.DataFrame, dict):
       '''
-      get a dataframe of metric names and their category annd color annotations
+      get a dataframe of metric names and their category annd color annotations, plus a dictionary of category and color
+
       '''
       Homogeneity = ['ASV_protocol_arith', 'ASV_protocol_geo', 'ASV_cell_line_arith', 'ASV_cell_line_geo']
       Effect_Size = ['factor_variance']
@@ -300,3 +346,50 @@ def get_metric_category_color_df():
                               'color': metric_category_df.Group.map(category_colors_dict)})
       
       return metric_colors_df, category_colors_dict
+
+
+
+
+
+def plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics):
+      '''
+        plot the heatmap of the scaled factor metrics for all the factors using seaborn, with row annotations and dendrogram
+        all_metrics_scaled: the scaled factor metrics for all the factors
+        factor_metrics: the list of factor metric names
+        title: the title of the plot
+      '''
+      
+      ### make a dict from metric annd color columns with metric as key and color as value
+      metric_colors_df, category_colors_dict = get_metric_category_color_df()
+      metric_colors_dict = dict(zip(metric_colors_df.metric, metric_colors_df.color))
+
+      ### convert to dataframe
+      all_metrics_scaled_df = pd.DataFrame(all_metrics_scaled, columns=factor_metrics).T
+      all_metrics_scaled_df.columns = ['F'+str(i) for i in range(1, all_metrics_scaled.shape[0]+1)]
+
+      factor_metrics = pd.Series(all_metrics_scaled_df.index.values)
+      row_colors = factor_metrics.map(metric_colors_dict)
+      row_colors.columns = ['Metric type']
+
+      sns.set(font_scale=1.6)
+      plt.figure(figsize=(27,15))
+
+      ### remove numbers from heatmap cells
+      g = sns.clustermap(all_metrics_scaled_df.reset_index(drop=True), 
+                         row_colors=row_colors, cmap='YlGnBu', figsize=(35, 20),  #viridis, coolwarm
+                              linewidths=.5, linecolor='white',
+                              col_cluster=False, row_cluster=True) # annot=False, fmt='.4g'
+      
+      plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
+      plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = 30)
+
+      g.ax_heatmap.set_xticklabels(['F'+str(i+1) for i in range(all_metrics_scaled_df.shape[1])])
+      g.ax_heatmap.set_yticklabels(factor_metrics)
+      #g.fig.suptitle(title, fontsize=30)
+
+      ### make a legennd for the row colors
+      for label in category_colors_dict:
+            g.ax_row_dendrogram.bar(0, 0, color=category_colors_dict[label],
+                                    label=label, linewidth=0)
+      g.ax_row_dendrogram.legend(loc="center", ncol=2, bbox_to_anchor=(1.1, 1.1), fontsize=21)
+      plt.show()
