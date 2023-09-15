@@ -104,11 +104,3 @@ def get_rotation_corr_mat(loadings_rot_dict, num_factors) -> pd.DataFrame:
       corr = loadings_rot_df.corr()
       #corr.style.background_gradient(cmap='coolwarm')
       return corr
-
-
-
-rotations = ['promax', 'oblimin', 'orthobimin', 'quartimin', 'biquartimin', 'varimin', 'equamin', 'parsimin']
-oadings_rot_dict_oblique, rotmat_dict_oblique, scores_rot_dict_oblique = get_rotation_dicts(factor_loading, 
-                                                                                             rotations_oblique,
-                                                                                             factor_scores=pca_scores)
-factor_rotation.rotate_factors(loading, method='quartimin')
