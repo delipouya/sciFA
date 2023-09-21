@@ -13,6 +13,8 @@ from sklearn.inspection import permutation_importance
 import functions_processing as fproc
 import constants as const
 
+import skimage as ski
+import skimage.filters as skif
 
 # training classifiers for feature importance on a classification problem
 # matching pca factors to different covariates in the data
@@ -104,3 +106,15 @@ def get_percent_matched_covariate(mean_importance_df, threshold):
       num_matched_cov = np.sum(matched_covariate_dist>0)
       percent_matched = np.round((num_matched_cov/total_num_covariates)*100, 2)
       return matched_covariate_dist, percent_matched
+
+
+### use otsu thresholding to find the threshold of the feature importance scores
+
+def get_otsu_threshold(values) -> float:
+      '''
+      This function calculates the otsu threshold of the values
+      :param values: a 1D array of values
+      :return: threshold
+      '''
+      threshold = ski.filters.threshold_otsu(values)
+      return threshold

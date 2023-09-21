@@ -134,13 +134,27 @@ all_covariate_levels = mean_importance_df.index.values
 
 ##### Define global metrics for how well a factor analysis works on a dataset 
 #### given a threshold for the feature importance scores, calculate the percentage of the factors that are matched with any covariate level
+
+### plot the histogram of all the values in mean importance scores
+fplot.plot_histogram(mean_importance_df.values.flatten(), xlabel='Feature importance scores',
+                     title='F-C Match: Feature importance scores') 
+
+### choosing a threshold for the feature importance scores
+
 threshold = 0.3
+threshold = fmatch.get_otsu_threshold(mean_importance_df.values.flatten())
 
-matched_factor_dist, percent_matched = fmatch.get_percent_matched_factors(mean_importance_df, threshold)
-matched_covariate_dist, percent_matched = fmatch.get_percent_matched_covariate(mean_importance_df, threshold)
+fplot.plot_histogram(mean_importance_df.values.flatten(), xlabel='Feature importance scores',
+                        title='F-C Match: Feature importance scores', threshold=threshold)
 
+matched_factor_dist, percent_matched_fact = fmatch.get_percent_matched_factors(mean_importance_df, threshold)
+matched_covariate_dist, percent_matched_cov = fmatch.get_percent_matched_covariate(mean_importance_df, threshold=threshold)
+
+print('percent_matched_fact: ', percent_matched_fact)
+print('percent_matched_cov: ', percent_matched_cov)
 fplot.plot_matched_factor_dist(matched_factor_dist)
-fplot.plot_matched_covariate_dist(matched_covariate_dist)
+fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
+
 
 
 ####################################

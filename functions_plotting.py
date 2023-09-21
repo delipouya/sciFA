@@ -130,21 +130,6 @@ def plot_factor_scatter(factor_scores, x_i, y_i, cell_color_vec, covariate='prot
 
 
 
-def plot_histogram(a_factor_score, title='') -> None:
-    '''
-    plot the histogram of a factor score
-    a_factor_score: the factor score for a factor
-    title: the title of the plot
-    '''
-    plt.hist(a_factor_score, bins=100)
-    plt.xlabel('Factor score')
-    plt.ylabel('count')
-    plt.title(title)
-    plt.show()
-
-
-
-
 def plot_metric_correlation_clustermap(all_metrics_df) -> None:
       '''
       plot correlation plot with columnns sorted by the dendrogram using seaborn clustermap
@@ -395,6 +380,7 @@ def plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics):
       plt.show()
 
 
+
 #### Visualizing global metrics for how well a factor analysis works on a dataset
 ### visualize the distribution of the matched factors
 def plot_matched_factor_dist(matched_factor_dist, title=''):
@@ -409,14 +395,37 @@ def plot_matched_factor_dist(matched_factor_dist, title=''):
       plt.title(title)
       plt.show()
 
-def plot_matched_covariate_dist(matched_covariate_dist, title=''):
+
+def plot_matched_covariate_dist(matched_covariate_dist, covariate_levels , title=''):
       plt.figure(figsize=(np.round(len(matched_covariate_dist)/3),4))
       plt.bar(np.arange(len(matched_covariate_dist)), matched_covariate_dist)
       ### add covariate levels to the xticks
-      plt.xticks(np.arange(len(matched_covariate_dist)), mean_importance_df.index.values)
+      plt.xticks(np.arange(len(matched_covariate_dist)), covariate_levels)
+
       ### make the xticks vertical and set the fontsize to 14
       plt.xticks(rotation=90, fontsize=12)
       #plt.xlabel('Number of matched factors')
       plt.ylabel('Number of matched factors')
       plt.title(title)
       plt.show()
+
+
+
+def plot_histogram(values, xlabel='scores',title='', bins=100,threshold=None) -> None:
+      '''
+      plot the histogram of a list of values
+      values: list of values
+      xlabel: xlabel of the histogram
+      title: title of the histogram
+      '''
+      plt.figure(figsize=(10, 5))
+      plt.hist(values, bins=bins)
+      ## adding a line for a threshold value
+      if threshold:
+            plt.axvline(x=threshold, color='red')
+      plt.xlabel(xlabel)
+      plt.ylabel('Frequency')
+      plt.title(title)
+      plt.show()
+
+
