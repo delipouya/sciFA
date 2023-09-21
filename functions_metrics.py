@@ -531,9 +531,16 @@ def get_AUC_all_levels(a_factor, covariate_vector) -> list:
     wilcoxon_pvalue_all = []
     for covariate_level in np.unique(covariate_vector):
         AUC1, pvalue = get_AUC_alevel(a_factor, covariate_vector, covariate_level)
-        AUC_all.append(AUC1)
-        ### convert the pvalue to a -log10 scale
+        ### AUC: 0.5 is random, 1 is perfect 
+        ### to convert to feature importance, subtract 0.5 and multiply by 2
+        AUC1_scaled = np.abs((AUC1*2)-1)
+        AUC_all.append(AUC1_scaled)
+        ### convert the pvalue to a -log10 scale to handle the exponential distribution. High values are better? #TODO: check this - remove the negative sign??
         wilcoxon_pvalue_all.append(-np.log10(pvalue))
+    ### scale the wilcoxon pvalues to be between 0 and 1
+    wilcoxon_pvalue_all = fproc.get_scaled_vector(wilcoxon_pvalue_all)
+    ## reverse the direction of the scaled pvalues
+    wilcoxon_pvalue_all = 1 - wilcoxon_pvalue_all
     return AUC_all, wilcoxon_pvalue_all
 
 def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
@@ -572,6 +579,17 @@ def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
 
     return AUC_all_factors_df, wilcoxon_pvalue_all_factors_df
 
+
+
+def get_reversed_AUC_df(AUC_all_factors_df) -> pd.DataFrame:
+    '''
+    calculate the 1 - the AUC of all the factors for all the covariate levels as a measure of homogeneous factors
+    higher values (closer to 1) are more homogeneous
+    return a dataframe of 1-AUCs for all the factors
+    AUC_all_factors_df: a dataframe of AUCs for all the factors
+    '''
+    AUC_all_factors_df_1 = 1-AUC_all_factors_df
+    return AUC_all_factors_df_1
 
 
 def get_factor_binned(factor_scores, num_bins=10):

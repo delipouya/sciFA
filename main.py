@@ -144,8 +144,18 @@ wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_proto
 
 fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
                                  title='F-C Match: AUC scores', color='YlOrBr')
-fplot.plot_all_factors_levels_df(wilcoxon_pvalue_all_factors_df, 
-                                 title='Homogeneity: Wilcoxon pvalue', color='rocket_r')
+
+### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
+## list of color maps: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
+
+
+AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
+fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
+                                    title='Homogeneity: 1-AUC scores', color='hot')
+
+### p value score is not a good indicative of the homogeneity of the factors
+#fplot.plot_all_factors_levels_df(wilcoxon_pvalue_all_factors_df, 
+#                                 title='Homogeneity: Wilcoxon pvalue', color='rocket_r')
 
 #### Specificity 
 factor_specificity_all = fmet.get_all_factors_specificity(mean_importance_df)
