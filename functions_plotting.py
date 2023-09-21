@@ -393,3 +393,30 @@ def plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics):
                                     label=label, linewidth=0)
       g.ax_row_dendrogram.legend(loc="center", ncol=2, bbox_to_anchor=(1.1, 1.1), fontsize=21)
       plt.show()
+
+
+#### Visualizing global metrics for how well a factor analysis works on a dataset
+### visualize the distribution of the matched factors
+def plot_matched_factor_dist(matched_factor_dist, title=''):
+      plt.figure(figsize=(np.round(len(matched_factor_dist)/3),4))
+      plt.bar(np.arange(len(matched_factor_dist)), matched_factor_dist)
+      ### add F1, F2, ... to the xticks
+      plt.xticks(np.arange(len(matched_factor_dist)), ['F'+str(i) for i in range(1, len(matched_factor_dist)+1)])
+      ### make the xticks vertical and set the fontsize to 14
+      plt.xticks(rotation=90, fontsize=12)
+      #plt.xlabel('Number of matched covariates')
+      plt.ylabel('Number of matched covariate levels')
+      plt.title(title)
+      plt.show()
+
+def plot_matched_covariate_dist(matched_covariate_dist, title=''):
+      plt.figure(figsize=(np.round(len(matched_covariate_dist)/3),4))
+      plt.bar(np.arange(len(matched_covariate_dist)), matched_covariate_dist)
+      ### add covariate levels to the xticks
+      plt.xticks(np.arange(len(matched_covariate_dist)), mean_importance_df.index.values)
+      ### make the xticks vertical and set the fontsize to 14
+      plt.xticks(rotation=90, fontsize=12)
+      #plt.xlabel('Number of matched factors')
+      plt.ylabel('Number of matched factors')
+      plt.title(title)
+      plt.show()

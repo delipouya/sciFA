@@ -85,3 +85,22 @@ def get_mean_importance_all_levels(covariate_vec, factor_scores) -> pd.DataFrame
         mean_importance_df.loc[covariate_level] = mean_importance_a_level
 
     return mean_importance_df
+
+
+
+def get_percent_matched_factors(mean_importance_df, threshold):
+      total_num_factors = mean_importance_df.shape[1]
+      matched_factor_dist = np.sum(mean_importance_df > threshold)
+
+      num_matched_factors = np.sum(matched_factor_dist>0)
+      percent_matched = np.round((num_matched_factors/total_num_factors)*100, 2)
+      return matched_factor_dist, percent_matched
+
+
+def get_percent_matched_covariate(mean_importance_df, threshold):
+      total_num_covariates = mean_importance_df.shape[0]
+      matched_covariate_dist = np.sum(mean_importance_df > threshold, axis=1)
+
+      num_matched_cov = np.sum(matched_covariate_dist>0)
+      percent_matched = np.round((num_matched_cov/total_num_covariates)*100, 2)
+      return matched_covariate_dist, percent_matched
