@@ -345,7 +345,7 @@ def get_bimodality_index(a_factor, num_groups=2) -> float:
     '''
     calculate the bimodality index for a factor
     distribution of a factor with bimodal values can be expressed as a mixture of two normal distributions with means μ1 and μ2 
-    and equal standard deviation σ. The standardized distance δ between the two populations is given by
+    and equal standard deviation. The standardized distance δ between the two populations is given by
     '''
     gmm = GaussianMixture(n_components=num_groups, covariance_type='full', random_state=0)
     gmm.fit(a_factor.reshape(-1,1))
@@ -532,7 +532,8 @@ def get_AUC_all_levels(a_factor, covariate_vector) -> list:
     for covariate_level in np.unique(covariate_vector):
         AUC1, pvalue = get_AUC_alevel(a_factor, covariate_vector, covariate_level)
         AUC_all.append(AUC1)
-        wilcoxon_pvalue_all.append(pvalue)
+        ### convert the pvalue to a -log10 scale
+        wilcoxon_pvalue_all.append(-np.log10(pvalue))
     return AUC_all, wilcoxon_pvalue_all
 
 def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
