@@ -154,15 +154,76 @@ def get_a_factor_pairwise_overlap(mu_list, sigma_list) -> np.array:
     return overlap_matrix
 
 
+def get_simulated_factor_object(num_mixtures=2, mu_min=0, mu_max=None,
+                      sigma_min=0.5, sigma_max=1,
+                      p_equals=True) -> tuple:
+    '''
+    num_mixtures: number of mixtures
+    mu_min: minimum value of the mean
+    mu_max: maximum value of the mean
+    sigma_min: minimum value of the standard deviation
+    sigma_max: maximum value of the standard deviation
+    p_equals: if True, all the mixtures have equal proportions
+
+    '''
+    mu_list, sigma_list, p_list = get_random_factor_parameters(num_mixtures=num_mixtures, mu_min=mu_min, mu_max=mu_max,
+                      sigma_min=sigma_min, sigma_max=sigma_max, p_equals=p_equals)
+    a_random_factor = simulate_mixture_gaussian(n=100000, mu_list=mu_list, sigma_list=sigma_list, p_list=p_list)
+    overlap_matrix = get_a_factor_pairwise_overlap(mu_list, sigma_list)
+    
+    return a_random_factor, overlap_matrix, mu_list, sigma_list, p_list
 
 
-num_mixtures = 3
-mu_list, sigma_list, p_list = get_random_factor_parameters(num_mixtures=num_mixtures, mu_min=0, mu_max=None,
+
+def get_sim_factor_covariates(a_random_factor):
+    '''
+    make a list of covariates for each factor
+    a_random_factor: a list of lists of simulated numbers
+    '''
+    a_factor_covariate_list = []
+    for i in range(len(a_random_factor)):
+        for _ in range(len(a_random_factor[i])):
+            a_factor_covariate_list.append('cov'+ str(i+1))
+
+    return a_factor_covariate_list
+
+
+
+def get_covariate_freq_table(covariate_list):
+    '''
+    make a frequency table of covariate_list elements
+    covariate_list: list of covariates
+    '''
+    covariate_freq = {}
+    for i in covariate_list:
+        if i in covariate_freq:
+            covariate_freq[i] += 1
+        else:
+            covariate_freq[i] = 1
+    return covariate_freq
+
+
+### TODO: Define a class for a factor_sim
+### factor has the following attributes:
+### - num_mixtures, mu_list, sigma_list, p_list, overlap_matrix
+
+
+#### genenerate four simulated factors and 
+num_factors = 4
+sim_factors_list = []
+overlap_mat_list = []
+covariate_list = []
+num_mixtures = 3 ## each factor is a mixture of 3 normal distributions
+
+for i in range(num_factors):
+    a_random_factor, overlap_matrix, mu_list, sigma_list, p_list = get_simulated_factor_object(num_mixtures=3, mu_min=0, mu_max=None,
                       sigma_min=0.5, sigma_max=1, p_equals=True)
+    sim_factors_list.append(a_random_factor)
+    overlap_mat_list.append(overlap_matrix)
+    covariate_list.append(get_sim_factor_covariates(a_random_factor))
 
-a_random_factor = simulate_mixture_gaussian(n=100000, mu_list=mu_list, sigma_list=sigma_list, p_list=p_list)
-overlap_matrix = get_a_factor_pairwise_overlap(mu_list, sigma_list)
-overlap_matrix
+
+
 
 
 fplot.plot_histogram(a_random_factor, 'normal distribution')

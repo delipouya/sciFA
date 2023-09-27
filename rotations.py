@@ -96,7 +96,8 @@ def get_rotation_corr_mat(loadings_rot_dict, num_factors) -> pd.DataFrame:
       '''
       rotation_names = list(loadings_rot_dict.keys()) 
       first_rot = rotation_names[0]
-      loadings_rot_df = pd.DataFrame(loadings_rot_dict[first_rot][:,0:num_factors], columns=[first_rot + str(i) for i in range(1,num_factors+1)])
+      loadings_rot_df = pd.DataFrame(loadings_rot_dict[first_rot][:,0:num_factors], 
+                                     columns=[first_rot + str(i) for i in range(1,num_factors+1)])
       for rotation in rotation_names[1:]:
             loadings_rot_df = pd.concat([loadings_rot_df, 
                                          pd.DataFrame(loadings_rot_dict[rotation][:,0:num_factors], 
