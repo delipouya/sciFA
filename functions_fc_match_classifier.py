@@ -47,7 +47,7 @@ def get_importance_df(factor_scores, a_binary_cov) -> pd.DataFrame:
             importance_dict[model_name] = results.importances_mean
 
     importance_df = pd.DataFrame.from_dict(importance_dict, orient='index', 
-                                           columns=['F'+str(i) for i in range(1, const.num_components+1)])
+                                           columns=['F'+str(i) for i in range(1, factor_scores.shape[1]+1)])
     return importance_df
 
 
@@ -74,7 +74,8 @@ def get_mean_importance_all_levels(covariate_vec, factor_scores) -> pd.DataFrame
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     '''
 
-    mean_importance_df = pd.DataFrame(columns=['PC'+str(i) for i in range(1, const.num_components+1)])
+
+    mean_importance_df = pd.DataFrame(columns=['PC'+str(i) for i in range(1, factor_scores.shape[1]+1)])
 
     for covariate_level in np.unique(covariate_vec):
         print('covariate_level: ', covariate_level)

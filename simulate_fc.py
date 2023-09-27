@@ -1,6 +1,11 @@
 import numpy as np
 import functions_plotting as fplot
 from scipy.special import erf
+from itertools import chain
+import functions_fc_match_classifier as fmatch 
+import pandas as pd
+import functions_metrics as fmet
+import matplotlib.pyplot as plt
 
 def simulate_gaussian(n,mu, sigma) -> list:
     '''
@@ -154,7 +159,7 @@ def get_a_factor_pairwise_overlap(mu_list, sigma_list) -> np.array:
     return overlap_matrix
 
 
-def get_simulated_factor_object(num_mixtures=2, mu_min=0, mu_max=None,
+def get_simulated_factor_object(n=10000,num_mixtures=2, mu_min=0, mu_max=None,
                       sigma_min=0.5, sigma_max=1,
                       p_equals=True) -> tuple:
     '''
@@ -168,7 +173,7 @@ def get_simulated_factor_object(num_mixtures=2, mu_min=0, mu_max=None,
     '''
     mu_list, sigma_list, p_list = get_random_factor_parameters(num_mixtures=num_mixtures, mu_min=mu_min, mu_max=mu_max,
                       sigma_min=sigma_min, sigma_max=sigma_max, p_equals=p_equals)
-    a_random_factor = simulate_mixture_gaussian(n=100000, mu_list=mu_list, sigma_list=sigma_list, p_list=p_list)
+    a_random_factor = simulate_mixture_gaussian(n=n, mu_list=mu_list, sigma_list=sigma_list, p_list=p_list)
     overlap_matrix = get_a_factor_pairwise_overlap(mu_list, sigma_list)
     
     return a_random_factor, overlap_matrix, mu_list, sigma_list, p_list
@@ -203,27 +208,132 @@ def get_covariate_freq_table(covariate_list):
     return covariate_freq
 
 
+def unlist(l):
+    '''
+    unlist a list of lists
+    '''
+    return [item for sublist in l for item in sublist]
+
+
+def get_pairwise_match_score_matrix(match_score_df, factor_index):
+    '''
+    make a matrix of pairwise match scores between all covs for a given factor
+    match_score_df: dataframe of match scores (covariates, factors)
+    factor_index: index of the factor
+    '''
+
+    ### make a matrix of pairwise match scores between all covs for a given factor
+    match_score_matrix = np.zeros((match_score_df.shape[0],match_score_df.shape[0]))
+
+    for i in range(match_score_df.shape[0]):
+        for j in range(match_score_df.shape[0]):
+            match_score_f_covi = AUC_all_factors_df.iloc[i,factor_index]
+            match_score_f_covj = AUC_all_factors_df.iloc[j,factor_index]
+            pairwise_match_score = np.sqrt(match_score_f_covi*match_score_f_covj)
+            match_score_matrix[i,j] = pairwise_match_score
+
+    return match_score_matrix
+
+
+
+def convert_matrix_list_to_vector(matrix_list):
+    '''
+    convert a list of matrices to a flat vector - remove the upper triangle and the diagonal
+    matrix_list: list of matrices
+    '''
+    vector_list = []
+    for i in range(len(matrix_list)):
+        mat_tri = mask_upper_triangle(matrix_list[i])
+        mat_tri_flat = mat_tri.flatten()
+        ## remove the nan values
+        mat_tri_flat = mat_tri_flat[~np.isnan(mat_tri_flat)]
+        vector_list.append(mat_tri_flat)
+    
+    vector_list = unlist(vector_list)
+
+    return vector_list
+
+
+### define a function to mask the upper triangle of a matrix
+def mask_upper_triangle(mat):
+    '''
+    mask the upper triangle of a matrix
+    '''
+    mat_triu = np.triu(mat).T
+    mat_triu[mat_triu == 0] = np.nan
+    ## mask the diagonal
+    np.fill_diagonal(mat_triu, np.nan)
+
+    return mat_triu
+
+
+def plot_scatter(overlap_scores, matching_score, title=''):
+    '''
+    plot the scatter plot of the overlap and match scores
+    overlap_scores: vector of overlap scores
+    matching_score: vector of matching scores
+    '''
+    ### use matplotlib to plot the scatter plot
+    
+    plt.scatter(overlap_scores, matching_score)
+    ### fit a line to the scatter plot
+    plt.plot(np.unique(overlap_scores), np.poly1d(np.polyfit(overlap_scores, matching_score, 1))(np.unique(overlap_scores)))
+    ### add value of correlation coefficient
+    plt.text(0.5, 0.5, 'R: '+ str(round(np.corrcoef(overlap_scores, matching_score)[0,1], 2)))
+    plt.xlabel('overlap')
+    plt.ylabel('match score')
+    plt.title(title)
+    plt.show()
+
 ### TODO: Define a class for a factor_sim
 ### factor has the following attributes:
 ### - num_mixtures, mu_list, sigma_list, p_list, overlap_matrix
 
 
-#### genenerate four simulated factors and 
-num_factors = 4
+num_factors = 10
 sim_factors_list = []
 overlap_mat_list = []
 covariate_list = []
-num_mixtures = 3 ## each factor is a mixture of 3 normal distributions
+num_mixtures = 5 ## each factor is a mixture of 3 normal distributions
 
 for i in range(num_factors):
-    a_random_factor, overlap_matrix, mu_list, sigma_list, p_list = get_simulated_factor_object(num_mixtures=3, mu_min=0, mu_max=None,
-                      sigma_min=0.5, sigma_max=1, p_equals=True)
-    sim_factors_list.append(a_random_factor)
+    a_random_factor, overlap_matrix, mu_list, sigma_list, p_list = get_simulated_factor_object(n=10000,num_mixtures=num_mixtures, 
+                                                                                               mu_min=0, mu_max=None,
+                                                                                               sigma_min=0.5, sigma_max=1, p_equals=True)  
+    sim_factors_list.append(unlist(a_random_factor))
     overlap_mat_list.append(overlap_matrix)
     covariate_list.append(get_sim_factor_covariates(a_random_factor))
 
+len(sim_factors_list)
+len(sim_factors_list[0])
 
 
+### convert sim_factors_list to a numpy nd array with shape (num_samples, num_factors)
+sim_factors_array = np.asarray(sim_factors_list).T
+sim_factors_array.shape
+sim_factors_df = pd.DataFrame(sim_factors_array, columns=['factor'+str(i+1) for i in range(num_factors)])
+sim_factors_df
+
+### convert covariate_list[0] to pandas.core.series.Series
+covariate_vector = pd.Series(covariate_list[0])
+factor_scores = sim_factors_array
+
+####################################
+#### Matching between factors and covariates ######
+####################################
+
+### calculate the mean importance of each covariate level
+mean_importance_df = fmatch.get_mean_importance_all_levels(covariate_vector, factor_scores)
+fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
+all_covariate_levels = mean_importance_df.index.values
+
+#### AUC score
+#### calculate the AUC of all the factors for all the covariate levels
+AUC_all_factors_df, wilcoxon_pvalue_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
+fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
+                                 title='F-C Match: AUC scores', color='YlOrBr')
+
+#################################### 
 
 
 fplot.plot_histogram(a_random_factor, 'normal distribution')
@@ -231,5 +341,27 @@ for i in range(num_mixtures):
     fplot.plot_histogram(a_random_factor[i], 'normal distribution')
 
 
+factor_index = 0
+match_score_mat_AUC = get_pairwise_match_score_matrix(AUC_all_factors_df,factor_index)
+match_score_mat_meanImp = get_pairwise_match_score_matrix(mean_importance_df,factor_index)
+overlap_mat = overlap_mat_list[factor_index]
 
+### plot the scatter plot of the overlap and match scores
+plot_scatter(overlap_mat.flatten(), match_score_mat_AUC.flatten(), title='AUC')
+plot_scatter(overlap_mat.flatten(), match_score_mat_meanImp.flatten(), title='feature importance')
+
+#### calculating the scores for all the factors
+match_score_mat_AUC_list = []
+match_score_mat_meanImp_list = []
+
+for i in range(num_factors): ## i is the factor index
+    match_score_mat_AUC_list.append(get_pairwise_match_score_matrix(AUC_all_factors_df,i))
+    match_score_mat_meanImp_list.append(get_pairwise_match_score_matrix(mean_importance_df,i))
+
+match_score_mat_AUC_flat = convert_matrix_list_to_vector(match_score_mat_AUC_list)
+match_score_mat_meanImp_flat = convert_matrix_list_to_vector(match_score_mat_meanImp_list)
+overlap_mat_flat = convert_matrix_list_to_vector(overlap_mat_list)
+
+plot_scatter(overlap_mat_flat, match_score_mat_meanImp_flat, title='feature importance')
+plot_scatter(overlap_mat_flat, match_score_mat_AUC_flat, title='AUC')
 

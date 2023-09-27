@@ -68,7 +68,7 @@ def get_factor_entropy_all(factor_scores) -> list:
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     '''
     H_all = []
-    for i in range(const.num_components):
+    for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         H = get_factor_entropy(a_factor)
         H_all.append(H)
@@ -80,7 +80,7 @@ def get_factor_variance_all(factor_scores) -> list:
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     '''
     factor_variance_all = []
-    for i in range(const.num_components):
+    for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         factor_variance = np.var(a_factor)
         factor_variance_all.append(factor_variance)
@@ -148,7 +148,7 @@ def get_ASV_all(factor_scores, covariate_vector, mean_type='geometric') -> list:
     '''
 
     ASV_all = []
-    for i in range(const.num_components):
+    for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         ASV = get_a_factor_ASV(a_factor, covariate_vector, mean_type)
         ASV_all.append(ASV)
@@ -162,7 +162,7 @@ def get_factors_SV_all_levels(factor_scores, covariate_vector) -> np.array:
     covariate_vector: numpy array of the covariate values for all the cells (n_cells, 1)
     '''
     SV_all_factors = []
-    for i in range(const.num_components):
+    for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         SV_all = get_SV_all_levels(a_factor, covariate_vector)
         
@@ -543,6 +543,8 @@ def get_AUC_all_levels(a_factor, covariate_vector) -> list:
     wilcoxon_pvalue_all = 1 - wilcoxon_pvalue_all
     return AUC_all, wilcoxon_pvalue_all
 
+
+
 def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
     '''
     calculate the AUC of all the factors for all the covariate levels
@@ -552,12 +554,14 @@ def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
     '''
     AUC_all_factors = []
     wilcoxon_pvalue_all_factors = []
-    for i in range(const.num_components):
+    for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         AUC_all, wilcoxon_pvalue_all = get_AUC_all_levels(a_factor, covariate_vector)
         AUC_all_factors.append(AUC_all)
         wilcoxon_pvalue_all_factors.append(wilcoxon_pvalue_all)
     return AUC_all_factors, wilcoxon_pvalue_all_factors
+
+
 
 def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
     '''
@@ -569,11 +573,11 @@ def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
     AUC_all_factors, wilcoxon_pvalue_all_factors = get_AUC_all_factors(factor_scores, covariate_vector)
 
     AUC_all_factors_df = pd.DataFrame(AUC_all_factors).T
-    AUC_all_factors_df.columns = ['F'+str(i+1) for i in range(const.num_components)]
+    AUC_all_factors_df.columns = ['F'+str(i+1) for i in range(factor_scores.shape[1])]
     AUC_all_factors_df.index = np.unique(covariate_vector)
 
     wilcoxon_pvalue_all_factors_df = pd.DataFrame(wilcoxon_pvalue_all_factors).T
-    wilcoxon_pvalue_all_factors_df.columns = ['F'+str(i+1) for i in range(const.num_components)]
+    wilcoxon_pvalue_all_factors_df.columns = ['F'+str(i+1) for i in range(factor_scores.shape[1])]
     wilcoxon_pvalue_all_factors_df.index = np.unique(covariate_vector)
 
 
@@ -616,7 +620,7 @@ def get_kbet_all_factors(factor_scores, covariate_vector) -> list:
     covariate_vector: a vector of the covariate
     '''
     kbet_all_factors = []
-    for i in range(const.num_components):
+    for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         kbet_all = scib.kbet(a_factor, covariate_vector)
         kbet_all_factors.append(kbet_all)
