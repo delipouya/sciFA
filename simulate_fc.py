@@ -279,25 +279,27 @@ def plot_scatter(overlap_scores, matching_score, title=''):
     ### fit a line to the scatter plot
     plt.plot(np.unique(overlap_scores), np.poly1d(np.polyfit(overlap_scores, matching_score, 1))(np.unique(overlap_scores)))
     ### add value of correlation coefficient
-    plt.text(0.5, 0.5, 'R: '+ str(round(np.corrcoef(overlap_scores, matching_score)[0,1], 2)))
+    plt.text(np.mean(overlap_scores), np.mean(matching_score), 'R: '+ str(round(np.corrcoef(overlap_scores, matching_score)[0,1], 2)))
     plt.xlabel('overlap')
     plt.ylabel('match score')
     plt.title(title)
     plt.show()
 
-### TODO: Define a class for a factor_sim
-### factor has the following attributes:
-### - num_mixtures, mu_list, sigma_list, p_list, overlap_matrix
 
 
-num_factors = 10
+####################################
+#### Simulate factors and covariates ######
+####################################
+### TODO: Define a class for a factor_simulator
+
+num_factors = 15
 sim_factors_list = []
 overlap_mat_list = []
 covariate_list = []
-num_mixtures = 5 ## each factor is a mixture of 3 normal distributions
+num_mixtures = 2 ## each gaussian represents a covariate level 
 
 for i in range(num_factors):
-    a_random_factor, overlap_matrix, mu_list, sigma_list, p_list = get_simulated_factor_object(n=10000,num_mixtures=num_mixtures, 
+    a_random_factor, overlap_matrix, mu_list, sigma_list, p_list = get_simulated_factor_object(n=10000, num_mixtures=num_mixtures, 
                                                                                                mu_min=0, mu_max=None,
                                                                                                sigma_min=0.5, sigma_max=1, p_equals=True)  
     sim_factors_list.append(unlist(a_random_factor))
@@ -306,17 +308,15 @@ for i in range(num_factors):
 
 len(sim_factors_list)
 len(sim_factors_list[0])
+fplot.plot_histogram(a_random_factor, 'normal distribution')
 
+overlap_mat_flat = convert_matrix_list_to_vector(overlap_mat_list) ### flatten the overlap matrix list
 
 ### convert sim_factors_list to a numpy nd array with shape (num_samples, num_factors)
 sim_factors_array = np.asarray(sim_factors_list).T
-sim_factors_array.shape
 sim_factors_df = pd.DataFrame(sim_factors_array, columns=['factor'+str(i+1) for i in range(num_factors)])
-sim_factors_df
-
-### convert covariate_list[0] to pandas.core.series.Series
-covariate_vector = pd.Series(covariate_list[0])
 factor_scores = sim_factors_array
+covariate_vector = pd.Series(covariate_list[0])
 
 ####################################
 #### Matching between factors and covariates ######
@@ -334,13 +334,8 @@ fplot.plot_all_factors_levels_df(AUC_all_factors_df,
                                  title='F-C Match: AUC scores', color='YlOrBr')
 
 #################################### 
-
-
-fplot.plot_histogram(a_random_factor, 'normal distribution')
-for i in range(num_mixtures):
-    fplot.plot_histogram(a_random_factor[i], 'normal distribution')
-
-
+#### Evaluate overlap and match scores for a single factor
+#################################### 
 factor_index = 0
 match_score_mat_AUC = get_pairwise_match_score_matrix(AUC_all_factors_df,factor_index)
 match_score_mat_meanImp = get_pairwise_match_score_matrix(mean_importance_df,factor_index)
@@ -350,7 +345,9 @@ overlap_mat = overlap_mat_list[factor_index]
 plot_scatter(overlap_mat.flatten(), match_score_mat_AUC.flatten(), title='AUC')
 plot_scatter(overlap_mat.flatten(), match_score_mat_meanImp.flatten(), title='feature importance')
 
-#### calculating the scores for all the factors
+#################################### 
+#### calculate the overlap and matching scores for all the factors
+#################################### 
 match_score_mat_AUC_list = []
 match_score_mat_meanImp_list = []
 
@@ -360,8 +357,73 @@ for i in range(num_factors): ## i is the factor index
 
 match_score_mat_AUC_flat = convert_matrix_list_to_vector(match_score_mat_AUC_list)
 match_score_mat_meanImp_flat = convert_matrix_list_to_vector(match_score_mat_meanImp_list)
-overlap_mat_flat = convert_matrix_list_to_vector(overlap_mat_list)
 
+#### plot the scatter plot of the overlap and match scores
 plot_scatter(overlap_mat_flat, match_score_mat_meanImp_flat, title='feature importance')
 plot_scatter(overlap_mat_flat, match_score_mat_AUC_flat, title='AUC')
 
+
+####################################
+#### evaluating bimodality score using simulated factors ####
+####################################
+overlap_mat_flat
+
+factor_scores
+
+bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
+      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores)
+bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores)
+likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
+bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
+dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
+kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
+outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
+
+bimodality_metrics = ['bic_km', 'calinski_harabasz_km', 'davies_bouldin_km', 'silhouette_km', 'vrs_km', 'wvrs_km',
+                      'bic_gmm', 'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm', 'likelihood_ratio', 'bimodality_index',
+                          'dip_score', 'dip_pval', 'kurtosis', 'outlier_sum']
+bimodality_scores = [bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
+                                    silhouette_scores_km, vrs_km, wvrs_km,
+                                    bic_scores_gmm, silhouette_scores_gmm,
+                                    vrs_gmm, wvrs_gmm, likelihood_ratio_scores, bimodality_index_scores,
+                                    dip_scores, pval_scores, kurtosis_scores, outlier_sum_scores]
+
+
+# plot the scatter plot of the overlap and each of the bimodality scores
+for i in range(len(bimodality_metrics)):
+    plot_scatter(overlap_mat_flat, bimodality_scores[i], title=bimodality_metrics[i])
+
+
+#### Scaled variance
+SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)
+plot_scatter(overlap_mat_flat, SV_all_factors[0], title='SV - cov1')
+plot_scatter(overlap_mat_flat, SV_all_factors[1], title='SV - cov2')
+
+### label dependent factor metrics
+ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='arithmetic')
+ASV_all_geo = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='geometric')
+plot_scatter(overlap_mat_flat, ASV_all_arith, title='ASV - arithmatic')
+plot_scatter(overlap_mat_flat, ASV_all_geo, title='ASV - geometric')
+
+#### Specificity 
+factor_specificity_meanImp = fmet.get_all_factors_specificity(mean_importance_df)
+factor_specificity_AUC = fmet.get_all_factors_specificity(AUC_all_factors_df)
+
+plot_scatter(overlap_mat_flat, factor_specificity_meanImp, title='factor specificity - mean importance')
+plot_scatter(overlap_mat_flat, factor_specificity_AUC, title='factor specificity - AUC')
+
+
+#### label free factor metrics
+factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
+factor_variance_all = fmet.get_factor_variance_all(factor_scores)
+
+plot_scatter(overlap_mat_flat, factor_entropy_all, title='factor entropy')
+plot_scatter(overlap_mat_flat, factor_variance_all, title='factor variance')
+
+
+### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
+AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
+fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
+                                    title='Homogeneity: 1-AUC scores', color='hot')
+plot_scatter(overlap_mat_flat, AUC_all_factors_df_1.iloc[0,:], title='cov1 - 1-AUC')
+plot_scatter(overlap_mat_flat, AUC_all_factors_df_1.iloc[1,:], title='cov2 - 1-AUC')

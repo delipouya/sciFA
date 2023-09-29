@@ -42,6 +42,7 @@ pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=con
 pca_scores = pipeline.fit_transform(y)
 pca = pipeline.named_steps['pca']
 factor_loading = pca.components_
+factor_loading.shape
 
 plt.plot(pca.explained_variance_ratio_)
 fplot.plot_pca_scMix(pca_scores, 4, 

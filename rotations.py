@@ -2,8 +2,10 @@
 import numpy as np
 import pandas as pd
 from numpy import eye, asarray, dot, sum, diag
-from numpy.linalg import svd
+#from numpy.linalg import svd
 import statsmodels.multivariate.factor_rotation as factor_rotation
+import numpy as np
+from scipy.linalg import svd
 
 
 def varimax(Phi, gamma = 1.0, q = 100, tol = 1e-6):
@@ -26,8 +28,71 @@ def varimax(Phi, gamma = 1.0, q = 100, tol = 1e-6):
         if d_old!=0 and d/d_old < 1 + tol: break
     Lambda = dot(Phi, R)
 
-    return Lambda, R #'rotloadings':Lambda, 'rotmat':R
+    return {'rotloading':Lambda, 'rotmat':R}
 
+
+##########  implementation of base R Varimax rotation in python ##########
+def varimax_rotation(x, normalize=True, eps=1e-05):
+    nc = x.shape[1]
+    if nc < 2:
+        return x
+    
+    if normalize:
+        sc = np.sqrt(np.sum(x**2, axis=1))
+        x = x / sc[:, np.newaxis]
+    
+    p = x.shape[0]
+    TT = np.eye(nc)
+    d = 0
+    
+    for i in range(1, 1001):
+        z = np.dot(x, TT)
+        B = np.dot(x.T, z**3 - np.dot(z, np.diag(np.sum(z**2, axis=0)) / p))
+        u, sB, vh = svd(B, full_matrices=False)
+        TT = np.dot(u, vh)
+        dpast = d
+        d = np.sum(sB)
+        
+        if d < dpast * (1 + eps):
+            break
+    
+    z = np.dot(x, TT)
+    
+    if normalize:
+        z = z * sc[:, np.newaxis]
+    
+    return {'rotloading': z, 'rotmat': TT}
+
+
+
+def promax_rotation(x, m=4, normalize=True, eps=1e-05):
+    if x.shape[1] < 2:
+        return x
+    
+    # Varimax rotation
+    xx = varimax_rotation(x, normalize)
+    x = xx['rotloading']
+    
+    # Calculate Q matrix
+    q = x * np.abs(x)**(m - 1)
+    
+    try:
+        # Perform linear regression
+        u = np.linalg.lstsq(x, q, rcond=None)[0]
+        d = np.diag(np.linalg.inv(np.dot(u.T, u)))
+        u = np.dot(u, np.diag(np.sqrt(d)))
+    except LinAlgError:
+        return x  # Return the original loadings if there is an error
+    
+    # Calculate the rotated loadings
+    z = np.dot(x, u)
+    u = np.dot(xx['rotmat'], u)
+    
+    return {'loadings': z, 'rotmat': u}
+
+# Example usage:
+# Assuming 'x' is your data matrix
+# z = promax_rotation(x)
 
 
 
@@ -40,7 +105,9 @@ def get_varimax_rotated_scores(factor_scores, loading):
     factor_scores: the factor scores matrix
     loading: the factor loading matrix
     '''
-    loadings_rot, rotmat  = varimax(loading)
+    rotation_results  = varimax_rotation(loading)
+    #loadings_rot, rotmat  = varimax(loading)
+    loadings_rot, rotmat = rotation_results['rotloading'], rotation_results['rotmat']
     scores_rot = dot(factor_scores, rotmat)
     
     return scores_rot, loadings_rot, rotmat
