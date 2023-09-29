@@ -20,7 +20,6 @@ def simulate_gaussian(n,mu, sigma) -> list:
     return normal_numbers
 
 
-
 def simulate_mixture_gaussian(n, mu_list, sigma_list, p_list=None) -> list:
     '''
     simulate n random numbers from mixture of normal distributions with mean mu, std sigma, and proportion p

@@ -6,33 +6,16 @@ from numpy import eye, asarray, dot, sum, diag
 import statsmodels.multivariate.factor_rotation as factor_rotation
 import numpy as np
 from scipy.linalg import svd
+from numpy.linalg import LinAlgError
 
-
-def varimax(Phi, gamma = 1.0, q = 100, tol = 1e-6):
+####  python implementation of base R varimax function
+def varimax_rotation(x, normalize=True, eps=1e-05):
     '''
     varimax rotation
-    Phi: the factor loading matrix
-    gamma: the power of the objective function
-    q: the maximum number of iterations
-    tol: the tolerance for convergence
+    x: the factor loading matrix
+    normalize: whether to normalize the factor loading matrix
+    eps: the tolerance for convergence
     '''
-    p,k = Phi.shape
-    R = eye(k)
-    d=0
-    for i in range(q):
-        d_old = d
-        Lambda = dot(Phi, R)
-        u,s,vh = svd(dot(Phi.T,asarray(Lambda)**3 - (gamma/p) * dot(Lambda, diag(diag(dot(Lambda.T,Lambda))))))
-        R = dot(u,vh)
-        d = sum(s)
-        if d_old!=0 and d/d_old < 1 + tol: break
-    Lambda = dot(Phi, R)
-
-    return {'rotloading':Lambda, 'rotmat':R}
-
-
-##########  implementation of base R Varimax rotation in python ##########
-def varimax_rotation(x, normalize=True, eps=1e-05):
     nc = x.shape[1]
     if nc < 2:
         return x
@@ -44,7 +27,6 @@ def varimax_rotation(x, normalize=True, eps=1e-05):
     p = x.shape[0]
     TT = np.eye(nc)
     d = 0
-    
     for i in range(1, 1001):
         z = np.dot(x, TT)
         B = np.dot(x.T, z**3 - np.dot(z, np.diag(np.sum(z**2, axis=0)) / p))
@@ -64,8 +46,16 @@ def varimax_rotation(x, normalize=True, eps=1e-05):
     return {'rotloading': z, 'rotmat': TT}
 
 
-
+####  python implementation of base R promax function
 def promax_rotation(x, m=4, normalize=True, eps=1e-05):
+    '''
+    promax rotation
+    x: the factor loading matrix
+    m: the power of the objective function
+    normalize: whether to normalize the factor loading matrix
+    eps: the tolerance for convergence
+    '''
+
     if x.shape[1] < 2:
         return x
     
@@ -89,10 +79,6 @@ def promax_rotation(x, m=4, normalize=True, eps=1e-05):
     u = np.dot(xx['rotmat'], u)
     
     return {'loadings': z, 'rotmat': u}
-
-# Example usage:
-# Assuming 'x' is your data matrix
-# z = promax_rotation(x)
 
 
 
