@@ -13,8 +13,8 @@ from numpy.random import multivariate_normal
 # Simulate data with 3 factors and 10 variables
 np.random.seed(123)
 n = 1000  # Number of observations
-p = 3000   # Number of variables - genes
-factors = 10  # Number of factors
+p = 70   # Number of variables - genes
+factors = 4  # Number of factors
 
 # Create a random correlation matrix with 3 factors
 loading_matrix = np.random.randn(p, factors)
@@ -29,12 +29,17 @@ simulated_data = np.random.multivariate_normal(mean=np.zeros(p), cov=cor_matrix,
 simulated_data.shape
 
 
+
+## TODO: how to calculate scores matrix for the simulated loadings
+# https://stats.stackexchange.com/questions/59213/how-to-compute-varimax-rotated-principal-components-in-r
+# multiple the data with the transposed pseudo-inverse of the rotated loadings: standardized scores
+
 ######################################################################
 ########## Simulation by specifying the loading matrix and creating a correlation matrix from it
 ######################################################################
 # Simulate data with n factors and p variables
-n = 500  # Number of observations
-p = 20   # Number of variables
+n = 1000  # Number of observations
+p = 50   # Number of variables
 n_factors = 3  # Number of factors
 
 # Specify the loadings for each factor manually
@@ -72,4 +77,50 @@ pca_scores = pipeline.fit_transform(simulated_data)
 pca = pipeline.named_steps['pca']
 factor_loading = pca.components_
 factor_loading.shape
-rotated_loading= rot.varimax_rotation(factor_loading)
+factor_scores = pca_scores
+
+rotation_results = rot.varimax_rotation(factor_loading.T)
+rotation_results = rot.promax_rotation(factor_loading.T)
+
+rotloading = rotation_results['rotloading']
+rotmat = rotation_results['rotmat']
+scores_rot = np.dot(factor_scores, rotmat)
+
+print(rotloading.shape)
+print(rotmat.shape)
+print(factor_loading.shape)
+print(factor_scores.shape)
+print(scores_rot.shape)
+
+#### plot the pca scores and the rotated pca scores
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plt.scatter(factor_scores[:,0], factor_scores[:,1])
+plt.title('PCA scores')
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+plt.subplot(1, 2, 2)
+plt.scatter(scores_rot[:,0], scores_rot[:,1])
+plt.title('Rotated PCA scores')
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+plt.show()
+
+#### plot the pca loadings and the rotated pca loadings and the matrix of the loadings
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 3, 1)
+plt.scatter(factor_loading.T[:,0], factor_loading.T[:,1])
+plt.title('PCA loadings')
+plt.xlabel('PC')
+plt.ylabel('Variables')
+plt.subplot(1, 3, 2)
+plt.scatter(rotloading[:,0], rotloading[:,1])
+plt.title('Rotated PCA loadings')
+plt.xlabel('PC')
+plt.ylabel('Variables')
+plt.subplot(1, 3, 3)
+plt.scatter(loading_matrix[:,0], loading_matrix[:,1])
+plt.title('True loadings')
+plt.xlabel('PC')
+plt.ylabel('Variables')
+plt.show()

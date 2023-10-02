@@ -78,7 +78,7 @@ def promax_rotation(x, m=4, normalize=True, eps=1e-05):
     z = np.dot(x, u)
     u = np.dot(xx['rotmat'], u)
     
-    return {'loadings': z, 'rotmat': u}
+    return {'rotloading': z, 'rotmat': u}
 
 
 
