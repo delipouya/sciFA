@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import scanpy as sc
 import statsmodels.api as sm
 import time
 from statsmodels import graphics
@@ -8,60 +7,6 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
 from statsmodels.graphics.regressionplots import abline_plot
-
-
-
-#### calculate the goodness of fit of GLM model
-# https://www.statsmodels.org/stable/generated/statsmodels.genmod.generalized_linear_model.GLMResults.html#statsmodels.genmod.generalized_linear_model.GLMResults
-
-### statsmodels GLM source code:
-# https://github.com/statsmodels/statsmodels/blob/main/statsmodels/genmod/families/links.py
-
-### poisson family link function
-# https://github.com/statsmodels/statsmodels/blob/main/statsmodels/genmod/families/family.py
-
-
-
-
-#### import the immune subpopulation of the rat samples
-data = sc.read('/home/delaram/scLMM/input_data_designMat/inputdata_rat_set1_countData_2.h5ad') ## attributes removed
-data.var_names_make_unique()
-# a.obs['orig.ident'].head()
-### renaming the meta info column names: https://github.com/theislab/scvelo/issues/255
-data.__dict__['_raw'].__dict__['_var'] = data.__dict__['_raw'].__dict__['_var'].rename(columns={'_index': 'features'})
-
-data_numpy = data.X.toarray()
-cell_sums = np.sum(data_numpy,axis=1) # row sums - library size
-gene_sums = np.sum(data_numpy,axis=0) # col sums - sum reads in a gene
-gene_vars = np.var(data_numpy, axis=0)
-data_numpy = data_numpy[:,gene_sums != 0]
-
-data_sub = data_numpy
-strain = data.obs.strain
-#### sample metadata
-y_cluster =data.obs.cluster 
-y_strain = np.zeros((strain.shape[0]))
-
-for i in range(len(data.obs.strain)):
-    if data.obs.strain[i] != 'DA':
-        y_strain[i] = 1
-
-## working with the rat data
-num_cells = data_sub.shape[0]
-num_genes = data_sub.shape[1]
-num_vars = 2 # number of variables in the design matrix - strain
-
-### sample 100 genes and subset the data
-#num_genes = 1000
-#gene_idx = random.sample(range(0, data_numpy.shape[1]), num_genes)
-#data_numpy = data_numpy[:, gene_idx]
-
-
-y = data_numpy
-### design matrix - strain
-x = y_strain
-### add a column of ones to the design matrix
-x = sm.add_constant(x)
 
 
 def fit_poisson_GLM(y, x, num_vars) -> dict:

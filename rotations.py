@@ -72,31 +72,25 @@ def promax_rotation(x, m=4, normalize=True, eps=1e-05):
         d = np.diag(np.linalg.inv(np.dot(u.T, u)))
         u = np.dot(u, np.diag(np.sqrt(d)))
     except LinAlgError:
+        print('Error: Singular matrix. The loadings cannot be rotated using promax.')
         return x  # Return the original loadings if there is an error
     
     # Calculate the rotated loadings
     z = np.dot(x, u)
     u = np.dot(xx['rotmat'], u)
+    print('promax was performed.')
     
     return {'rotloading': z, 'rotmat': u}
 
 
-
-##### First implementation of Varimax rotation ####
 ## method: scale(original pc scores) %*% rotmat
-## rotmat: the rotation matrix
-def get_varimax_rotated_scores(factor_scores, loading):
+def get_varimax_rotated_scores(factor_scores, rotmat):
     '''
     apply varimax rotation to the factor scores
     factor_scores: the factor scores matrix
-    loading: the factor loading matrix
+    rotmat: the rotation matrix
     '''
-    rotation_results  = varimax_rotation(loading)
-    #loadings_rot, rotmat  = varimax(loading)
-    loadings_rot, rotmat = rotation_results['rotloading'], rotation_results['rotmat']
-    scores_rot = dot(factor_scores, rotmat)
-    
-    return scores_rot, loadings_rot, rotmat
+    return np.dot(factor_scores, rotmat)
 
 
 

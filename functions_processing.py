@@ -51,6 +51,20 @@ def get_metadata_scMix(data) -> tuple:
     
 
 
+def get_metadata_ratLiver(data) -> tuple:
+    """Return the metadata of the healthy rat liver dataset, including sample, strain and cluster information.
+    data: AnnData object
+    """
+
+    #### sample metadata
+    y_cluster = data.obs.cluster.squeeze()
+    y_sample = data.obs[['sample']].squeeze()
+    y_strain = data.obs.strain.squeeze()
+
+    return y_sample, y_strain, y_cluster
+
+
+
 def get_data_array(data) -> np.array:
     """Return the data matrix as a numpy array, and the number of cells and genes.
     data: AnnData object
@@ -72,20 +86,34 @@ def get_data_array(data) -> np.array:
     return data_numpy, num_cells, num_genes
 
 
+def get_highly_variable_gene_indices(data_numpy, num_genes=const.num_genes, random=False):
+    '''
+    get the indices of the highly variable genes
+    data_numpy: numpy array of the data (n_cells, n_genes)
+    num_genes: number of genes to select
+    random: whether to randomly select the genes or select the genes with highest variance
+    '''
+    if random:
+        ### randomly select 1000 genes
+        gene_idx = random.sample(range(0, data_numpy.shape[1]), num_genes)
+    else:
+        ### calculate the variance for each gene
+        gene_vars = np.var(data_numpy, axis=0)
+        ### select the top num_genes genes with the highest variance
+        gene_idx = np.argsort(gene_vars)[-num_genes:]
 
-def get_sub_data(y) -> np.array:    
+    return gene_idx
+
+
+
+def get_sub_data(y, num_genes=const.num_genes, random=False) -> np.array:    
     ''' subset the data matrix to the top num_genes genes
     y: numpy array of the gene expression matrix (n_cells, n_genes)
+    random: whether to randomly select the genes or select the genes with highest variance
+    num_genes: number of genes to select
     '''
-
     #### select num_genes genes based on variance
-    ### calculate the variance for each gene
-    gene_vars = np.var(y, axis=0)
-    ### select the top num_genes genes with the highest variance
-    gene_idx = np.argsort(gene_vars)[::-1][0:const.num_genes]
-
-    #### randomly select num_genes genes
-    #gene_idx = random.sample(range(0, y.shape[1]), num_genes)
+    gene_idx = get_highly_variable_gene_indices(y, num_genes=num_genes, random=random)
 
     ### subset the data matrix to the top num_genes genes
     return y[:, gene_idx]
@@ -128,7 +156,7 @@ def get_design_mat(a_metadata_col, data) -> np.array:
     dict_covariate = {}
     for column_level in column_levels:
         print(column_level)
-        dict_covariate[column_level] = get_binary_covariate(a_metadata_col, column_level, data)
+        dict_covariate[column_level] = get_binary_covariate(a_metadata_col, column_level)
 
     #### stack colummns of dict_covariate 
     x = np.column_stack((dict_covariate[column] for column in column_levels))
@@ -136,25 +164,12 @@ def get_design_mat(a_metadata_col, data) -> np.array:
 
 
 
-def get_protocol_designmat_scMixology(data) -> np.array:
-    ''' return a design matrix for the protocol covariate
+def get_lib_designmat(data, lib_size='nCount_RNA'): # nCount_originalexp for scMixology
+    ''' return a design matrix for the library size covariate - equivalent to performing normalization
     data: AnnData object
+    lib_size: the library size covariate name in the AnnData object
     '''
-
-    #### Design matrix : Intercept + Depth + protocol
-    x_protocol = get_design_mat('protocol', data)
-    # x_cell_line = get_design_mat('cell_line', data)
-    x = np.column_stack((data.obs.nCount_originalexp, x_protocol)) #, x_batch
-    x = sm.add_constant(x) ## adding the intercept
-
-    return x
-
-
-def get_lib_designmat_scMixology(data):
-    ''' return a design matrix for the library size covariate
-    data: AnnData object
-    '''
-    x = np.column_stack((np.ones(data.nobs), np.array(data.obs.nCount_originalexp)))
+    x = np.column_stack((np.ones(data.shape[0]), np.array(data.obs[lib_size])))
     return x
 
 

@@ -79,9 +79,15 @@ factor_loading = pca.components_
 factor_loading.shape
 factor_scores = pca_scores
 
-rotation_results = rot.varimax_rotation(factor_loading.T)
-rotation_results = rot.promax_rotation(factor_loading.T)
+rotation_results_varimax = rot.varimax_rotation(factor_loading.T)
+rotation_results_promax = rot.promax_rotation(factor_loading.T)
 
+
+### check if the rotloading of the varimax rotation is the same as the loadings_rot of the promax rotation
+np.allclose(rotation_results_varimax['rotloading'], 
+            rotation_results_promax['rotloading'])
+
+rotation_results = rotation_results_promax
 rotloading = rotation_results['rotloading']
 rotmat = rotation_results['rotmat']
 scores_rot = np.dot(factor_scores, rotmat)
