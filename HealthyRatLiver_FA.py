@@ -29,8 +29,6 @@ np.random.seed(0)
 # https://github.com/statsmodels/statsmodels/blob/main/statsmodels/genmod/families/family.py
 
 
-
-
 data_file_path = '/home/delaram/scLMM/input_data_designMat/inputdata_rat_set1_countData_2.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
@@ -68,8 +66,8 @@ print('y shape: ', y.shape) # (num_cells, num_genes)
 pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=const.num_components))])
 pca_scores = pipeline.fit_transform(y)
 pca = pipeline.named_steps['pca']
-factor_loading = pca.components_
-factor_loading.shape
+pca_loading = pca.components_
+pca_loading.shape
 
 colors_dict_ratLiver = fplot.get_colors_dict_ratLiver(y_sample, y_strain, y_cluster)
 
@@ -86,25 +84,27 @@ fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_ratLiver['strain'])
 ####################################
 covariate_name = 'strain'#'cell_line'
 covariate_level = 'DA'
-factor_scores = pca_scores
+#factor_scores = pca_scores
 covariate_vector = y_strain
 
 ######## Applying varimax rotation to the factor scores
-rotation_results_varimax = rot.varimax_rotation(factor_loading.T)
-factor_loading = rotation_results_varimax['rotloading']
-factor_scores = rot.get_rotated_scores(factor_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(factor_scores, 4, cell_color_vec= colors_dict_ratLiver['strain'])
-fplot.plot_pca(factor_scores, 4, cell_color_vec= colors_dict_ratLiver['cluster'])
+rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
+varimax_loading = rotation_results_varimax['rotloading']
+pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
+fplot.plot_pca(pca_scores_varimax, 9, cell_color_vec= colors_dict_ratLiver['strain'])
+fplot.plot_pca(pca_scores_varimax, 9, cell_color_vec= colors_dict_ratLiver['cluster'])
 
 ######## Applying promax rotation to the factor scores
-rotation_results_promax = rot.promax_rotation(factor_loading.T)
-factor_loading = rotation_results_promax['rotloading']
-factor_scores = rot.get_rotated_scores(factor_scores, rotation_results_promax['rotmat'])
-fplot.plot_pca(factor_scores, 4, cell_color_vec= colors_dict_ratLiver['strain'])
-fplot.plot_pca(factor_scores, 4, cell_color_vec= colors_dict_ratLiver['cluster'])
+rotation_results_promax = rot.promax_rotation(pca_loading.T)
+promax_loading = rotation_results_promax['rotloading']
+pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['rotmat'])
+fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_ratLiver['strain'])
+fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_ratLiver['cluster'])
 
 ########################
 
+factor_loading = varimax_loading #pca_loading
+factor_scores = pca_scores_varimax #pca_scores_promax #pca_scores_varimax
 ### calculate the mean importance of each covariate level
 mean_importance_df_strain = fmatch.get_mean_importance_all_levels(y_strain, factor_scores)
 mean_importance_df_cluster = fmatch.get_mean_importance_all_levels(y_cluster, factor_scores)
@@ -197,6 +197,15 @@ SV_all_factors_cluster = fmet.get_factors_SV_all_levels(factor_scores, y_cluster
 SV_all_factors = np.concatenate((SV_all_factors_strain, SV_all_factors_cluster), axis=0)
 #all_covariate_levels = np.concatenate((y_protocol.unique(), y_cell_line.unique()), axis=0)
 
+### convert to SV_all_factors to dataframe
+SV_all_factors_df = pd.DataFrame(SV_all_factors)
+SV_all_factors_df.columns = AUC_all_factors_df.columns
+SV_all_factors_df.index = AUC_all_factors_df.index
+## scale each factor from 0 to 1
+SV_all_factors_df = SV_all_factors_df.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+
+fplot.plot_all_factors_levels_df(SV_all_factors_df,
+                                    title='Homogeneity: scaled variance scores', color='Reds')
 fplot.plot_all_factors_levels(SV_all_factors, all_covariate_levels, 
                               title='Scaled variance for all the factors', color='RdPu')
 
