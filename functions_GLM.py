@@ -9,7 +9,7 @@ import seaborn as sns
 from statsmodels.graphics.regressionplots import abline_plot
 
 
-def fit_poisson_GLM(y, x, num_vars) -> dict:
+def fit_poisson_GLM(y, x) -> dict:
     '''
     fit a Poisson GLM model to each gene of the data
     y: gene expression matrix, cells x genes
@@ -20,6 +20,7 @@ def fit_poisson_GLM(y, x, num_vars) -> dict:
 
     num_cells = y.shape[0]
     num_genes = y.shape[1]
+    num_vars=x.shape[1]
 
     ### make an empty array to store the p-values and coefficients
     pvalue = []
@@ -164,9 +165,9 @@ def check_null_deviance(glm_fit_res):
     See statsmodels.families.family for distribution-specific loglikelihoods.
 
     '''
-    null_deviance = 2*(glm_fit_res.llnull - glm_fit_res.llf)
+    null_deviance = 2*(glm_fit_res['llnull'] - glm_fit_res['llf'])
 
-    return np.array_equal(null_deviance, glm_fit_res.null_deviance)
+    return np.array_equal(null_deviance, glm_fit_res['null_deviance'])
 
 
 
@@ -178,9 +179,9 @@ def check_response_residual(glm_fit_res):
     response residual: endog - fittedvalues
     '''
     ## endog: The endogenous response variable: yi
-    response_residual = glm_fit_res.endog - glm_fit_res.fittedvalues
+    response_residual = glm_fit_res['endog'] - glm_fit_res['fittedvalues']
 
-    return np.array_equal(response_residual, glm_fit_res.resid_response)
+    return np.array_equal(response_residual, glm_fit_res['resid_response'])
 
 
 
@@ -199,7 +200,7 @@ def check_working_residual(glm_fit_res):
     ## link’(mu): derivative of the link function
     ## mu: The inverse of the link function at the linear predicted values. - then why is mu=yhat instead of mu=e^yhat? 
     ## https://www.statsmodels.org/dev/glm.html#link-functions
-    working_residual = glm_fit_res.resid_response/glm_fit_res.family.link.deriv(glm_fit_res.mu)
+    working_residual = glm_fit_res['resid_response']/glm_fit_res.family.link.deriv(glm_fit_res.mu)
 
     return np.array_equal(working_residual, glm_fit_res.resid_working)
   
@@ -260,10 +261,9 @@ def check_aic(glm_fit_res):
     ## AIC : deviance + 2 * (df_model + 1)
     ## df_model: rank of the regression matrix excluding the intercept:  df_model = k_exog - 1 = 0 is only strain is included
 
-    AIC = glm_fit_res.deviance + 2 * (glm_fit_res.df_model + 1)
+    AIC = glm_fit_res['deviance'] + 2 * (glm_fit_res['df_model'] + 1)
 
-    return np.array_equal(AIC, glm_fit_res.aic)
-
+    return np.array_equal(AIC, glm_fit_res['aic'])
 
 
 def check_pseudo_r2(glm_fit_res):
@@ -274,9 +274,9 @@ def check_pseudo_r2(glm_fit_res):
     pseudo R-squared: 1 - deviance/null_deviance
     '''
     ## pseudo R-squared: 1 - deviance/null_deviance
-    pseudo_r2 = 1 - glm_fit_res.deviance/glm_fit_res.null_deviance
+    pseudo_r2 = 1 - glm_fit_res['deviance']/glm_fit_res['null_deviance']
 
-    return np.array_equal(pseudo_r2, glm_fit_res.prsquared)
+    return np.array_equal(pseudo_r2, glm_fit_res['prsquared'])
 
 
 def save_glm_results(glm_fit_dict, folder_name='GLM_FA_res/'):

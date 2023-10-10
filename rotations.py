@@ -84,9 +84,9 @@ def promax_rotation(x, m=4, normalize=True, eps=1e-05):
 
 
 ## method: scale(original pc scores) %*% rotmat
-def get_varimax_rotated_scores(factor_scores, rotmat):
+def get_rotated_scores(factor_scores, rotmat):
     '''
-    apply varimax rotation to the factor scores
+    calculate the rotated factor scores
     factor_scores: the factor scores matrix
     rotmat: the rotation matrix
     '''

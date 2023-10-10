@@ -7,7 +7,8 @@ import seaborn as sns
 import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, linkage
 sns.set(color_codes=True)
-
+import random
+random.seed(0)
 import constants as const
 
 
@@ -42,6 +43,66 @@ def get_colors_dict_scMix(y_protocol, y_cell_line):
 
     return {'protocol': protocol_color, 'cell_line': cell_line_color}
 
+
+
+def get_colors_dict_ratLiver(y_sample, y_strain,y_cluster):
+    '''
+    generate a dictionary of colors for each cell in the rat liver dataset
+    y_sample: the sample for each cell
+    y_strain: the strain for each cell
+    y_cluster: the cluster for each cell
+    '''
+
+    my_color = {'DA_01': 'red','DA_02': 'orange', 'LEW_01': 'blue', 'LEW_02': 'purple'}
+    sample_color = [my_color[y_sample[i]] for i in range(len(y_sample))]
+
+    ### make a dictionary of colors for each strain in y_strain
+    my_color = {'DA': 'red', 'LEW': 'blue'}
+    strain_color = [my_color[y_strain[i]] for i in range(len(y_strain))]
+
+
+    ### make a dictionary of colors for each 16 cluster in y_cluster. use np.unique(y_cluster)
+    ### generate 16 colors using the following code:
+    my_color = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                        for i in np.unique(y_cluster)}
+    cluster_color = [my_color[y_cluster[i]] for i in range(len(y_cluster))]
+
+    return {'sample': sample_color, 'strain': strain_color, 'cluster':cluster_color}
+
+
+
+def plot_pca(pca_scores, 
+                   num_components_to_plot, 
+                   cell_color_vec, 
+                   legend_handles=False,
+                   covariate=None,
+                   plt_legend_dict = None,
+                   title='PCA of the data matrix') -> None:
+    '''
+    plot the PCA components with PC1 on the x-axis and other PCs on the y-axis
+    pca_scores: the PCA scores for all the cells
+    num_components_to_plot: the number of PCA components to plot as the y-axis
+    cell_color_vec: the color vector for each cell
+    covariate: the covariate to color the cells
+    legend_handles: whether to show the legend handles
+    plt_legend_dict: a dictionary of legend handles for each covariate
+    covariate: the covariate to color the cells
+    title: the title of the plot
+    '''
+    
+    for i in range(1, num_components_to_plot):
+        ## color PCA based on strain
+        plt.figure()
+        ### makke the background white with black axes
+        plt.rcParams['axes.facecolor'] = 'white'
+        
+        plt.scatter(pca_scores[:,0], pca_scores[:,i], c=cell_color_vec, s=1) 
+        plt.xlabel('PC1')
+        plt.ylabel('PC'+str(i+1))
+        plt.title(title)
+        if legend_handles:
+            plt.legend(handles=plt_legend_dict[covariate])
+        plt.show()
 
 
 
@@ -110,7 +171,7 @@ def plot_metric_barplot(metric_all, title) -> None:
 
 
 
-def plot_factor_scatter(factor_scores, x_i, y_i, cell_color_vec, covariate='protocol',title='') -> None:
+def plot_factor_scatter(factor_scores, x_i, y_i, cell_color_vec, covariate=None,title='') -> None:
     '''
     plot the scatter plot of two factors
     factor_scores: the factor scores for all cells
@@ -124,7 +185,8 @@ def plot_factor_scatter(factor_scores, x_i, y_i, cell_color_vec, covariate='prot
     plt.scatter(factor_scores[:,x_i], factor_scores[:,y_i], c=cell_color_vec, s=1) 
     plt.xlabel('F'+str(x_i+1))
     plt.ylabel('F'+str(y_i+1))
-    plt.legend(handles=plt_legend_dict[covariate])
+    if covariate:
+        plt.legend(handles=plt_legend_dict[covariate])
     plt.title(title)
     plt.show()
 

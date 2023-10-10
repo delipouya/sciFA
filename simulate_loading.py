@@ -13,8 +13,8 @@ from numpy.random import multivariate_normal
 # Simulate data with 3 factors and 10 variables
 np.random.seed(123)
 n = 1000  # Number of observations
-p = 70   # Number of variables - genes
-factors = 4  # Number of factors
+p = 100   # Number of variables - genes
+factors = 5  # Number of factors
 
 # Create a random correlation matrix with 3 factors
 loading_matrix = np.random.randn(p, factors)
