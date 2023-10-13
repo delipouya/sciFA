@@ -2,6 +2,7 @@ library(reshape2)
 library(ggplot2)
 ### import the results from the simulation (simulation_fc_multi.py) and visualize the results
 df = read.csv('~/sciFA/metric_overlap_corr_df_sim20.csv')
+df = read.csv('~/sciFA/metric_overlap_corr_df_sim20_v2.csv')
 df = data.frame(t(df))
 colnames(df) = df[1,]
 df = df[-1,]

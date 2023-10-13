@@ -29,7 +29,7 @@ np.random.seed(0)
 # https://github.com/statsmodels/statsmodels/blob/main/statsmodels/genmod/families/family.py
 
 
-data_file_path = '/home/delaram/scLMM/input_data_designMat/inputdata_rat_set1_countData_2.h5ad'
+data_file_path = './Data/inputdata_rat_set1_countData_2.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_strain, y_cluster = fproc.get_metadata_ratLiver(data)

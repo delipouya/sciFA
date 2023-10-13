@@ -303,13 +303,13 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics,
     factor_metrics: the list of factor metric names
     '''
     sns.set(font_scale=1.4)
-    plt.figure(figsize=(27,15))
+    plt.figure(figsize=(all_metrics_scaled.shape[1]+3,15))
     #all_metrics_np = all_metrics_df.T.to_numpy()
     all_metrics_np = all_metrics_scaled.T
     
     ### remove numbers from heatmap cells
 
-    g = sns.clustermap(all_metrics_np, cmap='YlGnBu', figsize=(28, 20),  #viridis, coolwarm
+    g = sns.clustermap(all_metrics_np, cmap='YlGnBu', figsize=(28, all_metrics_scaled.shape[1]),  #viridis, coolwarm
                             linewidths=.5, linecolor='white',
                             col_cluster=False, row_cluster=True) # annot=False, fmt='.4g'
     plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
@@ -330,11 +330,20 @@ def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr"):
     plot the score of all the factors for all the covariate levels
     all_factors_df: a dataframe of a score for all the factors for all the covariate levels
     '''
-    fig, ax = plt.subplots(figsize=(20,5))
+    fig, ax = plt.subplots(figsize=(24,5))
     ax = sns.heatmap(all_factors_df, cmap=color, linewidths=.5, annot=False)
     ax.set_title(title)
     ax.set_xlabel('Factors')
     ax.set_ylabel('Covariate level')
+    ### increase the fontsize of the x and y ticks axis labels
+    ax.xaxis.label.set_size(19)
+    ax.yaxis.label.set_size(20)
+    ### increase the fontsize of the x and y ticks
+    ax.tick_params(axis='x', labelsize=20)
+    ax.tick_params(axis='y', labelsize=20)
+    ### set title fontsize
+    ax.title.set_size(22)
+
     ## add F1, F2, ... to the x-axis ticks
     x_axis_label = ['F'+str(i) for i in range(1, all_factors_df.shape[1]+1)]
     ax.set_xticklabels(x_axis_label, rotation=45, ha="right",)
