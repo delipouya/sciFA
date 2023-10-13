@@ -64,6 +64,15 @@ def get_metadata_ratLiver(data) -> tuple:
     return y_sample, y_strain, y_cluster
 
 
+def get_metadata_humanLiver(data) -> tuple:
+    """Return the metadata of the healthy human liver dataset, including sample, cell type information.
+    data: AnnData object
+    """
+    y_sample = data.obs['sample'].squeeze()
+    y_cell_type = data.obs['cell_type'].squeeze()
+    return y_sample, y_cell_type
+
+
 
 def get_data_array(data) -> np.array:
     """Return the data matrix as a numpy array, and the number of cells and genes.

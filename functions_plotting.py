@@ -71,6 +71,27 @@ def get_colors_dict_ratLiver(y_sample, y_strain,y_cluster):
 
 
 
+def get_colors_dict_humanLiver(y_sample, y_cell_type):
+    '''
+    generate a dictionary of colors for each cell in the rat liver dataset
+    y_sample: the sample for each cell
+    y_strain: the strain for each cell
+    y_cluster: the cluster for each cell
+    '''
+
+    ### make a dictionary of colors for each sample in y_sample
+    my_color = {'P1TLH': 'red','P3TLH': 'orange', 'P2TLH': 'blue', 'P5TLH': 'purple','P4TLH': 'green'}
+    sample_color = [my_color[y_sample[i]] for i in range(len(y_sample))]
+
+    ### make a dictionary of colors for each 16 cluster in y_cluster. use np.unique(y_cluster)
+    ### generate 16 colors using the following code:
+    my_color = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                        for i in np.unique(y_cell_type)}
+    cell_type_color = [my_color[y_cell_type[i]] for i in range(len(y_cell_type))]
+
+    return {'sample': sample_color, 'cell_type':cell_type_color}
+
+
 def plot_pca(pca_scores, 
                    num_components_to_plot, 
                    cell_color_vec, 
@@ -303,50 +324,54 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics,
     factor_metrics: the list of factor metric names
     '''
     sns.set(font_scale=1.4)
-    plt.figure(figsize=(all_metrics_scaled.shape[1]+3,15))
+    plt.figure(figsize=(all_metrics_scaled.shape[1]+2, all_metrics_scaled.shape[0]+2))
     #all_metrics_np = all_metrics_df.T.to_numpy()
-    all_metrics_np = all_metrics_scaled.T
     
     ### remove numbers from heatmap cells
+    all_metrics_scaled_df = pd.DataFrame(all_metrics_scaled)
+    all_metrics_scaled_df.columns = factor_metrics
 
-    g = sns.clustermap(all_metrics_np, cmap='YlGnBu', figsize=(28, all_metrics_scaled.shape[1]),  #viridis, coolwarm
-                            linewidths=.5, linecolor='white',
-                            col_cluster=False, row_cluster=True) # annot=False, fmt='.4g'
+
+    g = sns.clustermap(all_metrics_scaled_df.T, cmap='YlGnBu', figsize=(all_metrics_scaled.shape[0]+3, all_metrics_scaled.shape[1]+2),  #viridis, coolwarm
+                            linewidths=.5, linecolor='white', annot=True, fmt='.2f', cbar=True,
+                            col_cluster=False, row_cluster=False) # annot=False, fmt='.4g'
     plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
     plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = 30)
     ## add F1, F2, ... to the heatmap x axis
 
-    g.ax_heatmap.set_xticklabels(['F'+str(i+1) for i in range(all_metrics_np.shape[1])])
-
+    g.ax_heatmap.set_xticklabels(['F'+str(i+1) for i in range(all_metrics_scaled_df.T.shape[1])])
     g.ax_heatmap.set_yticklabels(factor_metrics)
 
     plt.show()
 
 
 
-def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr"):
+def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",
+                               x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=21, y_axis_tick_fontsize=24):
     '''
     colors: SV: 'RdPu', AUC/: 'YlOrBr', wilcoxon: rocket_r, featureImp: coolwarm
     plot the score of all the factors for all the covariate levels
     all_factors_df: a dataframe of a score for all the factors for all the covariate levels
     '''
-    fig, ax = plt.subplots(figsize=(24,5))
+    fig, ax = plt.subplots(figsize=(all_factors_df.shape[0],(all_factors_df.shape[1])/1.8))
     ax = sns.heatmap(all_factors_df, cmap=color, linewidths=.5, annot=False)
     ax.set_title(title)
     ax.set_xlabel('Factors')
     ax.set_ylabel('Covariate level')
     ### increase the fontsize of the x and y ticks axis labels
-    ax.xaxis.label.set_size(19)
-    ax.yaxis.label.set_size(20)
+    ax.xaxis.label.set_size(x_axis_fontsize)
+    ax.yaxis.label.set_size(y_axis_fontsize)
     ### increase the fontsize of the x and y ticks
-    ax.tick_params(axis='x', labelsize=20)
-    ax.tick_params(axis='y', labelsize=20)
+    ax.tick_params(axis='x', labelsize=x_axis_tick_fontsize)
+    ax.tick_params(axis='y', labelsize=y_axis_tick_fontsize)
     ### set title fontsize
-    ax.title.set_size(22)
+    ax.title.set_size(title_fontsize)
 
     ## add F1, F2, ... to the x-axis ticks
     x_axis_label = ['F'+str(i) for i in range(1, all_factors_df.shape[1]+1)]
     ax.set_xticklabels(x_axis_label, rotation=45, ha="right",)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     plt.show()
 
 

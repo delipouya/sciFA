@@ -318,7 +318,19 @@ def get_likelihood_ratio_test(a_factor, num_groups=2) -> float:
     log_likelihood_normal = np.sum(gmm.score_samples(a_factor.reshape(-1,1)))
 
     ### calculate the likelihood of the mixture normal model
-    log_likelihood_mixture = np.sum(np.log(gmm.predict_proba(a_factor.reshape(-1,1))))
+
+    gmm_predict = gmm.predict_proba(a_factor.reshape(-1,1))
+    
+    ### if the gmm_predict is None, set the log_likelihood_mixture to zero
+    if gmm_predict is None:
+        log_likelihood_mixture = 0
+    ### if any element is equal to zero add a small number to it to avoid log(0)
+    elif np.any(gmm_predict == 0):
+        gmm_predict[gmm_predict == 0] = 1e-10
+        log_likelihood_mixture = np.sum(np.log(gmm_predict))
+
+    else:
+        log_likelihood_mixture = np.sum(np.log(gmm_predict))
 
     ### calculate the likelihood ratio test
     #lrt = -2*(log_likelihood_normal - log_likelihood_mixture)

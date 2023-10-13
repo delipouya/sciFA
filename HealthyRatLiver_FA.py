@@ -146,10 +146,6 @@ fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
 
-
-####################################
-##### Factor metrics #####
-####################################
 #### AUC score
 #### calculate the AUC of all the factors for all the covariate levels
 AUC_all_factors_df_strain, wilcoxon_pvalue_all_factors_df_strain = fmet.get_AUC_all_factors_df(factor_scores, y_strain)
@@ -161,6 +157,14 @@ wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_strai
 fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
                                  title='F-C Match: AUC scores', color='inferno') #YlOrBr
 
+
+
+
+
+
+####################################
+##### Factor metrics #####
+####################################
 ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
 ## list of color maps: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
 
