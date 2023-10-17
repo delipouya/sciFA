@@ -30,6 +30,7 @@ data.obs['sample'] = y_sample.to_numpy()
 y, num_cells, num_genes = fproc.get_data_array(data)
 y = fproc.get_sub_data(y)
 colors_dict_scMix = fplot.get_colors_dict_scMix(y_protocol, y_cell_line)
+genes = data.var_names
 
 
 ####################################
@@ -131,6 +132,12 @@ pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['
 fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_scMix['protocol'])
 fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_scMix['cell_line'])
 
+
+
+#### plot the loadings
+plot_factor_loading(varimax_loading, genes, 0, 2, fontsize=10, 
+                    num_gene_labels=6,title='Scatter plot of the loading vectors', 
+                    label_x=True, label_y=True)
 
 
 ####################################

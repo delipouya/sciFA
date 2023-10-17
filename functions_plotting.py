@@ -213,6 +213,60 @@ def plot_factor_scatter(factor_scores, x_i, y_i, cell_color_vec, covariate=None,
 
 
 
+
+def plot_factor_loading(factor_loading, genes, x_i, y_i, fontsize=6, num_gene_labels=5,
+                        title='Scatter plot of the loading vectors', label_x=True, label_y=True) -> None:
+      '''
+      plot the scatter plot of two factors
+      factor_loading: the factor loading matrix
+      genes: the gene names
+      x_i: the index of the x-axis factor
+      y_i: the index of the y-axis factor
+      fontsize: the fontsize of the gene names
+      title: the title of the plot
+      label_x: whether to label the x-axis with the gene names
+      label_y: whether to label the y-axis
+      '''
+
+      plt.figure(figsize=(10, 10))
+      plt.scatter(factor_loading[:,x_i], factor_loading[:,y_i], s=10)
+      plt.xlabel('F'+str(x_i+1))
+      plt.ylabel('F'+str(y_i+1))
+      
+      if label_y:
+            ### identify the top 5 genes with the highest loading for the y-axis factor
+            top_genes_y = np.argsort(factor_loading[:,y_i])[::-1][0:num_gene_labels]
+            ### identify the gene nnames of the top 5 genes
+            top_genes_y_names = genes[top_genes_y]
+
+            bottom_genes_y = np.argsort(factor_loading[:,y_i])[0:num_gene_labels]
+            ### identify the gene nnames of the top 5 genes
+            bottom_genes_y_names = genes[bottom_genes_y]
+                  ### add the top 5 genes with the highest loading for the y-axis factor to the plot make font size smaller
+            for i, txt in enumerate(top_genes_y_names):
+                  plt.annotate(txt, (factor_loading[top_genes_y[i],x_i], factor_loading[top_genes_y[i],y_i]), fontsize=fontsize)
+            ### add the top 5 genes with the least loading for the y-axis factor to the plot make font size smaller
+            for i, txt in enumerate(bottom_genes_y_names):
+                  plt.annotate(txt, (factor_loading[bottom_genes_y[i],x_i], factor_loading[bottom_genes_y[i],y_i]), fontsize=fontsize)
+      
+      
+      if label_x:
+            top_genes_x = np.argsort(factor_loading[:,x_i])[::-1][0:num_gene_labels]
+            top_genes_x_names = genes[top_genes_x]
+            bottom_genes_x = np.argsort(factor_loading[:,x_i])[0:num_gene_labels]
+            bottom_genes_x_names = genes[bottom_genes_x]
+            for i, txt in enumerate(top_genes_x_names):
+                  plt.annotate(txt, (factor_loading[top_genes_x[i],x_i], factor_loading[top_genes_x[i],y_i]), fontsize=fontsize)
+            for i, txt in enumerate(bottom_genes_x_names):
+                  plt.annotate(txt, (factor_loading[bottom_genes_x[i],x_i], factor_loading[bottom_genes_x[i],y_i]), fontsize=fontsize)
+      
+      plt.title(title)
+      plt.show()
+
+            
+
+
+
 def plot_metric_correlation_clustermap(all_metrics_df) -> None:
       '''
       plot correlation plot with columnns sorted by the dendrogram using seaborn clustermap
@@ -523,5 +577,6 @@ def plot_histogram(values, xlabel='scores',title='', bins=100,threshold=None) ->
       plt.ylabel('Frequency')
       plt.title(title)
       plt.show()
+
 
 
