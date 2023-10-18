@@ -23,6 +23,7 @@ data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_cell_type = fproc.get_metadata_humanLiver(data)
 y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
+genes = data.var_names
 
 ### randomly subsample the cells to 2000 cells
 sample_size = 2000
@@ -58,8 +59,8 @@ print('y shape: ', y.shape) # (num_cells, num_genes)
 pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=const.num_components))])
 pca_scores = pipeline.fit_transform(y)
 pca = pipeline.named_steps['pca']
-pca_loading = pca.components_
-pca_loading.shape
+pca_loading = pca.components_ 
+pca_loading.shape #(factors, genes)
 
 colors_dict_humanLiver = fplot.get_colors_dict_humanLiver(y_sample, y_cell_type)
 
@@ -70,6 +71,10 @@ fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanLiver['cell_type'
                title='PCA of pearson residuals - reg: library size')
 fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanLiver['sample'])
 
+#### plot the loadings of the factors
+fplot.plot_factor_loading(pca_loading.T, genes, 0, 1, fontsize=10, 
+                    num_gene_labels=2,title='Scatter plot of the loading vectors', 
+                    label_x=True, label_y=True)
 
 ####################################
 #### Matching between factors and covariates ######
@@ -86,6 +91,53 @@ varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['sample'])
 fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['cell_type'])
+
+
+fplot.plot_factor_loading(varimax_loading, genes, 0, 1, fontsize=10, 
+                    num_gene_labels=2,title='Scatter plot of the loading vectors', 
+                    label_x=True, label_y=True)
+
+
+
+
+################################################
+#### make the loading scatter plot with histograms on the sides
+def scatter_hist(x, y, ax, ax_histx, ax_histy):
+    # no labels
+    ax_histx.tick_params(axis="x", labelbottom=False)
+    ax_histy.tick_params(axis="y", labelleft=False)
+
+    # the scatter plot:
+    ax.scatter(x, y, color='black', s=2, alpha=0.5)
+
+    # now determine nice limits by hand:
+    binwidth = 0.009
+    xymax = max(np.max(np.abs(x)), np.max(np.abs(y)))
+    lim = (int(xymax/binwidth) + 1) * binwidth
+
+    bins = np.arange(-lim, lim + binwidth, binwidth)
+    ax_histx.hist(x, bins=bins)
+    ax_histy.hist(y, bins=bins, orientation='horizontal')
+
+x = varimax_loading[:,0]
+y = varimax_loading[:,1]
+# Start with a square Figure.
+fig = plt.figure(figsize=(6, 6))
+# Add a gridspec with two rows and two columns and a ratio of 1 to 4 between
+# the size of the marginal axes and the main axes in both directions.
+# Also adjust the subplot parameters for a square plot.
+gs = fig.add_gridspec(2, 2,  width_ratios=(4, 1), height_ratios=(1, 4),
+                      left=0.1, right=0.9, bottom=0.1, top=0.9,
+                      wspace=0.05, hspace=0.05)
+# Create the Axes.
+ax = fig.add_subplot(gs[1, 0])
+ax_histx = fig.add_subplot(gs[0, 0], sharex=ax)
+ax_histy = fig.add_subplot(gs[1, 1], sharey=ax)
+# Draw the scatter plot and marginals.
+scatter_hist(x, y, ax, ax_histx, ax_histy)
+####################################################################
+
+
 
 ######## Applying promax rotation to the factor scores
 rotation_results_promax = rot.promax_rotation(pca_loading.T)

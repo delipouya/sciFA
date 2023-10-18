@@ -67,7 +67,7 @@ pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=con
 pca_scores = pipeline.fit_transform(y)
 pca = pipeline.named_steps['pca']
 pca_loading = pca.components_
-pca_loading.shape
+pca_loading.shape #(factors, genes)
 
 colors_dict_ratLiver = fplot.get_colors_dict_ratLiver(y_sample, y_strain, y_cluster)
 

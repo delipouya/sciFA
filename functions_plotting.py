@@ -6,7 +6,6 @@ import matplotlib.patches as mpatches
 import seaborn as sns
 import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, linkage
-sns.set(color_codes=True)
 import random
 random.seed(0)
 import constants as const
@@ -22,7 +21,6 @@ plt_legend_cl = [mpatches.Patch(color='springgreen', label='HCC827'),
                         mpatches.Patch(color='orchid', label='H2228')]
 
 plt_legend_dict = {'protocol': plt_legend_protocol, 'cell_line': plt_legend_cl}
-
 
 
 
@@ -282,8 +280,9 @@ def plot_metric_correlation_clustermap(all_metrics_df) -> None:
       
       Z = linkage(corr, 'ward')
       ### plot the correlation matrix with hierarchical clustering
-      
+      #sns.set(color_codes=True)
       sns.set(font_scale=2.5)
+      
       
       g = sns.clustermap(corr, row_linkage=Z, col_linkage=Z, cmap='viridis', figsize=(19, 13),  #viridis, coolwarm
                          linewidths=.5, linecolor='white') # annot=False, fmt='.4g'
@@ -579,4 +578,19 @@ def plot_histogram(values, xlabel='scores',title='', bins=100,threshold=None) ->
       plt.show()
 
 
+
+def plot_violinplot(data_df, title='', xlab='', ylab='values', fontsize=14) -> None:
+    '''
+    draw violin plots of columns of the dataframe in a single plot using seaborn
+    data_df: dataframe with columns as different violin plots
+    title: title of the plot
+    xlab: label for x-axis
+    ylab: label for y-axis
+    '''
+    ax = sns.violinplot(data=data_df, palette="Set3")
+    plt.xticks(rotation=90, fontsize=fontsize)
+    plt.ylabel(ylab, fontsize=fontsize)
+    plt.xlabel(xlab, fontsize=fontsize)
+    plt.title(title, fontsize=fontsize)
+    plt.show()
 

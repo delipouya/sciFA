@@ -40,7 +40,7 @@ pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=con
 pca_scores = pipeline.fit_transform(y)
 pca = pipeline.named_steps['pca']
 pca_loading = pca.components_
-pca_loading.shape
+pca_loading.shape #(factors, genes)
 plt.plot(pca.explained_variance_ratio_)
 fplot.plot_pca(pca_scores, 4, 
                cell_color_vec= colors_dict_scMix['protocol'], 
@@ -54,6 +54,11 @@ fplot.plot_pca(pca_scores, 6,
                title='PCA of gene expression data', legend_handles=True,
                plt_legend_dict=fplot.plt_legend_dict)
 
+
+#### plot the loadings of the factors
+fplot.plot_factor_loading(pca_loading.T, genes, 0, 2, fontsize=10, 
+                    num_gene_labels=2,title='Scatter plot of the loading vectors', 
+                    label_x=True, label_y=True)
 
 ####################################
 #### fit GLM to each gene ######
@@ -134,8 +139,8 @@ fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_scMix['cell_lin
 
 
 
-#### plot the loadings
-plot_factor_loading(varimax_loading, genes, 0, 2, fontsize=10, 
+#### plot the loadings of the factors
+fplot.plot_factor_loading(varimax_loading, genes, 0, 2, fontsize=10, 
                     num_gene_labels=6,title='Scatter plot of the loading vectors', 
                     label_x=True, label_y=True)
 
