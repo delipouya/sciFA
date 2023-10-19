@@ -191,11 +191,7 @@ for method in mean_importance_df_dict.keys():
 fplot.plot_violinplot(pd.DataFrame.from_dict(mean_importance_mat_dict), 
                       fontsize=14,ylab='mean importance', title='mean importance (thresholded)')
 
-
-
 #### repeat the procedure for AUC scores
-
-
 ####################################
 #### AUC score
 ####################################
@@ -216,9 +212,6 @@ for method in scores_mat_dict.keys():
     threshold = fmatch.get_otsu_threshold(AUC_all_factors_df.values.flatten())
     threshold_dict_auc[method] = threshold
 
-
-
-
 ### convert dictionaty of dataframe to dictionary of numpy arrays
 auc_mat_dict = {}
 for method in AUC_df_dict.keys():
@@ -229,10 +222,7 @@ for method in AUC_df_dict.keys():
     auc_flat[auc_flat<threshold_dict_auc[method]] = 'NaN'
     auc_mat_dict[method] = auc_flat
 
-
-fplot.plot_violinplot(pd.DataFrame.from_dict(auc_mat_dict), 
-                      fontsize=14,ylab='AUC', title='AUC scores')
-
-
+fplot.plot_violinplot(pd.DataFrame.from_dict(auc_mat_dict),
+                       fontsize=14, ylab='AUC', title='AUC scores')
 fplot.plot_violinplot(pd.DataFrame.from_dict(auc_mat_dict), 
                       fontsize=14,ylab='AUC', title='AUC scores(Thresholded)')
