@@ -16,6 +16,13 @@ class(Kang18_8vs8)
 Kang18_8vs8_seur = as.Seurat(Kang18_8vs8, counts = "counts", data = "counts")
 GetAssayData(Kang18_8vs8_seur)
 dim(Kang18_8vs8_seur)
+Kang18_8vs8_seur$stim = as.character(Kang18_8vs8_seur$stim)
+Kang18_8vs8_seur$ind = as.character(Kang18_8vs8_seur$ind)
+Kang18_8vs8_seur$cluster = as.character(Kang18_8vs8_seur$cluster)
+Kang18_8vs8_seur$cell = as.character(Kang18_8vs8_seur$cell)
+Kang18_8vs8_seur$multiplets = as.character(Kang18_8vs8_seur$multiplets)
+
+
 SaveH5Seurat(Kang18_8vs8_seur, filename = "~/sciFA/Data/PBMC_Lupus_Kang8vs8_data.h5Seurat")
 Convert("~/sciFA/Data/PBMC_Lupus_Kang8vs8_data.h5Seurat", dest = "h5ad")
 

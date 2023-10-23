@@ -20,12 +20,24 @@ import constants as const
 ## SET SEED
 np.random.seed(0)
 
-data_file_path = './Data/HumanLiverAtlas.h5ad'
+data_file_path = './Data/PBMC_Lupus_Kang8vs8_data.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
-y_sample, y_cell_type = fproc.get_metadata_humanLiver(data)
+
+y_sample, y_stim, y_cell_type, y_cluster  = fproc.get_metadata_humanPBMC(data)
 y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
 genes = data.var_names
+
+'''
+### check which cells have y_cell_type as NA and remove them from data
+NA_index = np.where(y_cell_type == 'NA')[0]
+y = np.delete(y, NA_index, axis=0)
+y_sample = np.delete(y_sample, NA_index, axis=0)
+y_stim = np.delete(y_stim, NA_index, axis=0)
+y_cell_type = np.delete(y_cell_type, NA_index, axis=0)
+### remove cells that have NA_index from data
+data = data[~NA_index,:]
+'''
 
 ### randomly subsample the cells to 2000 cells
 sample_size = 2000
@@ -33,12 +45,13 @@ subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
 y = y[subsample_index,:]
 data = data[subsample_index,:]
 y_sample = y_sample[subsample_index]
+y_stim = y_stim[subsample_index]
 y_cell_type = y_cell_type[subsample_index]
 
 ### get the indices of the highly variable genes
 
 #### design matrix - library size only
-x = fproc.get_lib_designmat(data, lib_size='total_counts')
+x = fproc.get_lib_designmat(data, lib_size='nCount_originalexp')
 
 #### design matrix - library size and sample
 x_sample = fproc.get_design_mat('sample', data) 
@@ -64,14 +77,14 @@ pca = pipeline.named_steps['pca']
 pca_loading = pca.components_ 
 pca_loading.shape #(factors, genes)
 
-colors_dict_humanLiver = fplot.get_colors_dict_humanLiver(y_sample, y_cell_type)
+colors_dict_humanPBMC = fplot.get_colors_dict_humanPBMC(y_sample, y_stim, y_cell_type)
 
 plt.plot(pca.explained_variance_ratio_)
 
 ### make a dictionary of colors for each sample in y_sample
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanLiver['cell_type'], 
-               title='PCA of pearson residuals - reg: library size')
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanLiver['sample'])
+fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['cell_type'])
+fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['stim'])
+fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['sample'])
 
 #### plot the loadings of the factors
 fplot.plot_factor_loading(pca_loading.T, genes, 0, 1, fontsize=10, 
@@ -91,8 +104,10 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['sample'])
-fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['cell_type'])
+fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanPBMC['sample'])
+fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanPBMC['cell_type'])
+fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanPBMC['stim'])
+
 
 
 fplot.plot_factor_loading(varimax_loading, genes, 0, 1, fontsize=10, 
@@ -145,17 +160,18 @@ scatter_hist(x, y, ax, ax_histx, ax_histy)
 rotation_results_promax = rot.promax_rotation(pca_loading.T)
 promax_loading = rotation_results_promax['rotloading']
 pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['rotmat'])
-fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanLiver['strain'])
-fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanLiver['cluster'])
+fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanPBMC['stim'])
+fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanPBMC['cell_type'])
 
 
-########################
-factor_loading = rotation_results_varimax['rotloading']
-factor_scores = pca_scores_varimax
 ########################
 factor_loading = pca_loading
 factor_scores = pca_scores
 ########################
+
+########################
+factor_loading = rotation_results_varimax['rotloading']
+factor_scores = pca_scores_varimax
 
 ### find unique covariate levels
 y_cell_type_unique = np.unique(y_cell_type)
@@ -166,10 +182,11 @@ y_cell_type_unique = np.unique(y_cell_type)
 
 ### calculate the mean importance of each covariate level
 mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores)
+mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_scores)
 mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores)
 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
-mean_importance_df = pd.concat([mean_importance_df_sample, mean_importance_df_cell_type], axis=0)
+mean_importance_df = pd.concat([mean_importance_df_stim, mean_importance_df_sample, mean_importance_df_cell_type], axis=0)
 mean_importance_df.shape
 fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
 ## getting rownnammes of the mean_importance_df

@@ -1,4 +1,6 @@
 
+import sys
+sys.path.append('./Code/')
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -51,6 +53,8 @@ def get_importance_df(factor_scores, a_binary_cov) -> pd.DataFrame:
     return importance_df
 
 
+
+### TODO: evaluate which normalization approach would be better
 def get_mean_importance_level(importance_df_a_level) -> np.array:
     ''' 
     calculate the mean importance of one level of a given covariate and returns a vector of length of number of factors

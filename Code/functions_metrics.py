@@ -1,3 +1,5 @@
+import sys
+sys.path.append('./Code/')
 import numpy as np
 import pandas as pd
 import sklearn.cluster as cluster

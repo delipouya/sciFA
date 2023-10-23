@@ -74,6 +74,31 @@ def get_metadata_humanLiver(data) -> tuple:
 
 
 
+def get_metadata_humanKidney(data) -> tuple:
+    """Return the metadata of the healthy human kidney dataset, including sex, sampleID, cell type information.
+    data: AnnData object
+    """
+    y_sample = data.obs['sampleID'].squeeze()
+    y_cell_type = data.obs['Cell_Types_Broad'].squeeze()
+    y_cell_type_sub = data.obs['Cell_Types_Subclusters'].squeeze()
+    y_sex = data.obs['sex'].squeeze()
+
+    return y_sample, y_sex, y_cell_type, y_cell_type_sub 
+
+
+
+def get_metadata_humanPBMC(data) -> tuple:
+    """Return the metadata of the stimulated human pbmc dataset, including sample, stimulation, cluster and cell type information.
+    data: AnnData object
+    """
+    y_sample = data.obs['ind'].squeeze()
+    y_stim = data.obs['stim'].squeeze()
+    y_cell_type = data.obs['cell'].squeeze()
+    y_cluster = data.obs['cluster'].squeeze()
+
+    return y_sample, y_stim, y_cell_type, y_cluster 
+
+
 def get_data_array(data) -> np.array:
     """Return the data matrix as a numpy array, and the number of cells and genes.
     data: AnnData object

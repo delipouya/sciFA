@@ -8,7 +8,6 @@ import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, linkage
 import random
 random.seed(0)
-import constants as const
 
 
 plt_legend_protocol = [mpatches.Patch(color='palegreen', label='sc_10X'),
@@ -88,6 +87,59 @@ def get_colors_dict_humanLiver(y_sample, y_cell_type):
     cell_type_color = [my_color[y_cell_type[i]] for i in range(len(y_cell_type))]
 
     return {'sample': sample_color, 'cell_type':cell_type_color}
+
+
+### ToDo: needs to be refined
+def get_colors_dict_humanKidney(y_sample, y_sex, y_cell_type):
+    '''
+    generate a dictionary of colors for each cell in the rat liver dataset
+    y_sample: the sample for each cell
+    y_sex: the sex info for each cell
+    y_cell_type: the cluster for each cell
+    '''
+
+    ### make a dictionary of colors for each sample in y_sample
+    my_color = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                        for i in np.unique(y_sample)}
+    sample_color = [my_color[y_sample[i]] for i in range(len(y_sample))]
+
+    ### make a dictionary of colors for each strain in y_strain
+    my_color = {'Male': 'red', 'Female': 'blue'}
+    sex_color = [my_color[y_sex[i]] for i in range(len(y_sex))]
+
+    ### make a dictionary of colors for each 16 cluster in y_cluster. use np.unique(y_cluster)
+    ### generate 16 colors using the following code:
+    my_color = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                        for i in np.unique(y_cell_type)}
+    cell_type_color = [my_color[y_cell_type[i]] for i in range(len(y_cell_type))]
+
+    return {'sample': sample_color, 'sex':sex_color, 'cell_type':cell_type_color}
+
+
+
+def get_colors_dict_humanPBMC(y_sample, y_stim, y_cell_type):
+     '''
+     generate a dictionary of colors for each cell in the rat liver dataset
+     y_sample: the sample for each cell
+     y_sex: the sex info for each cell
+     y_cell_type: the cluster for each cell
+     '''
+     ### make a dictionary of colors for each sample in y_sample
+     my_color = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                        for i in np.unique(y_sample)}
+     sample_color = [my_color[y_sample[i]] for i in range(len(y_sample))]
+
+     ### make a dictionary of colors for each strain in y_strain
+     my_color = {'stim': 'red', 'ctrl': 'blue'}
+     stim_color = [my_color[y_stim[i]] for i in range(len(y_stim))]
+
+     ### make a dictionary of colors for each 16 cluster in y_cluster. use np.unique(y_cluster)
+     ### generate 16 colors using the following code:
+     my_color = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                        for i in np.unique(y_cell_type)}
+     cell_type_color = [my_color[y_cell_type[i]] for i in range(len(y_cell_type))]
+
+     return {'sample': sample_color, 'stim':stim_color, 'cell_type':cell_type_color}
 
 
 def plot_pca(pca_scores, 
@@ -407,7 +459,7 @@ def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",
     plot the score of all the factors for all the covariate levels
     all_factors_df: a dataframe of a score for all the factors for all the covariate levels
     '''
-    fig, ax = plt.subplots(figsize=(all_factors_df.shape[0],(all_factors_df.shape[1])/1.8))
+    fig, ax = plt.subplots(figsize=(all_factors_df.shape[0]/0.4,(all_factors_df.shape[1]/2))) ## x axis, y axis
     ax = sns.heatmap(all_factors_df, cmap=color, linewidths=.5, annot=False)
     ax.set_title(title)
     ax.set_xlabel('Factors')
@@ -426,7 +478,6 @@ def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",
     ax.set_xticklabels(x_axis_label, rotation=45, ha="right",)
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     plt.show()
-
 
 def plot_all_factors_levels(SV_all_factors, covariate_levels, title='', color='RdPu'):
     ''' 
