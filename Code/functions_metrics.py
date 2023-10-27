@@ -48,33 +48,68 @@ def get_all_factors_specificity(mean_importance_df) -> list:
 
 
 
-def get_factor_entropy(a_factor) -> float:
+#define function to calculate Gini coefficient
+def get_factor_gini(x):
     '''
-    calculate the entropy of a factor
+    calculate the gini score of a factor
+    x: numpy array of the factor match scores based on feature importance
+    gini=0 means perfect equality - all the covariate levels are matched equally with the factor - not specific
+    gini=1 means perfect inequality - the factor is only matched with one covariate level - very specific
+    '''
+    total = 0
+    for i, xi in enumerate(x[:-1], 1):
+        total += np.sum(np.abs(xi - x[i:]))
+    return total / (len(x)**2 * np.mean(x))
+
+
+def get_all_factors_gini(mean_importance_df) -> list:
+    '''
+    calculate the gini score of all the factors based on the mean importance matrix
+    mean_importance_df: dataframe of mean importance of each factor for each covariate level
+    '''
+    factor_gini_all = []
+    for factor_i in range(mean_importance_df.shape[1]):
+        ### get the importance of the factor for each covariate level
+        gini_factor = get_factor_gini(mean_importance_df.iloc[:, factor_i])
+        factor_gini_all.append(gini_factor)
+    return factor_gini_all
+
+
+
+
+def get_factor_rev_entropy(a_factor) -> float:
+    '''
+    calculate the 1 - entropy of a factor 
+    zero entropy means the factor is only macthed with one covariate. entropy=1 means the factor is matched with all the covariates equally
+    entropy=0 means high specificity of the factor
+
+    rev_entropy = 1 - entropy: higher rev_entropy means higher specificity
     a_factor: numpy array of the factor values
     '''
     ### caculate number of zeros in pk
-    num_zeros = np.count_nonzero(a_factor == 0)
-    #print('num_zeros: ', num_zeros)
+    # num_zeros = np.count_nonzero(a_factor == 0)
+    
     ### shift all the values to be positive
     a_factor = a_factor - np.min(a_factor) + 1e-10
     ### devide all the score by the max value
     a_factor = a_factor / np.max(a_factor)
     #plt.hist(a_factor, bins=100)
     H = -sum(a_factor * np.log(a_factor))
-    return H
+    return 1 - H
 
 
-def get_factor_entropy_all(factor_scores) -> list:
-    ''' calculate the entropy of all the factors
-    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
+def get_factor_rev_entropy_all(mean_importance_df) -> list:
     '''
-    H_all = []
-    for i in range(factor_scores.shape[1]):
-        a_factor = factor_scores[:,i]
-        H = get_factor_entropy(a_factor)
-        H_all.append(H)
-    return H_all
+    calculate the 1 - entropy of all the factors based on the mean importance matrix
+    mean_importance_df: dataframe of mean importance of each factor for each covariate level
+    '''
+    H_rev_all = []
+    for factor_i in range(mean_importance_df.shape[1]):
+        ### get the importance of the factor for each covariate level
+        H_rev = get_factor_rev_entropy(mean_importance_df.iloc[:, factor_i])
+        H_rev_all.append(H_rev)
+    return H_rev_all
+
 
 
 def get_factor_variance_all(factor_scores) -> list:
@@ -132,7 +167,9 @@ def get_a_factor_ASV(a_factor, covariate_vector, mean_type='geometric') -> float
     print('mean type: ', mean_type)
     ### calculate the geometric mean of the scaled variance for all levels of the covariate
     if mean_type == 'geometric':
-        RSV = np.exp(np.mean(np.log(scaled_variance_all)))
+        #RSV = np.exp(np.mean(np.log(scaled_variance_all))) 
+        RSV = np.exp(np.log(scaled_variance_all).mean())
+        
 
     elif mean_type == 'arithmetic':
         ### sum of the scaled variance for all levels of the covariate / number of levels in the covariate

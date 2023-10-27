@@ -30,7 +30,7 @@ y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
 genes = data.var_names
 
 ### randomly subsample the cells to 2000 cells
-sample_size = 2000
+sample_size = 3000
 subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
 y = y[subsample_index,:]
 data = data[subsample_index,:]
@@ -44,9 +44,14 @@ y_cell_type = y_cell_type[subsample_index]
 x = fproc.get_lib_designmat(data, lib_size='nCount_RNA')
 
 #### design matrix - library size and sample
-x_sample = fproc.get_design_mat('sample', data) 
-x = np.column_stack((data.obs.total_counts, x_sample)) 
+x_sample = fproc.get_design_mat('sampleID', data) 
+x = np.column_stack((data.obs.nCount_RNA, x_sample)) 
 x = sm.add_constant(x) ## adding the intercept
+
+
+#### design matrix - sample only
+x_sample = fproc.get_design_mat('sampleID', data) 
+x = sm.add_constant(x_sample) ## adding the intercept
 
 ### fit GLM to each gene
 glm_fit_dict = fglm.fit_poisson_GLM(y, x)
@@ -67,17 +72,24 @@ pca = pipeline.named_steps['pca']
 pca_loading = pca.components_ 
 pca_loading.shape #(factors, genes)
 
-colors_dict_humanKidney = fplot.get_colors_dict_humanLiver(y_sample, y_sex, y_cell_type)
+colors_dict_humanKidney = fplot.get_colors_dict_humanKidney(y_sample, y_sex, y_cell_type)
+
+plt_legend_celltype = fplot.get_legend_patch(y_cell_type, colors_dict_humanKidney['cell_type'] )
+plt_legend_sex = fplot.get_legend_patch(y_sex, colors_dict_humanKidney['sex'] )
+plt_legend_sample = fplot.get_legend_patch(y_sample, colors_dict_humanKidney['sample'] )
 
 plt.plot(pca.explained_variance_ratio_)
 
 ### make a dictionary of colors for each sample in y_sample
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanKidney['cell_type'])
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanKidney['sex'])
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanKidney['sample'])
+fplot.plot_pca(pca_scores, 11, cell_color_vec= colors_dict_humanKidney['cell_type'], 
+               legend_handles=True,plt_legend_list=plt_legend_celltype)
+fplot.plot_pca(pca_scores, 11, cell_color_vec= colors_dict_humanKidney['sex'],
+               legend_handles=True,plt_legend_list=plt_legend_sex)
+fplot.plot_pca(pca_scores, 11, cell_color_vec= colors_dict_humanKidney['sample'],
+               legend_handles=True,plt_legend_list=plt_legend_sample)
 
 #### plot the loadings of the factors
-fplot.plot_factor_loading(pca_loading.T, genes, 0, 1, fontsize=10, 
+fplot.plot_factor_loading(pca_loading.T, genes, 0, 10, fontsize=10, 
                     num_gene_labels=2,title='Scatter plot of the loading vectors', 
                     label_x=True, label_y=True)
 
@@ -94,9 +106,12 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['sample'])
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['cell_type'])
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['sex'])
+fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['cell_type'],
+               legend_handles=True,plt_legend_list=plt_legend_celltype)
+fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['sex'],
+               legend_handles=True,plt_legend_list=plt_legend_sex)
+fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['sample'],
+               legend_handles=True,plt_legend_list=plt_legend_sample)
 
 
 
@@ -155,13 +170,12 @@ fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanKidney['cl
 
 
 ########################
-factor_loading = rotation_results_varimax['rotloading']
-factor_scores = pca_scores_varimax
-########################
 factor_loading = pca_loading
 factor_scores = pca_scores
 ########################
-
+factor_loading = rotation_results_varimax['rotloading']
+factor_scores = pca_scores_varimax
+########################
 ### find unique covariate levels
 y_cell_type_unique = np.unique(y_cell_type)
 
@@ -176,6 +190,9 @@ mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type
 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
 mean_importance_df = pd.concat([mean_importance_df_sex, mean_importance_df_cell_type], axis=0)
+### remove the rows with NaN
+mean_importance_df = mean_importance_df.dropna(axis=0)
+
 mean_importance_df.shape
 fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
 ## getting rownnammes of the mean_importance_df
@@ -202,11 +219,10 @@ fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_c
 #### AUC score
 ####################################
 #### calculate the AUC of all the factors for all the covariate levels
-AUC_all_factors_df_sample, wilcoxon_pvalue_all_factors_df_sample = fmet.get_AUC_all_factors_df(factor_scores, y_sample)
+AUC_all_factors_df_sex, wilcoxon_pvalue_all_factors_df_sex = fmet.get_AUC_all_factors_df(factor_scores, y_sex)
 AUC_all_factors_df_cell_type, wilcoxon_pvalue_all_factors_df_cell_type = fmet.get_AUC_all_factors_df(factor_scores, y_cell_type)
 
-AUC_all_factors_df = pd.concat([AUC_all_factors_df_sample, AUC_all_factors_df_cell_type], axis=0)
-wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_sample, wilcoxon_pvalue_all_factors_df_cell_type], axis=0)
+AUC_all_factors_df = pd.concat([AUC_all_factors_df_sex, AUC_all_factors_df_cell_type], axis=0)
 
 fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
                                  title='F-C Match: AUC scores', color='coolwarm') #'YlOrBr'

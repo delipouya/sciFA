@@ -89,6 +89,7 @@ cor_matrix <- loading_matrix %*% t(loading_matrix) + diag(error_variances)
 
 # Generate data based on the correlation matrix
 simulated_data <- rmvnorm(n, mean = rep(0, p), sigma = cor_matrix)
+dim(simulated_data) ## Number of observations * number of variables
 
 # Factor analysis with rotations
 fa_varimax <- fa(simulated_data, nfactors = factors, rotate = "varimax")

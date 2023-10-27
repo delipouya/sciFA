@@ -48,13 +48,13 @@ fplot.plot_pca(pca_scores, 4,
                cell_color_vec= colors_dict_scMix['protocol'], 
                covariate='protocol',
                title='PCA of gene expression data', legend_handles=True,
-               plt_legend_dict=fplot.plt_legend_dict)
+               plt_legend_list=fplot.plt_legend_dict['protocol'])
 
 fplot.plot_pca(pca_scores, 6, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
                covariate='cell_line',
                title='PCA of gene expression data', legend_handles=True,
-               plt_legend_dict=fplot.plt_legend_dict)
+               plt_legend_list=fplot.plt_legend_dict['cell_line'])
 
 
 #### plot the loadings of the factors

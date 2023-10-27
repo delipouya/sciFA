@@ -114,6 +114,13 @@ fplot.plot_factor_loading(varimax_loading, genes, 0, 1, fontsize=10,
                     num_gene_labels=2,title='Scatter plot of the loading vectors', 
                     label_x=True, label_y=True)
 
+fplot.plot_factor_loading(varimax_loading, genes, 0, 8, fontsize=10, 
+                    num_gene_labels=2,title='Scatter plot of the loading vectors', 
+                    label_x=True, label_y=True)
+
+fplot.plot_factor_loading(varimax_loading, genes, 0, 8, fontsize=10, 
+                    num_gene_labels=2,title='Scatter plot of the loading vectors', 
+                    label_x=True, label_y=True)
 
 
 
@@ -186,8 +193,12 @@ mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_s
 mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores)
 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
-mean_importance_df = pd.concat([mean_importance_df_stim, mean_importance_df_sample, mean_importance_df_cell_type], axis=0)
+mean_importance_df = pd.concat([mean_importance_df_sample, mean_importance_df_stim, mean_importance_df_cell_type], axis=0)
 mean_importance_df.shape
+
+### remove the rownames called NA from the mean_importance_df
+mean_importance_df = mean_importance_df[mean_importance_df.index != 'NA']
+
 fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
 ## getting rownnammes of the mean_importance_df
 all_covariate_levels = mean_importance_df.index.values
@@ -214,10 +225,13 @@ fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_c
 ####################################
 #### calculate the AUC of all the factors for all the covariate levels
 AUC_all_factors_df_sample, wilcoxon_pvalue_all_factors_df_sample = fmet.get_AUC_all_factors_df(factor_scores, y_sample)
+AUC_all_factors_df_stim, wilcoxon_pvalue_all_factors_df_stim = fmet.get_AUC_all_factors_df(factor_scores, y_stim)
+
 AUC_all_factors_df_cell_type, wilcoxon_pvalue_all_factors_df_cell_type = fmet.get_AUC_all_factors_df(factor_scores, y_cell_type)
 
-AUC_all_factors_df = pd.concat([AUC_all_factors_df_sample, AUC_all_factors_df_cell_type], axis=0)
+AUC_all_factors_df = pd.concat([AUC_all_factors_df_sample, AUC_all_factors_df_stim, AUC_all_factors_df_cell_type], axis=0)
 wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_sample, wilcoxon_pvalue_all_factors_df_cell_type], axis=0)
+AUC_all_factors_df = AUC_all_factors_df[AUC_all_factors_df.index != 'NA']
 
 fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
                                  title='F-C Match: AUC scores', color='coolwarm') #'YlOrBr'

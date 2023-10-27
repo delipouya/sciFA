@@ -21,6 +21,21 @@ plt_legend_cl = [mpatches.Patch(color='springgreen', label='HCC827'),
 
 plt_legend_dict = {'protocol': plt_legend_protocol, 'cell_line': plt_legend_cl}
 
+### make a legend patch given a numpy array of covariates and their colors for each sample 
+def get_legend_patch(y_sample, sample_color):
+    '''
+    generate a legend patch for each sample in y_sample
+    y_sample: the sample for each cell
+    sample_color: the color for each sample
+    '''
+
+    ### make a dictionary of colors annd samples
+    my_color = {y_sample[i]: sample_color[i] for i in range(len(y_sample))}
+
+    ### make a legend patch based on my_color
+    legend_patch = [mpatches.Patch(color=my_color[i], label=i) for i in np.unique(y_sample)]
+    return legend_patch
+
 
 
 def get_colors_dict_scMix(y_protocol, y_cell_line):
@@ -146,18 +161,15 @@ def plot_pca(pca_scores,
                    num_components_to_plot, 
                    cell_color_vec, 
                    legend_handles=False,
-                   covariate=None,
-                   plt_legend_dict = None,
+                   plt_legend_list = None,
                    title='PCA of the data matrix') -> None:
     '''
     plot the PCA components with PC1 on the x-axis and other PCs on the y-axis
     pca_scores: the PCA scores for all the cells
     num_components_to_plot: the number of PCA components to plot as the y-axis
     cell_color_vec: the color vector for each cell
-    covariate: the covariate to color the cells
     legend_handles: whether to show the legend handles
-    plt_legend_dict: a dictionary of legend handles for each covariate
-    covariate: the covariate to color the cells
+    plt_legend_list: a list of legend handles for each covariate
     title: the title of the plot
     '''
     
@@ -172,7 +184,18 @@ def plot_pca(pca_scores,
         plt.ylabel('PC'+str(i+1))
         plt.title(title)
         if legend_handles:
-            plt.legend(handles=plt_legend_dict[covariate])
+            if len(plt_legend_list) > 4: 
+                ### make the legend small if there are more than 4 covariates and place it outside the plot
+                plt.legend(handles=plt_legend_list, bbox_to_anchor=(1.05, 1), 
+                loc='upper left', borderaxespad=0., prop={'size': 6})
+
+            else:
+                plt.legend(handles=plt_legend_list)
+
+
+
+        
+        
         plt.show()
 
 

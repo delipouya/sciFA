@@ -17,6 +17,7 @@ import constants as const
 
 import skimage as ski
 import skimage.filters as skif
+import scipy.stats as ss
 
 # training classifiers for feature importance on a classification problem
 # matching pca factors to different covariates in the data
@@ -38,7 +39,9 @@ def get_importance_df(factor_scores, a_binary_cov) -> pd.DataFrame:
         model.fit(X, y)
 
         if model_name == 'LogisticRegression':
-            importance_dict[model_name] = model.coef_[0]
+            ### use the absolute value of the coefficients as the importance
+            importance_dict[model_name] = np.abs(model.coef_)[0]
+            #importance_dict[model_name] = model.coef_[0]
 
         elif model_name in ['DecisionTree', 'RandomForest', 'XGB']:
             # get importance
@@ -55,18 +58,42 @@ def get_importance_df(factor_scores, a_binary_cov) -> pd.DataFrame:
 
 
 ### TODO: evaluate which normalization approach would be better
-def get_mean_importance_level(importance_df_a_level) -> np.array:
+def get_mean_importance_level(importance_df_a_level, scale='standard', mean='arithmatic') -> np.array:
     ''' 
     calculate the mean importance of one level of a given covariate and returns a vector of length of number of factors
     importance_df_a_level: a dataframe of the importance of each factor for a given covariate level
+    scale: 'standard', 'minmax' or 'rank', 'pearson'
+    standard: scale each row of the importance_df_np to have zero mean and unit variance
+    minmax: scale each row of the importance_df_np to be between 0 and 1
+    rank: replace each row of the importance_df_np with its rank
+    pearson: calculate the pearson residuals of each row of the importance_df_np
+    mean: 'arithmatic' or 'geometric'
+    arithmatic: calculate the arithmatic mean of each column
+    geometric: calculate the geometric mean of each column
+'
     '''
     importance_df_np = np.asarray(importance_df_a_level)
-    ### scale each row of the importance_df_np to be positive
-    importance_df_np = importance_df_np - importance_df_np.min(axis=1, keepdims=True)
-    ### normalize each row of the importance_df_np to be between 0 and 1
-    importance_df_np = importance_df_np / importance_df_np.max(axis=1, keepdims=True)
-    ### calculate the mean of each column of the importance_df_np
-    mean_importance = np.mean(importance_df_np, axis=0)
+    if scale == 'standard':
+        ### scale each row of the importance_df_np to have zero mean and unit variance
+        importance_df_np = (importance_df_np - importance_df_np.mean(axis=1, keepdims=True))/importance_df_np.std(axis=1, keepdims=True)
+    elif scale == 'minmax':
+        ### scale each row of the importance_df_np to be between 0 and 1
+        importance_df_np = (importance_df_np - importance_df_np.min(axis=1, keepdims=True))/(importance_df_np.max(axis=1, keepdims=True) - importance_df_np.min(axis=1, keepdims=True))
+    elif scale == 'pearson':
+        ### calculate the pearson residuals of each row of the importance_df_np
+        importance_df_np = (importance_df_np - importance_df_np.mean(axis=1, keepdims=True))/np.sqrt(importance_df_np.var(axis=1, keepdims=True))
+    elif scale == 'rank':
+        ### replace each row of the importance_df_np with its rank
+        importance_df_np = np.apply_along_axis(ss.rankdata, 1, importance_df_np)
+
+    
+    if mean == 'arithmatic':
+        ### calculate the arithmatic mean of each column
+        mean_importance = np.mean(importance_df_np, axis=0)
+    elif mean == 'geometric':
+        ### calculate the geometric mean of each column
+        mean_importance = ss.gmean(importance_df_np, axis=0)
+
     return mean_importance
 
 
