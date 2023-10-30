@@ -588,6 +588,7 @@ def get_AUC_all_levels(a_factor, covariate_vector) -> list:
         AUC_all.append(AUC1_scaled)
         ### convert the pvalue to a -log10 scale to handle the exponential distribution. High values are better? #TODO: check this - remove the negative sign??
         wilcoxon_pvalue_all.append(-np.log10(pvalue))
+        
     ### scale the wilcoxon pvalues to be between 0 and 1
     wilcoxon_pvalue_all = fproc.get_scaled_vector(wilcoxon_pvalue_all)
     ## reverse the direction of the scaled pvalues

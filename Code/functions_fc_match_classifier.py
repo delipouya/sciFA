@@ -11,27 +11,29 @@ from xgboost import XGBClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.inspection import permutation_importance
 
-
 import functions_processing as fproc
 import constants as const
 
 import skimage as ski
-import skimage.filters as skif
 import scipy.stats as ss
 
 # training classifiers for feature importance on a classification problem
 # matching pca factors to different covariates in the data
 
-def get_importance_df(factor_scores, a_binary_cov) -> pd.DataFrame:
+def get_importance_df(factor_scores, a_binary_cov, time_eff=True) -> pd.DataFrame:
     '''
     calculate the importance of each factor for each covariate level
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     a_binary_cov: numpy array of the binary covariate for a covariate level (n_cells, )
+    time_eff: if True, skip RandomForest which is time consuming
     '''
 
     models = {'LogisticRegression': LogisticRegression(), 
-              'DecisionTree': DecisionTreeClassifier(), 'RandomForest': RandomForestClassifier(), 
+              'DecisionTree': DecisionTreeClassifier(), 
               'XGB': XGBClassifier(), 'KNeighbors_permute': KNeighborsClassifier()}
+    
+    if not time_eff:
+        models['RandomForest'] = RandomForestClassifier()
 
     importance_dict = {}
     for model_name, model in models.items():
@@ -39,7 +41,7 @@ def get_importance_df(factor_scores, a_binary_cov) -> pd.DataFrame:
         model.fit(X, y)
 
         if model_name == 'LogisticRegression':
-            ### use the absolute value of the coefficients as the importance
+            ### use the absolute value of the logistic reg coefficients as the importance - for consistency with other classifiers
             importance_dict[model_name] = np.abs(model.coef_)[0]
             #importance_dict[model_name] = model.coef_[0]
 
@@ -66,27 +68,24 @@ def get_mean_importance_level(importance_df_a_level, scale='standard', mean='ari
     standard: scale each row of the importance_df_np to have zero mean and unit variance
     minmax: scale each row of the importance_df_np to be between 0 and 1
     rank: replace each row of the importance_df_np with its rank
-    pearson: calculate the pearson residuals of each row of the importance_df_np
     mean: 'arithmatic' or 'geometric'
     arithmatic: calculate the arithmatic mean of each column
     geometric: calculate the geometric mean of each column
 '
     '''
     importance_df_np = np.asarray(importance_df_a_level)
+    ### normalize the importance score of each classifier in importance_df_np matrix
     if scale == 'standard':
         ### scale each row of the importance_df_np to have zero mean and unit variance
         importance_df_np = (importance_df_np - importance_df_np.mean(axis=1, keepdims=True))/importance_df_np.std(axis=1, keepdims=True)
     elif scale == 'minmax':
         ### scale each row of the importance_df_np to be between 0 and 1
         importance_df_np = (importance_df_np - importance_df_np.min(axis=1, keepdims=True))/(importance_df_np.max(axis=1, keepdims=True) - importance_df_np.min(axis=1, keepdims=True))
-    elif scale == 'pearson':
-        ### calculate the pearson residuals of each row of the importance_df_np
-        importance_df_np = (importance_df_np - importance_df_np.mean(axis=1, keepdims=True))/np.sqrt(importance_df_np.var(axis=1, keepdims=True))
     elif scale == 'rank':
         ### replace each row of the importance_df_np with its rank
         importance_df_np = np.apply_along_axis(ss.rankdata, 1, importance_df_np)
 
-    
+    ### calculate the mean of the importance_df_np matrix
     if mean == 'arithmatic':
         ### calculate the arithmatic mean of each column
         mean_importance = np.mean(importance_df_np, axis=0)
@@ -122,7 +121,7 @@ def get_mean_importance_all_levels(covariate_vec, factor_scores) -> pd.DataFrame
 
 
 
-def get_percent_matched_factors(mean_importance_df, threshold):
+def get_percent_matched_factors(mean_importance_df, threshold) -> float:
       total_num_factors = mean_importance_df.shape[1]
       matched_factor_dist = np.sum(mean_importance_df > threshold)
 
@@ -131,7 +130,7 @@ def get_percent_matched_factors(mean_importance_df, threshold):
       return matched_factor_dist, percent_matched
 
 
-def get_percent_matched_covariate(mean_importance_df, threshold):
+def get_percent_matched_covariate(mean_importance_df, threshold) -> float:
       total_num_covariates = mean_importance_df.shape[0]
       matched_covariate_dist = np.sum(mean_importance_df > threshold, axis=1)
 
@@ -140,11 +139,10 @@ def get_percent_matched_covariate(mean_importance_df, threshold):
       return matched_covariate_dist, percent_matched
 
 
-### use otsu thresholding to find the threshold of the feature importance scores
 
 def get_otsu_threshold(values) -> float:
       '''
-      This function calculates the otsu threshold of the values
+      This function calculates the otsu threshold of the feature importance scores
       :param values: a 1D array of values
       :return: threshold
       '''
