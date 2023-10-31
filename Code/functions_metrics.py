@@ -18,35 +18,36 @@ from sklearn.metrics import calinski_harabasz_score
 import diptest
 
 
-### calculating specificity of a single factor
-def get_factor_specificity(factor_i, mean_importance_df, p_all_factors) -> float:
-    '''
-    calculate the specificity of a factor based on the mean importance matrix
-    factor_i: the index of the factor
-    mean_importance_df: dataframe of mean importance of each factor for each covariate level
-    p_all_factors: numpy array of probability of a factor being selected
-    '''
-    p_factor_i = p_all_factors[factor_i]
-    S_factor = 0 
-    for lev in range(mean_importance_df.shape[0]):
-        p_factor_lev = mean_importance_df.iloc[lev, factor_i]
-        S_factor += (p_factor_lev/p_factor_i)*np.log(p_factor_lev/p_factor_i)
-    return S_factor/mean_importance_df.shape[0]
 
 
-def get_all_factors_specificity(mean_importance_df) -> list:
+def get_factor_simpson_index(x):
     '''
-    calculate the specificity of all the factors based on the mean importance matrix
+    calculate the simpson index of a factor
+    x: numpy array of the factor match scores based on feature importance
+    simpson index = 1 - simpson diversity index
+    simpson diversity index = sum of the square of the probability of a factor being selected
+    '''
+    ### calculate the probability of a level being selected
+    p_factor = x/np.sum(x)
+    ### calculate the simpson diversity index
+    simpson_diversity_index = np.sum(p_factor**2)
+    ### calculate the simpson index
+    simpson_index = 1 - simpson_diversity_index
+    return simpson_index
+
+
+def get_all_factors_simpson(mean_importance_df) -> list:
+    '''
+    calculate the simpson index of all the factors based on the mean importance matrix
     mean_importance_df: dataframe of mean importance of each factor for each covariate level
     '''
-    factor_specificity_all = []
-    p_all_factors = np.sum(np.asarray(mean_importance_df), axis=0)/mean_importance_df.shape[0]
+    factor_simpson_all = []
     for factor_i in range(mean_importance_df.shape[1]):
-        S_factor = get_factor_specificity(factor_i, mean_importance_df, p_all_factors)
-        factor_specificity_all.append(S_factor)
-    return factor_specificity_all
-
-
+        ### get the importance of the factor for each covariate level
+        x = mean_importance_df.iloc[:, factor_i]
+        simpson_index = get_factor_simpson_index(x)
+        factor_simpson_all.append(simpson_index)
+    return factor_simpson_all
 
 #define function to calculate Gini coefficient
 def get_factor_gini(x):
@@ -70,6 +71,7 @@ def get_all_factors_gini(mean_importance_df) -> list:
     factor_gini_all = []
     for factor_i in range(mean_importance_df.shape[1]):
         ### get the importance of the factor for each covariate level
+
         gini_factor = get_factor_gini(mean_importance_df.iloc[:, factor_i])
         factor_gini_all.append(gini_factor)
     return factor_gini_all
@@ -77,9 +79,9 @@ def get_all_factors_gini(mean_importance_df) -> list:
 
 
 
-def get_factor_rev_entropy(a_factor) -> float:
+def get_factor_entropy(x) -> float:
     '''
-    calculate the 1 - entropy of a factor 
+    calculate the entropy of a factor 
     zero entropy means the factor is only macthed with one covariate. entropy=1 means the factor is matched with all the covariates equally
     entropy=0 means high specificity of the factor
 
@@ -89,26 +91,29 @@ def get_factor_rev_entropy(a_factor) -> float:
     ### caculate number of zeros in pk
     # num_zeros = np.count_nonzero(a_factor == 0)
     
-    ### shift all the values to be positive
-    a_factor = a_factor - np.min(a_factor) + 1e-10
-    ### devide all the score by the max value
-    a_factor = a_factor / np.max(a_factor)
-    #plt.hist(a_factor, bins=100)
-    H = -sum(a_factor * np.log(a_factor))
-    return 1 - H
+    p_factor = x/np.sum(x)
+    ### check if any element is zero
+    if np.any(p_factor == 0):
+        ### replace the zero values with a small number
+        p_factor[p_factor == 0] = 1e-10
+    ### calculate the entropy
+    H = -sum(p_factor * np.log(p_factor))
+    
+    return H
 
 
-def get_factor_rev_entropy_all(mean_importance_df) -> list:
+
+def get_factor_entropy_all(mean_importance_df) -> list:
     '''
-    calculate the 1 - entropy of all the factors based on the mean importance matrix
+    calculate the entropy of all the factors based on the mean importance matrix
     mean_importance_df: dataframe of mean importance of each factor for each covariate level
     '''
-    H_rev_all = []
+    H_all = []
     for factor_i in range(mean_importance_df.shape[1]):
         ### get the importance of the factor for each covariate level
-        H_rev = get_factor_rev_entropy(mean_importance_df.iloc[:, factor_i])
-        H_rev_all.append(H_rev)
-    return H_rev_all
+        H = get_factor_entropy(mean_importance_df.iloc[:, factor_i])
+        H_all.append(H)
+    return H_all
 
 
 
@@ -571,6 +576,7 @@ def get_AUC_alevel(a_factor, covariate_vector, covariate_level) -> float:
     AUC1 = scipy_U.statistic/ (n1*n0)
     return AUC1, scipy_U.pvalue
 
+
 def get_AUC_all_levels(a_factor, covariate_vector) -> list:
     '''
     calculate the AUC of a factor for all the covariate levels
@@ -588,7 +594,7 @@ def get_AUC_all_levels(a_factor, covariate_vector) -> list:
         AUC_all.append(AUC1_scaled)
         ### convert the pvalue to a -log10 scale to handle the exponential distribution. High values are better? #TODO: check this - remove the negative sign??
         wilcoxon_pvalue_all.append(-np.log10(pvalue))
-        
+
     ### scale the wilcoxon pvalues to be between 0 and 1
     wilcoxon_pvalue_all = fproc.get_scaled_vector(wilcoxon_pvalue_all)
     ## reverse the direction of the scaled pvalues

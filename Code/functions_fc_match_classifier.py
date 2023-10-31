@@ -51,7 +51,7 @@ def get_importance_df(factor_scores, a_binary_cov, time_eff=True) -> pd.DataFram
         else:
             # perform permutation importance
             results = permutation_importance(model, X, y, scoring='accuracy')
-            importance_dict[model_name] = results.importances_mean
+            importance_dict[model_name] = np.abs(results.importances_mean)
 
     importance_df = pd.DataFrame.from_dict(importance_dict, orient='index', 
                                            columns=['F'+str(i) for i in range(1, factor_scores.shape[1]+1)])
@@ -59,13 +59,12 @@ def get_importance_df(factor_scores, a_binary_cov, time_eff=True) -> pd.DataFram
 
 
 
-### TODO: evaluate which normalization approach would be better
-def get_mean_importance_level(importance_df_a_level, scale='standard', mean='arithmatic') -> np.array:
+def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
     ''' 
     calculate the mean importance of one level of a given covariate and returns a vector of length of number of factors
     importance_df_a_level: a dataframe of the importance of each factor for a given covariate level
     scale: 'standard', 'minmax' or 'rank', 'pearson'
-    standard: scale each row of the importance_df_np to have zero mean and unit variance
+    standard: scale each row of the importance_df_np to have zero mean and unit variance "REMOVED"
     minmax: scale each row of the importance_df_np to be between 0 and 1
     rank: replace each row of the importance_df_np with its rank
     mean: 'arithmatic' or 'geometric'
@@ -78,7 +77,7 @@ def get_mean_importance_level(importance_df_a_level, scale='standard', mean='ari
     if scale == 'standard':
         ### scale each row of the importance_df_np to have zero mean and unit variance
         importance_df_np = (importance_df_np - importance_df_np.mean(axis=1, keepdims=True))/importance_df_np.std(axis=1, keepdims=True)
-    elif scale == 'minmax':
+    if scale == 'minmax':
         ### scale each row of the importance_df_np to be between 0 and 1
         importance_df_np = (importance_df_np - importance_df_np.min(axis=1, keepdims=True))/(importance_df_np.max(axis=1, keepdims=True) - importance_df_np.min(axis=1, keepdims=True))
     elif scale == 'rank':
@@ -97,7 +96,7 @@ def get_mean_importance_level(importance_df_a_level, scale='standard', mean='ari
 
 
 
-def get_mean_importance_all_levels(covariate_vec, factor_scores) -> pd.DataFrame:
+def get_mean_importance_all_levels(covariate_vec, factor_scores, scale='standard', mean='arithmatic') -> pd.DataFrame:
     '''
     calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, num_components)
     covariate_vec: numpy array of the covariate vector (n_cells, )
@@ -105,14 +104,14 @@ def get_mean_importance_all_levels(covariate_vec, factor_scores) -> pd.DataFrame
     '''
 
 
-    mean_importance_df = pd.DataFrame(columns=['PC'+str(i) for i in range(1, factor_scores.shape[1]+1)])
+    mean_importance_df = pd.DataFrame(columns=['F'+str(i) for i in range(1, factor_scores.shape[1]+1)])
 
     for covariate_level in np.unique(covariate_vec):
         print('covariate_level: ', covariate_level)
 
         a_binary_cov = fproc.get_binary_covariate(covariate_vec, covariate_level)
         importance_df_a_level = get_importance_df(factor_scores, a_binary_cov)
-        mean_importance_a_level = get_mean_importance_level(importance_df_a_level)
+        mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale, mean)
 
         print('mean_importance_a_level:', mean_importance_a_level)
         mean_importance_df.loc[covariate_level] = mean_importance_a_level

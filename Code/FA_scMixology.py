@@ -23,7 +23,7 @@ import statsmodels.api as sm
 
 np.random.seed(10)
 
-data = fproc.import_AnnData('./Data/scMix_3cl_merged.h5ad')
+data = fproc.import_AnnData('/home/delaram/sciFA/Data/scMix_3cl_merged.h5ad')
 y_cell_line, y_sample, y_protocol = fproc.get_metadata_scMix(data)
 
 data.obs['protocol'] = y_protocol.to_numpy()
@@ -168,8 +168,8 @@ factor_scores = pca_scores
 ####################################
 
 ### calculate the mean importance of each covariate level
-mean_importance_df_protocol = fmatch.get_mean_importance_all_levels(y_protocol, factor_scores)
-mean_importance_df_cell_line = fmatch.get_mean_importance_all_levels(y_cell_line, factor_scores)
+mean_importance_df_protocol = fmatch.get_mean_importance_all_levels(y_protocol, factor_scores, scale='rank', mean='geometric')
+mean_importance_df_cell_line = fmatch.get_mean_importance_all_levels(y_cell_line, factor_scores, scale='rank', mean='geometric')
 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
 mean_importance_df = pd.concat([mean_importance_df_protocol, mean_importance_df_cell_line], axis=0)
