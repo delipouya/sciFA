@@ -96,7 +96,7 @@ def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
 
 
 
-def get_mean_importance_all_levels(covariate_vec, factor_scores, scale='standard', mean='arithmatic') -> pd.DataFrame:
+def get_mean_importance_all_levels(covariate_vec, factor_scores, scale='rank', mean='geometric') -> pd.DataFrame:
     '''
     calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, num_components)
     covariate_vec: numpy array of the covariate vector (n_cells, )

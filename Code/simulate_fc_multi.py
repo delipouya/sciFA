@@ -22,8 +22,8 @@ import time
 
 np.random.seed(0)
 
-num_sim_rounds = 20
-num_factors = 15
+num_sim_rounds = 100
+num_factors = 10
 num_mixtures = 2 ## each gaussian represents a covariate level 
 num_samples = 10000
 #### perform the simulation nn times and calculate the average correlation between the overlap and all of the scores
@@ -115,12 +115,17 @@ for i in range(num_sim_rounds):
     ASV_all_geo = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='geometric')
 
     #### label free factor metrics
-    factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
     factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 
-    ### calculate specificity
-    factor_specificity_meanimp = fmet.get_all_factors_specificity(mean_importance_df)
-    factor_specificity_AUC = fmet.get_all_factors_specificity(AUC_all_factors_df)
+    ### calculate diversity metrics
+    factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
+    factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
+
+    factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
+    factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
+
+    factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
+    factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
 
 
     #### calculate the correlation between the overlap and all of the scores and save in a dataframe
@@ -135,12 +140,20 @@ for i in range(num_sim_rounds):
     corr_df_temp['1-AUC_arith'] = [np.corrcoef(overlap_mat_flat, AUC_1_arith_mean)[0,1]]
     corr_df_temp['1-AUC_geo'] = [np.corrcoef(overlap_mat_flat, AUC_1_geo_mean)[0,1]]
 
-    corr_df_temp['specificity_meanimp'] = [np.corrcoef(overlap_mat_flat, factor_specificity_meanimp)[0,1]]
-    corr_df_temp['specificity_AUC'] = [np.corrcoef(overlap_mat_flat, factor_specificity_AUC)[0,1]]
+    corr_df_temp['factor_variance'] = [np.corrcoef(overlap_mat_flat, factor_variance_all)[0,1]]
+
+
+    corr_df_temp['factor_gini_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_gini_meanimp)[0,1]]
+    corr_df_temp['factor_gini_AUC'] = [np.corrcoef(overlap_mat_flat, factor_gini_AUC)[0,1]]
+
+    corr_df_temp['factor_entropy_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_entropy_meanimp)[0,1]]
+    corr_df_temp['factor_entropy_AUC'] = [np.corrcoef(overlap_mat_flat, factor_entropy_AUC)[0,1]]
+
+    corr_df_temp['factor_simpon_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_simpson_meanimp)[0,1]]
+    corr_df_temp['factor_simpson_AUC'] = [np.corrcoef(overlap_mat_flat, factor_simpson_AUC)[0,1]]
 
     corr_df_temp['factor_variance'] = [np.corrcoef(overlap_mat_flat, factor_variance_all)[0,1]]
-    corr_df_temp['factor_entropy'] = [np.corrcoef(overlap_mat_flat, factor_entropy_all)[0,1]]
-    
+        
     corr_df_temp = corr_df_temp.T
     corr_df_temp.columns = ['overlap']
     #corr_df_temp = corr_df_temp.sort_values(by='overlap', ascending=False)
@@ -161,4 +174,4 @@ corr_df = pd.concat(corr_df_list, axis=1)
 ### name the columns as overlap + column number
 corr_df.columns = ['overlap_'+str(i) for i in range(corr_df.shape[1])]
 ### save as a csv file
-corr_df.to_csv('metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_v2.csv')
+corr_df.to_csv('metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_v3_nov1.csv')

@@ -12,7 +12,7 @@ import functions_simulation as fsim
 ####################################
 ### TODO: Define a class for a factor_simulator
 
-num_factors = 15
+num_factors = 15 ### put this to 100-1000 
 num_mixtures = 2 ## each gaussian represents a covariate level 
 num_samples = 10000
 
@@ -128,19 +128,25 @@ ASV_all_geo = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='geome
 fsim.plot_scatter(overlap_mat_flat, ASV_all_arith, title='ASV - arithmatic')
 fsim.plot_scatter(overlap_mat_flat, ASV_all_geo, title='ASV - geometric')
 
-#### Specificity 
-factor_specificity_meanImp = fmet.get_all_factors_specificity(mean_importance_df)
-factor_specificity_AUC = fmet.get_all_factors_specificity(AUC_all_factors_df)
 
-fsim.plot_scatter(overlap_mat_flat, factor_specificity_meanImp, title='factor specificity - mean importance')
-fsim.plot_scatter(overlap_mat_flat, factor_specificity_AUC, title='factor specificity - AUC')
+### calculate diversity metrics
+factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
+factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
+
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
+factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
+
+factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
+factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
+
+
+fsim.plot_scatter(overlap_mat_flat, factor_gini_meanimp, title='factor gini - mean importance')
+fsim.plot_scatter(overlap_mat_flat, factor_gini_AUC, title='factor gini - AUC')
 
 
 #### label free factor metrics
-factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 
-fsim.plot_scatter(overlap_mat_flat, factor_entropy_all, title='factor entropy')
 fsim.plot_scatter(overlap_mat_flat, factor_variance_all, title='factor variance')
 
 
@@ -160,9 +166,16 @@ corr_df['SV_cov1'] = [np.corrcoef(overlap_mat_flat, SV_all_factors[0])[0,1]]
 corr_df['SV_cov2'] = [np.corrcoef(overlap_mat_flat, SV_all_factors[1])[0,1]]
 corr_df['ASV_arith'] = [np.corrcoef(overlap_mat_flat, ASV_all_arith)[0,1]]
 corr_df['ASV_geo'] = [np.corrcoef(overlap_mat_flat, ASV_all_geo)[0,1]]
-corr_df['factor_specificity_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_specificity_meanImp)[0,1]]
-corr_df['factor_specificity_AUC'] = [np.corrcoef(overlap_mat_flat, factor_specificity_AUC)[0,1]]
-corr_df['factor_entropy'] = [np.corrcoef(overlap_mat_flat, factor_entropy_all)[0,1]]
+
+corr_df['factor_gini_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_gini_meanimp)[0,1]]
+corr_df['factor_gini_AUC'] = [np.corrcoef(overlap_mat_flat, factor_gini_AUC)[0,1]]
+
+corr_df['factor_entropy_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_entropy_meanimp)[0,1]]
+corr_df['factor_entropy_AUC'] = [np.corrcoef(overlap_mat_flat, factor_entropy_AUC)[0,1]]
+
+corr_df['factor_simpon_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_simpson_meanimp)[0,1]]
+corr_df['factor_simpson_AUC'] = [np.corrcoef(overlap_mat_flat, factor_simpson_AUC)[0,1]]
+
 corr_df['factor_variance'] = [np.corrcoef(overlap_mat_flat, factor_variance_all)[0,1]]
 corr_df['1-AUC_cov1'] = [np.corrcoef(overlap_mat_flat, AUC_all_factors_df_1.iloc[0,:])[0,1]]
 corr_df['1-AUC_cov2'] = [np.corrcoef(overlap_mat_flat, AUC_all_factors_df_1.iloc[1,:])[0,1]]
