@@ -1,3 +1,4 @@
+sys.path.append('./Code/')
 import numpy as np
 import pandas as pd
 
@@ -16,7 +17,7 @@ np.random.seed(10)
 import time
 
 
-
+n = 500
 FA_type = 'varimax'#'PCA'
 scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA' 
 
@@ -26,13 +27,13 @@ scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA'
 importance_df_m_merged = pd.DataFrame()
 for i in range(n):
     print('i: ', i)
-    importance_df_m = pd.read_csv('./Results/importance_df_melted_scMixology_varimax_shuffle_results/importance_df_melted_scMixology_varimax_shuffle_v'+str(i)+'.csv')
+    importance_df_m = pd.read_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist/importance_df_melted_scMixology_varimax_shuffle_'+str(i)+'.csv')
     importance_df_m['shuffle'] = np.repeat('shuffle_'+str(i), importance_df_m.shape[0])
     importance_df_m_merged = pd.concat([importance_df_m_merged, importance_df_m], axis=0)
     
 
 #### read the importance_df_melted_scMixology_varimax_baseline.csv file and concatenate it to importance_df_m_merged
-importance_df_m_baseline = pd.read_csv('./Results/importance_df_melted_scMixology_varimax_baseline.csv')
+importance_df_m_baseline = pd.read_csv('../Results/importance_df_melted_scMixology_varimax_baseline_n1000.csv')
 importance_df_m_baseline['shuffle'] = np.repeat('baseline', importance_df_m_baseline.shape[0])
 importance_df_m_merged = pd.concat([importance_df_m_merged, importance_df_m_baseline], axis=0)
 ### drop the Unnamed: 0 column
@@ -42,12 +43,6 @@ importance_df_m_merged.drop(columns=['Unnamed: 0'], inplace=True)
 importance_df_m_merged['shuffle'] = importance_df_m_merged['shuffle'].astype('category')
 importance_df_m_merged['shuffle'].cat.reorder_categories(['baseline'] + ['shuffle_'+str(i) for i in range(n)], inplace=True)
 importance_df_m_merged.head()
-
-
-flabel.plot_importance_boxplot(importance_df_m_merged, x='model', y='importance', hue='shuffle',
-                               title='Model score comparison' + ' (' + FA_type + ' - ' + scores_included + ')')
-flabel.plot_importance_violinplot(importance_df_m_merged, x='model', y='importance', hue='shuffle',
-                               title='Model score comparison' + ' (' + FA_type + ' - ' + scores_included + ')')
 
 
 ############# replace shuffle_0, shuffle_1, ... with shuffle
@@ -61,6 +56,16 @@ flabel.plot_importance_boxplot(importance_df_m_merged, x='model', y='importance'
                                title='Model score comparison' + ' (' + FA_type + ' - ' + scores_included + ')')
 flabel.plot_importance_violinplot(importance_df_m_merged, x='model', y='importance', hue='shuffle',
                                title='Model score comparison' + ' (' + FA_type + ' - ' + scores_included + ')')
+
+
+
+
+###### sclale each model's importance score in the way that would have same min and max compared to each other
+importance_df_m_merged['importance_scaled'] = importance_df_m_merged.groupby('model')['importance'].apply(lambda x: (x - x.min()) / (x.max() - x.min()))
+flabel.plot_importance_boxplot(importance_df_m_merged, x='model', y='importance_scaled', hue='shuffle',
+                                 title='Model score comparison' + ' (' + FA_type + ' - ' + scores_included + ')')
+
+
 
 
 
