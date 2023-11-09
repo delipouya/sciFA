@@ -10,11 +10,16 @@ colnames(df) = df[1,]
 df = df[-1,]
 head(df)
 
+cols_to_remove = c('factor_gini_meanImp', 'factor_gini_AUC', 'factor_entropy_meanImp', 'factor_entropy_AUC', 'factor_simpon_meanImp', 'factor_simpson_AUC')
+df = df[,!colnames(df) %in% cols_to_remove]
+head(df)
+
 df_melt = melt(t(df))
 colnames(df_melt) = c('metric', 'overlap', 'R')
 df_melt$R = as.numeric(df_melt$R)
 
-ggplot(df_melt, aes(x=metric,y=R))+geom_boxplot(notch = TRUE)+coord_flip()+ylab('Correlation with overlap value')
+ggplot(df_melt, aes(x=metric,y=R))+geom_boxplot(notch = TRUE, fill='maroon')+
+  coord_flip()+ylab('Correlation with overlap value')+theme_classic()
 
 df.t = data.frame(t(data.frame(df)))
 df.t_num = data.frame(lapply(df.t, as.numeric))

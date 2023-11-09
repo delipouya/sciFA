@@ -1,3 +1,4 @@
+import sys
 sys.path.append('./Code/')
 import numpy as np
 import pandas as pd
@@ -17,7 +18,7 @@ np.random.seed(10)
 import time
 
 
-n = 500
+n = 999
 FA_type = 'varimax'#'PCA'
 scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA' 
 
@@ -33,7 +34,7 @@ for i in range(n):
     
 
 #### read the importance_df_melted_scMixology_varimax_baseline.csv file and concatenate it to importance_df_m_merged
-importance_df_m_baseline = pd.read_csv('../Results/importance_df_melted_scMixology_varimax_baseline_n1000.csv')
+importance_df_m_baseline = pd.read_csv('/home/delaram/sciFA//Results/importance_df_melted_scMixology_varimax_baseline_n1000.csv')
 importance_df_m_baseline['shuffle'] = np.repeat('baseline', importance_df_m_baseline.shape[0])
 importance_df_m_merged = pd.concat([importance_df_m_merged, importance_df_m_baseline], axis=0)
 ### drop the Unnamed: 0 column
@@ -59,6 +60,11 @@ flabel.plot_importance_violinplot(importance_df_m_merged, x='model', y='importan
 
 
 
+#### save the importance_df_m_merged dataframe as a csv file
+importance_df_m_merged.to_csv('/home/delaram/sciFA/Results/importance_df_melted_scMixology_varimax_shuffle_merged_1000allIncluded.csv')
+
+
+
 
 ###### sclale each model's importance score in the way that would have same min and max compared to each other
 importance_df_m_merged['importance_scaled'] = importance_df_m_merged.groupby('model')['importance'].apply(lambda x: (x - x.min()) / (x.max() - x.min()))
@@ -69,48 +75,30 @@ flabel.plot_importance_boxplot(importance_df_m_merged, x='model', y='importance_
 
 
 
-############# selecting the top importance score for each model and each factor
-### split the importance_df_m into dataframes based on "model" and for each 'factor' only keep the top score
-importance_df_m_merged_top = importance_df_m_merged.groupby(['model', 'factor', 'shuffle']).apply(lambda x: x.nlargest(1, 'importance')).reset_index(drop=True)
-### calculate the mean and sd importance of each model for baseline annd shuffle categories
-importance_df_m_merged_mean = importance_df_m_merged_top.groupby(['model', 'shuffle']).mean().reset_index()
-importance_df_m_merged_std = importance_df_m_merged_top.groupby(['model', 'shuffle']).std().reset_index()
-### split importance_df_m_merged_mean based on model to a dictionary,with model as key and suffle and baseline as values
-importance_df_m_merged_mean_dict = dict(tuple(importance_df_m_merged_mean.groupby('model')))
-importance_df_m_merged_std_dict = dict(tuple(importance_df_m_merged_std.groupby('model')))
 
-imp_drop_score_dict = {}
-imp_mean_drop_dict = {}
+n = 999
+FA_type = 'varimax'#'PCA'
+scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA' 
 
-## select the first model in importance_df_m_merged_mean_dict.keys()
+#######################################################
+##### read all the csv files in './Results/importance_df_melted_scMixology_varimax_shuffle_results/' and concatenate them into one dataframe
+#######################################################
+importance_df_m_merged_time = pd.DataFrame()
+for i in range(n):
+    print('i: ', i)
+    importance_df_m = pd.read_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_time/time_df_scMixology_varimax_shuffle_'+str(i)+'.csv')
+    importance_df_m['shuffle'] = np.repeat('shuffle_'+str(i), importance_df_m.shape[0])
+    importance_df_m_merged_time = pd.concat([importance_df_m_merged_time, importance_df_m], axis=0)
 
-for a_model in list(importance_df_m_merged_mean_dict.keys()):
-    mean_l = list(importance_df_m_merged_mean_dict[a_model]['importance'])
-    sd_l = list(importance_df_m_merged_std_dict[a_model]['importance'])
-    numerator = mean_l[0] - mean_l[1]
-    #denominator = np.sqrt(sd_l[0] * sd_l[1]) 
-    denominator = sd_l[0] * sd_l[1]
-    imp_mean_drop_dict[a_model] = numerator
-    imp_drop_score_dict[a_model] = numerator/denominator
+### drop the Unnamed: 0 column
+importance_df_m_merged_time.drop(columns=['Unnamed: 0', 'shuffle'], inplace=True)
 
-print(imp_mean_drop_dict)
-print(imp_drop_score_dict)
-
-
-### make a gourped violin plot of importance_df_m_top using sns and put the legend outside the plot
-### boxplot of importance_df_m_merged using sns, shuffle is the hue, model as x axis
-### put baseline as the first boxplot
-
-
-
-############# replace shuffle_0, shuffle_1, ... with shuffle
-importance_df_m_merged_top['shuffle'] = importance_df_m_merged_top['shuffle'].replace(['shuffle_'+str(i) for i in range(n)], 
-                                                                              ['shuffle' for i in range(n)])
-importance_df_m_merged_top['shuffle'] = importance_df_m_merged_top['shuffle'].astype('category')
-importance_df_m_merged_top['shuffle'].cat.reorder_categories(['baseline', 'shuffle'], inplace=True)
-
-flabel.plot_importance_boxplot(importance_df_m_merged_top, x='model', y='importance', hue='shuffle',xtick_fontsize=12,
-                               title='Model score comparison' + ' (' + FA_type + ' - ' + scores_included + ')')
-flabel.plot_importance_violinplot(importance_df_m_merged_top, x='model', y='importance', hue='shuffle',xtick_fontsize=12,
-                               title='Model score comparison' + ' (' + FA_type + ' - ' + scores_included + ')')
-
+importance_df_m_merged_time.head()
+### create a box plot for all columns of importance_df_m_merged_time 
+### fill teh color of each column with blue
+### remove the grid and increase the font size of x and y ticks
+### save the plot as a pdf file
+importance_df_m_merged_time.boxplot(color='blue', grid=False, fontsize=12)
+importance_df_m_merged_time.boxplot(grid=False, fontsize=20, rot=45, 
+                                    figsize=(10, 8), color='black')
+importance_df_m_merged_time.to_csv('/home/delaram/sciFA/Results/importance_df_melted_scMixology_varimax_shuffle_merged_1000allIncluded_RunTime.csv')

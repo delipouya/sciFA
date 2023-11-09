@@ -15,6 +15,7 @@ import functions_processing as fproc
 import constants as const
 
 import skimage as ski
+import skimage.filters as skif
 import scipy.stats as ss
 
 # training classifiers for feature importance on a classification problem

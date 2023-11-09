@@ -476,13 +476,18 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics,
 
 def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",
                                x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
-                               x_axis_tick_fontsize=21, y_axis_tick_fontsize=24):
+                               x_axis_tick_fontsize=21, y_axis_tick_fontsize=24, figsize_x=None, figsize_y=None):
     '''
     colors: SV: 'RdPu', AUC/: 'YlOrBr', wilcoxon: rocket_r, featureImp: coolwarm
     plot the score of all the factors for all the covariate levels
     all_factors_df: a dataframe of a score for all the factors for all the covariate levels
     '''
-    fig, ax = plt.subplots(figsize=(all_factors_df.shape[0]/0.4,(all_factors_df.shape[1]/2))) ## x axis, y axis
+    if not figsize_x:
+        figsize_x = all_factors_df.shape[1]+6
+    if not figsize_y:
+        figsize_y = all_factors_df.shape[0]+2
+         
+    fig, ax = plt.subplots(figsize=(figsize_x,(figsize_y))) ## x axis, y axis
     ax = sns.heatmap(all_factors_df, cmap=color, linewidths=.5, annot=False)
     ax.set_title(title)
     ax.set_xlabel('Factors')

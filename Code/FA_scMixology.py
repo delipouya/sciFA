@@ -34,6 +34,9 @@ y = fproc.get_sub_data(y)
 colors_dict_scMix = fplot.get_colors_dict_scMix(y_protocol, y_cell_line)
 genes = data.var_names
 
+plt_legend_cell_line = fplot.get_legend_patch(y_sample, colors_dict_scMix['cell_line'] )
+plt_legend_protocol = fplot.get_legend_patch(y_sample, colors_dict_scMix['protocol'] )
+
 
 ####################################
 #### Running PCA on the data ######
@@ -44,22 +47,27 @@ pca = pipeline.named_steps['pca']
 pca_loading = pca.components_
 pca_loading.shape #(factors, genes)
 plt.plot(pca.explained_variance_ratio_)
+
+plt.plot(pca.explained_variance_ratio_)
+
+### make a dictionary of colors for each sample in y_sample
+fplot.plot_pca(pca_scores, 4, 
+               cell_color_vec= colors_dict_scMix['cell_line'], 
+               legend_handles=True,
+               title='PCA of gene expression data',
+               plt_legend_list=plt_legend_cell_line)
+
+
 fplot.plot_pca(pca_scores, 4, 
                cell_color_vec= colors_dict_scMix['protocol'], 
-               covariate='protocol',
-               title='PCA of gene expression data', legend_handles=True,
-               plt_legend_list=fplot.plt_legend_dict['protocol'])
-
-fplot.plot_pca(pca_scores, 6, 
-               cell_color_vec= colors_dict_scMix['cell_line'], 
-               covariate='cell_line',
-               title='PCA of gene expression data', legend_handles=True,
-               plt_legend_list=fplot.plt_legend_dict['cell_line'])
-
+               legend_handles=True,
+               title='PCA of gene expression data',
+               plt_legend_list=plt_legend_protocol)
 
 #### plot the loadings of the factors
 fplot.plot_factor_loading(pca_loading.T, genes, 0, 2, fontsize=10, 
-                    num_gene_labels=2,title='Scatter plot of the loading vectors', 
+                    num_gene_labels=2,
+                    title='Scatter plot of the loading vectors', 
                     label_x=True, label_y=True)
 
 ####################################
@@ -92,19 +100,21 @@ pca = pipeline.named_steps['pca']
 pca_loading = pca.components_
 pca_loading.shape
 plt.plot(pca.explained_variance_ratio_)
-fplot.plot_pca(pca_scores, 4, 
-               cell_color_vec= colors_dict_scMix['protocol'], 
-               covariate='protocol',
-               title='PCA of pearson residuals - reg: lib size/protocol',
-               legend_handles=True,
-               plt_legend_dict=fplot.plt_legend_dict)
 
+
+### make a dictionary of colors for each sample in y_sample
 fplot.plot_pca(pca_scores, 4, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
-               covariate='cell_line',
-               title='PCA of pearson residuals - reg: lib size/protocol',
                legend_handles=True,
-               plt_legend_dict=fplot.plt_legend_dict)
+               title='PCA of pearson residuals - reg: lib size/protocol',
+               plt_legend_list=plt_legend_cell_line)
+
+
+fplot.plot_pca(pca_scores, 4, 
+               cell_color_vec= colors_dict_scMix['protocol'], 
+               legend_handles=True,
+               title='PCA of pearson residuals - reg: lib size/protocol',
+               plt_legend_list=plt_legend_protocol)
 
 fplot.plot_umap_scMix(pca_scores, colors_dict_scMix['protocol'] , covariate='protocol', title='UMAP')
 fplot.plot_umap_scMix(pca_scores, colors_dict_scMix['cell_line'] , covariate='cell_line',title='UMAP')
@@ -124,21 +134,35 @@ covariate_level = 'HCC827'
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 30, cell_color_vec= colors_dict_scMix['protocol'],
+
+fplot.plot_pca(pca_scores_varimax, 4, 
+               cell_color_vec= colors_dict_scMix['protocol'], 
+               legend_handles=True,
                title='Varimax PCA of pearson residuals ',
-               legend_handles=True,plt_legend_dict=fplot.plt_legend_dict, covariate='protocol')
-fplot.plot_pca(pca_scores_varimax, 30, cell_color_vec= colors_dict_scMix['cell_line'],
-               title='Varimax PCA of pearson residuals',
-               legend_handles=True,plt_legend_dict=fplot.plt_legend_dict, covariate='cell_line')
+               plt_legend_list=plt_legend_protocol)
+
+fplot.plot_pca(pca_scores_varimax, 4, 
+               cell_color_vec= colors_dict_scMix['cell_line'], 
+               legend_handles=True,
+               title='Varimax PCA of pearson residuals ',
+               plt_legend_list=plt_legend_protocol)
 
 
 ######## Applying promax rotation to the factor scores
 rotation_results_promax = rot.promax_rotation(pca_loading.T)
 promax_loading = rotation_results_promax['rotloading']
 pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['rotmat'])
-fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_scMix['protocol'])
-fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_scMix['cell_line'])
+fplot.plot_pca(pca_scores_promax, 4, 
+               cell_color_vec= colors_dict_scMix['protocol'], 
+               legend_handles=True,
+               title='Varimax PCA of pearson residuals ',
+               plt_legend_list=plt_legend_protocol)
 
+fplot.plot_pca(pca_scores_promax, 4, 
+               cell_color_vec= colors_dict_scMix['cell_line'], 
+               legend_handles=True,
+               title='Varimax PCA of pearson residuals ',
+               plt_legend_list=plt_legend_protocol)
 
 
 #### plot the loadings of the factors
@@ -155,12 +179,15 @@ covariate_level = b'Dropseq'
 covariate_vector = y_protocol
 
 ########################
-factor_loading = rotation_results_varimax['rotloading']
-factor_scores = pca_scores_varimax
-########################
 factor_loading = pca_loading
 factor_scores = pca_scores
 ########################
+
+
+########################
+factor_loading = rotation_results_varimax['rotloading']
+factor_scores = pca_scores_varimax
+
 
 
 ####################################
@@ -200,6 +227,15 @@ print('percent_matched_cov: ', percent_matched_cov)
 fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
+
+#### convert the mean importance matirx to a zero-one matrix based on the threshold value
+mean_importance_df_binary = mean_importance_df.apply(lambda x: (x > threshold).astype(int))
+fplot.plot_all_factors_levels_df(mean_importance_df_binary, 
+                                 title='F-C Match: binary mean importance scores', 
+                                 color='coolwarm') #'YlOrBr'
+
+
+
 ####################################
 #### AUC score
 ####################################
@@ -230,6 +266,11 @@ print('percent_matched_cov: ', percent_matched_cov)
 fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
+### convert the AUC matirx to a zero-one matrix based on a threshold
+AUC_all_factors_df_binary = AUC_all_factors_df.apply(lambda x: (x > threshold).astype(int))
+fplot.plot_all_factors_levels_df(AUC_all_factors_df_binary, 
+                                 title='F-C Match: binary AUC scores', color='coolwarm') #'YlOrBr'
+
 
 ####################################
 ##### Factor metrics #####
@@ -243,17 +284,41 @@ fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
 #fplot.plot_all_factors_levels_df(wilcoxon_pvalue_all_factors_df, 
 #                                 title='Homogeneity: Wilcoxon pvalue', color='rocket_r')
 
-#### Specificity 
-factor_specificity_all = fmet.get_all_factors_specificity(mean_importance_df)
-fplot.plot_metric_barplot(factor_specificity_all, 'Specificity of each factor')
-#highest_vote_factor = a_cov_match_factor_dict[covariate_level]; i = int(highest_vote_factor[2:]) - 1
-factor_i = 7
-fplot.plot_factor_scatter(factor_scores, 0, factor_i, colors_dict_scMix['protocol'], covariate='protocol')
 
-#### Entropy 
-factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
-fplot.plot_metric_barplot(factor_entropy_all, 'Entropy of each factor')
-fplot.plot_histogram(factor_scores[:,np.argmax(factor_entropy_all)], title='factor with the maximum entropy')
+ ### calculate diversity metrics
+ #### originnal importance scores
+factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
+factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
+print('mean importance matrix gini index is: ', factor_gini_meanimp)
+fplot.plot_metric_barplot(factor_simpson_meanimp, 'simpson index of each factor - mean importance')
+fplot.plot_metric_barplot(factor_entropy_meanimp, 'entropy of each factor - mean importance')
+
+### AUC scores
+factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
+factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
+factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
+print('AUC matrix gini index is: ', factor_gini_AUC)
+fplot.plot_metric_barplot(factor_simpson_AUC, 'simpson index of each factor - AUC')
+fplot.plot_metric_barplot(factor_entropy_AUC, 'entropy of each factor - AUC')
+
+#### binary AUC scores
+factor_gini_AUC_binary = fmet.get_all_factors_gini(AUC_all_factors_df_binary)
+factor_simpson_AUC_binary = fmet.get_all_factors_simpson(AUC_all_factors_df_binary)
+factor_entropy_AUC_binary = fmet.get_factor_entropy_all(AUC_all_factors_df_binary)
+print('binary AUC matrix gini index is: ', factor_gini_AUC_binary)
+fplot.plot_metric_barplot(factor_simpson_AUC_binary, 'simpson index of each factor - binary AUC')
+fplot.plot_metric_barplot(factor_entropy_AUC_binary, 'entropy of each factor - binary AUC')
+
+
+#### binary mean importance scores
+factor_gini_meanimp_binary = fmet.get_all_factors_gini(mean_importance_df_binary)
+factor_simpson_meanimp_binary = fmet.get_all_factors_simpson(mean_importance_df_binary)
+factor_entropy_meanimp_binary = fmet.get_factor_entropy_all(mean_importance_df_binary)
+print('binary mean importance matrix gini index is: ', factor_gini_meanimp_binary)
+fplot.plot_metric_barplot(factor_simpson_meanimp_binary, 'simpson index of each factor - binary mean importance')
+fplot.plot_metric_barplot(factor_entropy_meanimp_binary, 'entropy of each factor - binary mean importance')
+
 
 #### Variance
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
@@ -366,8 +431,10 @@ fplot.plot_metric_dendrogram(pd.DataFrame(bimodality_scores.T, columns=bimodalit
 ####################################
 
 #### label free factor metrics
-factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
+factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
+factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
+
 
 ### bimoality metrics
 bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
@@ -385,6 +452,13 @@ ASV_protocol_all_arith = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='
 ASV_cell_line_all_arith = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='arithmetic')
 ASV_protocol_all_geo = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='geometric')
 ASV_cell_line_all_geo = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='geometric')
+
+
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
+factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
+factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
+factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
+
 
 ### create a dictionaty annd thenn a dataframe of all the ASV metrics arrays
 ASV_all_factors_dict = {'ASV_protocol_arith': ASV_protocol_all_arith, 'ASV_protocol_geo': ASV_protocol_all_geo,
@@ -405,17 +479,15 @@ plt.show()
 SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)
 
 
-### calculate specificity
-factor_specificity_meanimp = fmet.get_all_factors_specificity(mean_importance_df)
-factor_specificity_AUC = fmet.get_all_factors_specificity(AUC_all_factors_df)
-
-
 #### make a dictionary of all the metrics
-all_metrics_dict = {'factor_entropy': factor_entropy_all,
+all_metrics_dict = {'factor_entropy_meanimp': factor_entropy_meanimp,
+                        'factor_entropy_AUC': factor_entropy_AUC,
+                        'factor_simpson_meanimp': factor_simpson_meanimp, 
+                        'factor_simpson_AUC': factor_simpson_AUC,
+                    
                     'factor_variance': factor_variance_all, 
                     'ASV_protocol_arith': ASV_protocol_all_arith, 'ASV_protocol_geo': ASV_protocol_all_geo,
                     'ASV_cell_line_arith': ASV_cell_line_all_arith, 'ASV_cell_line_geo': ASV_cell_line_all_geo,
-                    'factor_specificity_meanimp': factor_specificity_meanimp, 'factor_specificity_AUC':factor_specificity_AUC,
 
                     'bic_km': bic_scores_km, 'calinski_harabasz_km': calinski_harabasz_scores_km,
                     'davies_bouldin_km': davies_bouldin_scores_km, 'silhouette_km': silhouette_scores_km,
@@ -429,6 +501,9 @@ all_metrics_dict = {'factor_entropy': factor_entropy_all,
 all_metrics_df = pd.DataFrame(all_metrics_dict)
 factor_metrics = list(all_metrics_df.columns)
 all_metrics_df.head()
+
+
+
 
 all_metrics_scaled = fmet.get_scaled_metrics(all_metrics_df)
 

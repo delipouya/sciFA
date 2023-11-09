@@ -50,10 +50,10 @@ def get_all_factors_simpson(mean_importance_df) -> list:
     return factor_simpson_all
 
 #define function to calculate Gini coefficient
-def get_factor_gini(x):
+def get_gini(x):
     '''
-    calculate the gini score of a factor
-    x: numpy array of the factor match scores based on feature importance
+    calculate the gini score of a vector
+    x: numpy array of the all factor match scores based on feature importance
     gini=0 means perfect equality - all the covariate levels are matched equally with the factor - not specific
     gini=1 means perfect inequality - the factor is only matched with one covariate level - very specific
     '''
@@ -65,17 +65,14 @@ def get_factor_gini(x):
 
 def get_all_factors_gini(mean_importance_df) -> list:
     '''
-    calculate the gini score of all the factors based on the mean importance matrix
+    calculate the gini score for the mean importance matrix
     mean_importance_df: dataframe of mean importance of each factor for each covariate level
     '''
-    factor_gini_all = []
-    for factor_i in range(mean_importance_df.shape[1]):
-        ### get the importance of the factor for each covariate level
-
-        gini_factor = get_factor_gini(mean_importance_df.iloc[:, factor_i])
-        factor_gini_all.append(gini_factor)
-    return factor_gini_all
-
+    
+    ### convert the mean_importance_df to a one dimensional numpy array
+    mean_importance_df = mean_importance_df.to_numpy().flatten()
+    gini = get_gini(mean_importance_df)
+    return gini
 
 
 
