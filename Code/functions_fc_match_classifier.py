@@ -21,20 +21,24 @@ import scipy.stats as ss
 # training classifiers for feature importance on a classification problem
 # matching pca factors to different covariates in the data
 
-def get_importance_df(factor_scores, a_binary_cov, time_eff=True) -> pd.DataFrame:
+def get_importance_df(factor_scores, a_binary_cov, time_eff=True, force_all = False) -> pd.DataFrame:
     '''
     calculate the importance of each factor for each covariate level
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     a_binary_cov: numpy array of the binary covariate for a covariate level (n_cells, )
     time_eff: if True, skip RandomForest which is time consuming
+    force_all: if True, include KNeighbors_permute which often has lower performance 
     '''
 
     models = {'LogisticRegression': LogisticRegression(), 
               'DecisionTree': DecisionTreeClassifier(), 
-              'XGB': XGBClassifier(), 'KNeighbors_permute': KNeighborsClassifier()}
+              'XGB': XGBClassifier()}
     
     if not time_eff:
         models['RandomForest'] = RandomForestClassifier()
+
+    if force_all:
+        models['KNeighbors_permute'] =  KNeighborsClassifier()
 
     importance_dict = {}
     for model_name, model in models.items():
@@ -49,7 +53,8 @@ def get_importance_df(factor_scores, a_binary_cov, time_eff=True) -> pd.DataFram
         elif model_name in ['DecisionTree', 'RandomForest', 'XGB']:
             # get importance
             importance_dict[model_name] = model.feature_importances_
-        else:
+
+        elif model_name == 'KNeighbors_permute':
             # perform permutation importance
             results = permutation_importance(model, X, y, scoring='accuracy')
             importance_dict[model_name] = np.abs(results.importances_mean)

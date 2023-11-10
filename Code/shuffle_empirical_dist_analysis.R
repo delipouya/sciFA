@@ -139,3 +139,52 @@ rownames(cor_mat) = c( "DecisionTree","KNNpermute", "LogisticReg", "RandomForest
 pheatmap::pheatmap(cor_mat, display_numbers = TRUE)
 
 
+
+file = '/home/delaram/sciFA/Results/shuffle_empirical_dist_V2/mean_imp/'
+
+mean_imp_list = lapply(list.files(file, full.names = T), read.csv)
+mean_imp_shuffle <- Reduce(rbind,mean_imp_list)
+head(mean_imp_shuffle)
+mean_imp_baseline <- read.csv('/home/delaram/sciFA/Results/meanimp_df_scMixology_varimax_baseline_V2.csv')
+head(mean_imp_baseline)
+
+colnames(mean_imp_shuffle) == colnames(mean_imp_baseline)
+mean_imp_df = rbind(mean_imp_baseline, mean_imp_shuffle)
+head(mean_imp_df)
+mean_imp_df$scale_mean = paste0(mean_imp_df$scale_type, '_', mean_imp_df$mean_type)
+mean_imp_df_split = split(mean_imp_df, mean_imp_df$scale_mean)
+lapply(mean_imp_df_split, head)
+
+names(mean_imp_df_split)
+
+get_melted_meanDF <- function(a_df){
+  a_df = a_df[,!colnames(a_df) %in%c('X', 'covariate')]
+  a_df_m = melt(a_df, id.vars =c('scale_mean','scores_included'), measure.vars = paste0('F',1:30),value.name = c('factor'))
+  return(a_df_m)
+}
+mean_imp_melted_list = lapply(mean_imp_df_split, get_melted_meanDF)
+mean_imp_melted = Reduce(rbind, mean_imp_melted_list)
+
+head(mean_imp_melted)
+mean_imp_melted$factor = as.numeric(mean_imp_melted$factor)
+summary(mean_imp_melted$factor)
+table(mean_imp_melted$scores_included)
+table(mean_imp_melted$scale_mean)
+ggplot2::ggplot(mean_imp_melted, aes(x=scale_mean, y=factor, fill=scores_included))+geom_boxplot()
+
+table(mean_imp_melted$scale_mean)
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='baseline'])
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='shuffle'])
+
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='baseline'])
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='shuffle'])
+
+
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='baseline'])
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='shuffle'])
+
+
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='baseline'])
+summary(mean_imp_melted$factor[mean_imp_melted$scale_mean=='minmax_arithmatic' & mean_imp_melted$scores_included=='shuffle'])
+
+

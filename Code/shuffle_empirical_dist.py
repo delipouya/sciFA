@@ -26,7 +26,15 @@ import constants as const
 np.random.seed(10)
 import time
 
-
+#### Function to concatenate mean importance dataframes specific to scMix data
+def concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list):
+    for i in range(len(meanimp_df_list)):
+        meanimp_df_list[i]['mean_type'] = [mean_type_list[i]]*meanimp_df_list[i].shape[0]
+        meanimp_df_list[i]['scale_type'] = [scale_type_list[i]]*meanimp_df_list[i].shape[0]
+        meanimp_df_list[i]['scores_included'] = [scores_included_list[i]]*meanimp_df_list[i].shape[0]
+        meanimp_df_list[i]['covariate'] = covariate_list
+    meanimp_df = pd.concat(meanimp_df_list, axis=0)
+    return meanimp_df
 
 ######################################################################################
 ###################################################################################
@@ -70,8 +78,31 @@ n = 1000
 ####################################
 #### Baseline importance calculation and run time ######
 #### Importance calculation and run time as baseline ######
+
 importance_df_dict_protocol, time_dict_a_level_dict_protocol = flabel.get_importance_all_levels_dict(y_protocol, factor_scores) 
 importance_df_dict_cell_line, time_dict_a_level_dict_cell_line = flabel.get_importance_all_levels_dict(y_cell_line, factor_scores) 
+
+
+meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_v_comp(importance_df_dict_protocol)
+meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_v_comp(importance_df_dict_cell_line)
+
+
+meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_protocol, meanimp_standard_arith_cell_line], axis=0)
+meanimp_standard_geom_df = pd.concat([meanimp_standard_geom_protocol, meanimp_standard_geom_cell_line], axis=0)
+meanimp_minmax_arith_df = pd.concat([meanimp_minmax_arith_protocol, meanimp_minmax_arith_cell_line], axis=0)
+meanimp_minmax_geom_df = pd.concat([meanimp_minmax_geom_protocol, meanimp_minmax_geom_cell_line], axis=0)
+meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_arith_cell_line], axis=0)
+meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
+
+
+meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, meanimp_minmax_arith_df, meanimp_minmax_geom_df, meanimp_rank_arith_df, meanimp_rank_geom_df]
+mean_type_list = ['arithmatic', 'geometric', 'arithmatic', 'geometric', 'arithmatic', 'geometric']
+scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
+scores_included_list = [scores_included]*6
+covariate_list = ['protocol']*3+ ['cell_line']*3
+
+meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list)
+
 ########### Comparing model run times
 time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
 ########## Comparing time differences between models
@@ -84,9 +115,10 @@ importance_df_dict = {**importance_df_dict_protocol, **importance_df_dict_cell_l
 importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
 
 
-### save importance_df_m to csv
+### save importance_df_m and meanimp_df to csv
 importance_df_m.to_csv('/home/delaram/sciFA/Results/importance_df_melted_'+
-                        'scMixology_'+FA_type+'_'+'baseline_n1000.csv')
+                        'scMixology_'+FA_type+'_'+'baseline_n1000_V2.csv')
+meanimp_df.to_csv('/home/delaram/sciFA/Results/meanimp_df_'+'scMixology_'+FA_type+'_'+'baseline_V2.csv')
 
 
 t_start_total = time.time()
@@ -106,13 +138,35 @@ for i in range(n):
     ####################################
     ########### Comparing model run times
     ####################################
-    time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
+    #time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
     ########## Comparing time differences between models
-    time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
+    #time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
     #plot_runtime_barplot(time_df)
     ### save time_df to csv
-    time_df.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_time/time_df_'+
-                   'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'.csv')
+    #time_df.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_time/time_df_'+
+    #               'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'_V2.csv')
+
+    ####################################
+    ##### Mean importance calculation ########
+    meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_v_comp(importance_df_dict_protocol)
+    meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_v_comp(importance_df_dict_cell_line)
+
+
+    meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_protocol, meanimp_standard_arith_cell_line], axis=0)
+    meanimp_standard_geom_df = pd.concat([meanimp_standard_geom_protocol, meanimp_standard_geom_cell_line], axis=0)
+    meanimp_minmax_arith_df = pd.concat([meanimp_minmax_arith_protocol, meanimp_minmax_arith_cell_line], axis=0)
+    meanimp_minmax_geom_df = pd.concat([meanimp_minmax_geom_protocol, meanimp_minmax_geom_cell_line], axis=0)
+    meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_arith_cell_line], axis=0)
+    meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
+
+    scores_included = 'shuffle'#'baseline'#'top_cov' 'top_FA' 
+    meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, meanimp_minmax_arith_df, meanimp_minmax_geom_df, meanimp_rank_arith_df, meanimp_rank_geom_df]
+    mean_type_list = ['arithmatic', 'geometric', 'arithmatic', 'geometric', 'arithmatic', 'geometric']
+    scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
+    scores_included_list = [scores_included]*6
+    covariate_list = ['protocol']*3+ ['cell_line']*3
+
+    meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list)
 
 
     ############################################################
@@ -123,8 +177,11 @@ for i in range(n):
     importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
 
     ### save importance_df_m to csv
-    importance_df_m.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist/importance_df_melted_'+
-                           'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'.csv')
+    importance_df_m.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_V2/importance_df_melted_'+
+                           'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'_V2.csv')
+    meanimp_df.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_V2/mean_imp/meanimp_df_'+
+                      'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'_V2.csv')
+
 
 t_end_total = time.time()
 print('Total time: ', t_end_total - t_start_total)
