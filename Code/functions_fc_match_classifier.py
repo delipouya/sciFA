@@ -83,6 +83,9 @@ def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
     if scale == 'standard':
         ### scale each row of the importance_df_np to have zero mean and unit variance
         importance_df_np = (importance_df_np - importance_df_np.mean(axis=1, keepdims=True))/importance_df_np.std(axis=1, keepdims=True)
+        #### if any value in a column is equal or less than zero, add a small value to it
+        if np.any(importance_df_np <= 0):
+            importance_df_np[importance_df_np <= 0] = 1e-10
     if scale == 'minmax':
         ### scale each row of the importance_df_np to be between 0 and 1
         importance_df_np = (importance_df_np - importance_df_np.min(axis=1, keepdims=True))/(importance_df_np.max(axis=1, keepdims=True) - importance_df_np.min(axis=1, keepdims=True))
@@ -95,6 +98,9 @@ def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
         ### calculate the arithmatic mean of each column
         mean_importance = np.mean(importance_df_np, axis=0)
     elif mean == 'geometric':
+        #### if any value in a column is equal or less than zero, add a small value to it
+        if np.any(importance_df_np <= 0):
+            importance_df_np[importance_df_np <= 0] = 1e-10
         ### calculate the geometric mean of each column
         mean_importance = ss.gmean(importance_df_np, axis=0)
 
@@ -102,7 +108,7 @@ def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
 
 
 
-def get_mean_importance_all_levels(covariate_vec, factor_scores, scale='rank', mean='geometric') -> pd.DataFrame:
+def get_mean_importance_all_levels(covariate_vec, factor_scores, scale='standard', mean='geometric') -> pd.DataFrame:
     '''
     calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, num_components)
     covariate_vec: numpy array of the covariate vector (n_cells, )

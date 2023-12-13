@@ -34,7 +34,8 @@ import time
 
 def get_importance_df_v_comp(factor_scores, a_binary_cov) -> pd.DataFrame:
     '''
-    calculate the importance of each factor for each covariate level - model comparison version
+    calculate the importance of each factor for a given covariate level - model comparison version
+    returns a dataframe of size (num_models, num_components)
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     a_binary_cov: numpy array of the binary covariate for a covariate level (n_cells, )
     '''
@@ -74,9 +75,12 @@ def get_importance_df_v_comp(factor_scores, a_binary_cov) -> pd.DataFrame:
 
 
 
-def get_importance_all_levels_dict(covariate_vec, factor_scores) -> pd.DataFrame:
+def get_importance_all_levels_dict(covariate_vec, factor_scores) -> dict:
     '''
-    calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, num_components)
+    calculate the mean importance of all levels of a given covariate
+    returns a dictionary of length num_levels. dictionalry keys are covariate levels and values are dataframes of size (num_levels, num_components)
+    each dataframe is the importance of each factor for a given covariate level
+    
     covariate_vec: numpy array of the covariate vector (n_cells, )
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     '''
@@ -87,54 +91,17 @@ def get_importance_all_levels_dict(covariate_vec, factor_scores) -> pd.DataFrame
     for covariate_level in np.unique(covariate_vec):
         print('covariate_level: ', covariate_level)
 
-
         ### get the importance_df for each covariate level
         a_binary_cov = fproc.get_binary_covariate(covariate_vec, covariate_level)
         importance_df_a_level, time_dict = get_importance_df_v_comp(factor_scores, a_binary_cov)
+
         ### save the importance_df (each column's a model) for each covariate level
         importance_df_a_level_dict[covariate_level] = importance_df_a_level
         time_dict_a_level_dict[covariate_level] = time_dict
 
-
         
     return importance_df_a_level_dict, time_dict_a_level_dict
 
-
-
-def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
-    ''' 
-    calculate the mean importance of one level of a given covariate and returns a vector of length of number of factors
-    importance_df_a_level: a dataframe of the importance of each factor for a given covariate level
-    scale: 'standard', 'minmax' or 'rank', 'pearson'
-    standard: scale each row of the importance_df_np to have zero mean and unit variance "REMOVED"
-    minmax: scale each row of the importance_df_np to be between 0 and 1
-    rank: replace each row of the importance_df_np with its rank
-    mean: 'arithmatic' or 'geometric'
-    arithmatic: calculate the arithmatic mean of each column
-    geometric: calculate the geometric mean of each column
-'
-    '''
-    importance_df_np = np.asarray(importance_df_a_level)
-    ### normalize the importance score of each classifier in importance_df_np matrix
-    if scale == 'standard':
-        ### scale each row of the importance_df_np to have zero mean and unit variance
-        importance_df_np = (importance_df_np - importance_df_np.mean(axis=1, keepdims=True))/importance_df_np.std(axis=1, keepdims=True)
-    if scale == 'minmax':
-        ### scale each row of the importance_df_np to be between 0 and 1
-        importance_df_np = (importance_df_np - importance_df_np.min(axis=1, keepdims=True))/(importance_df_np.max(axis=1, keepdims=True) - importance_df_np.min(axis=1, keepdims=True))
-    elif scale == 'rank':
-        ### replace each row of the importance_df_np with its rank
-        importance_df_np = np.apply_along_axis(ss.rankdata, 1, importance_df_np)
-
-    ### calculate the mean of the importance_df_np matrix
-    if mean == 'arithmatic':
-        ### calculate the arithmatic mean of each column
-        mean_importance = np.mean(importance_df_np, axis=0)
-    elif mean == 'geometric':
-        ### calculate the geometric mean of each column
-        mean_importance = ss.gmean(importance_df_np, axis=0)
-
-    return mean_importance
 
 
 
@@ -165,27 +132,27 @@ def get_mean_importance_df_v_comp(importance_df_levels_dict) -> pd.DataFrame:
         
             ### calculate the mean importance of all models for each covariate level
             #### scale: standard - mean: arithmatic
-            mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale='standard', mean='arithmatic')
+            mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='standard', mean='arithmatic')
             mean_imp_standard_arith_df.loc[covariate_level] = mean_importance_a_level
 
             #### scale: standard - mean: geometric
-            mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale='standard', mean='geometric')
+            mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='standard', mean='geometric')
             mean_imp_standard_geom_df.loc[covariate_level] = mean_importance_a_level
 
             #### scale: minmax - mean: arithmatic
-            mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale='minmax', mean='arithmatic')
+            mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='minmax', mean='arithmatic')
             mean_imp_minmax_arith_df.loc[covariate_level] = mean_importance_a_level
 
             #### scale: minmax - mean: geometric
-            mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale='minmax', mean='geometric')
+            mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='minmax', mean='geometric')
             mean_imp_minmax_geom_df.loc[covariate_level] = mean_importance_a_level
 
             #### scale: rank - mean: arithmatic
-            mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale='rank', mean='arithmatic')
+            mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='rank', mean='arithmatic')
             mean_imp_rank_arith_df.loc[covariate_level] = mean_importance_a_level
 
             #### scale: rank - mean: geometric
-            mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale='rank', mean='geometric')
+            mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='rank', mean='geometric')
             mean_imp_rank_geom_df.loc[covariate_level] = mean_importance_a_level
 
 

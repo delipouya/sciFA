@@ -19,6 +19,7 @@ from statsmodels.graphics.api import abline_plot
 import functions_plotting as fplot
 import functions_processing as fproc
 import functions_label_shuffle as flabel
+import functions_metrics as fmet
 
 import rotations as rot
 import constants as const
@@ -95,18 +96,57 @@ meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_ari
 meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
 
 
-meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, meanimp_minmax_arith_df, meanimp_minmax_geom_df, meanimp_rank_arith_df, meanimp_rank_geom_df]
-mean_type_list = ['arithmatic', 'geometric', 'arithmatic', 'geometric', 'arithmatic', 'geometric']
-scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
-scores_included_list = [scores_included]*6
-covariate_list = ['protocol']*3+ ['cell_line']*3
+####################################
+#### AUC score
+####################################
+#### calculate the AUC of all the factors for all the covariate levels
+AUC_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
+AUC_all_factors_df_cell_line, wilcoxon_pvalue_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
 
-meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list)
+AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
+
+#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
+auc_weight = 2
+AUC_mean_importance_standard_arith_df = (auc_weight*AUC_all_factors_df + meanimp_standard_arith_df)/(auc_weight+1)
+AUC_mean_importance_standard_geom_df = (auc_weight*AUC_all_factors_df + meanimp_standard_geom_df)/(auc_weight+1)
+AUC_mean_importance_minmax_arith_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_arith_df)/(auc_weight+1)
+AUC_mean_importance_minmax_geom_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_geom_df)/(auc_weight+1)
+
+
+
+
+meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
+                   meanimp_minmax_arith_df, meanimp_minmax_geom_df, 
+                   meanimp_rank_arith_df, meanimp_rank_geom_df,
+                   AUC_all_factors_df,
+                   AUC_mean_importance_standard_arith_df, AUC_mean_importance_standard_geom_df,
+                   AUC_mean_importance_minmax_arith_df, AUC_mean_importance_minmax_geom_df]
+
+mean_type_list = ['arithmatic', 'geometric', 
+                  'arithmatic', 'geometric', 
+                  'arithmatic', 'geometric', 
+                  'AUC', 
+                  'AUC_arithmatic', 'AUC_geometric', 
+                  'AUC_arithmatic', 'AUC_geometric']
+
+scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank', 
+                   'AUC', 
+                   'AUC_standard', 'AUC_standard', 'AUC_minmax', 'AUC_minmax']
+
+scores_included_list = [scores_included]*11
+covariate_list = ['protocol']*3 + ['cell_line']*3
+
+meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, 
+                                    scale_type_list, scores_included_list)
+
+
+############################################################
+
 
 ########### Comparing model run times
-time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
+#time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
 ########## Comparing time differences between models
-time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
+#time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
 #plot_runtime_barplot(time_df)
 
 ########## Comparing factor scores between models
@@ -116,10 +156,9 @@ importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
 
 
 ### save importance_df_m and meanimp_df to csv
-importance_df_m.to_csv('/home/delaram/sciFA/Results/importance_df_melted_'+
-                        'scMixology_'+FA_type+'_'+'baseline_n1000_V2.csv')
-meanimp_df.to_csv('/home/delaram/sciFA/Results/meanimp_df_'+'scMixology_'+FA_type+'_'+'baseline_V2.csv')
-
+#importance_df_m.to_csv('/home/delaram/sciFA/Results/importance_df_melted_'+
+#                        'scMixology_'+FA_type+'_'+'baseline_n1000_V2.csv')
+meanimp_df.to_csv('/home/delaram/sciFA/Results/meanimp_df_'+'scMixology_'+FA_type+'_'+'baseline_V3.csv')
 
 t_start_total = time.time()
 #### shuffle the covariate vectors n times in a loop
@@ -159,14 +198,51 @@ for i in range(n):
     meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_arith_cell_line], axis=0)
     meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
 
-    scores_included = 'shuffle'#'baseline'#'top_cov' 'top_FA' 
-    meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, meanimp_minmax_arith_df, meanimp_minmax_geom_df, meanimp_rank_arith_df, meanimp_rank_geom_df]
-    mean_type_list = ['arithmatic', 'geometric', 'arithmatic', 'geometric', 'arithmatic', 'geometric']
-    scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
-    scores_included_list = [scores_included]*6
-    covariate_list = ['protocol']*3+ ['cell_line']*3
 
-    meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list)
+    ####################################
+    #### AUC score
+    ####################################
+    #### calculate the AUC of all the factors for all the covariate levels
+    AUC_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
+    AUC_all_factors_df_cell_line, wilcoxon_pvalue_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
+
+    AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
+
+    #### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
+    auc_weight = 2
+    AUC_mean_importance_standard_arith_df = (auc_weight*AUC_all_factors_df + meanimp_standard_arith_df)/(auc_weight+1)
+    AUC_mean_importance_standard_geom_df = (auc_weight*AUC_all_factors_df + meanimp_standard_geom_df)/(auc_weight+1)
+    AUC_mean_importance_minmax_arith_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_arith_df)/(auc_weight+1)
+    AUC_mean_importance_minmax_geom_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_geom_df)/(auc_weight+1)
+
+
+
+
+    meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
+                    meanimp_minmax_arith_df, meanimp_minmax_geom_df, 
+                    meanimp_rank_arith_df, meanimp_rank_geom_df,
+                    AUC_all_factors_df,
+                    AUC_mean_importance_standard_arith_df, AUC_mean_importance_standard_geom_df,
+                    AUC_mean_importance_minmax_arith_df, AUC_mean_importance_minmax_geom_df]
+
+    mean_type_list = ['arithmatic', 'geometric', 
+                    'arithmatic', 'geometric', 
+                    'arithmatic', 'geometric', 
+                    'AUC', 
+                    'AUC_arithmatic', 'AUC_geometric', 
+                    'AUC_arithmatic', 'AUC_geometric']
+
+    scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank', 
+                    'AUC', 
+                    'AUC_standard', 'AUC_standard', 'AUC_minmax', 'AUC_minmax']
+
+    scores_included = 'shuffle'#'baseline'#'top_cov' 'top_FA' 
+    scores_included_list = [scores_included]*11
+    covariate_list = ['protocol']*3 + ['cell_line']*3
+
+    meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, 
+                                        scale_type_list, scores_included_list)
+
 
 
     ############################################################
@@ -177,10 +253,10 @@ for i in range(n):
     importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
 
     ### save importance_df_m to csv
-    importance_df_m.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_V2/importance_df_melted_'+
-                           'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'_V2.csv')
-    meanimp_df.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_V2/mean_imp/meanimp_df_'+
-                      'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'_V2.csv')
+    importance_df_m.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_V3/importance_df_melted_'+
+                           'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'_V3.csv')
+    meanimp_df.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_V3/mean_imp/meanimp_df_'+
+                      'scMixology_'+FA_type+'_'+'shuffle_'+str(i)+'_V3.csv')
 
 
 t_end_total = time.time()

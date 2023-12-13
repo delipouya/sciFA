@@ -119,7 +119,7 @@ def get_colors_dict_humanKidney(y_sample, y_sex, y_cell_type):
     sample_color = [my_color[y_sample[i]] for i in range(len(y_sample))]
 
     ### make a dictionary of colors for each strain in y_strain
-    my_color = {'Male': 'red', 'Female': 'blue'}
+    my_color = {'Male': 'forestgreen', 'Female': 'hotpink'}
     sex_color = [my_color[y_sex[i]] for i in range(len(y_sex))]
 
     ### make a dictionary of colors for each 16 cluster in y_cluster. use np.unique(y_cluster)
@@ -180,8 +180,8 @@ def plot_pca(pca_scores,
         plt.rcParams['axes.facecolor'] = 'white'
         
         plt.scatter(pca_scores[:,0], pca_scores[:,i], c=cell_color_vec, s=1) 
-        plt.xlabel('PC1')
-        plt.ylabel('PC'+str(i+1))
+        plt.xlabel('F1')
+        plt.ylabel('F'+str(i+1))
         plt.title(title)
         if legend_handles:
             if len(plt_legend_list) > 4: 
@@ -221,8 +221,8 @@ def plot_pca_scMix(pca_scores,
         plt.rcParams['axes.facecolor'] = 'white'
         
         plt.scatter(pca_scores[:,0], pca_scores[:,i], c=cell_color_vec, s=1) 
-        plt.xlabel('PC1')
-        plt.ylabel('PC'+str(i+1))
+        plt.xlabel('F1')
+        plt.ylabel('F'+str(i+1))
         plt.title(title)
         plt.legend(handles=plt_legend_dict[covariate])
         plt.show()

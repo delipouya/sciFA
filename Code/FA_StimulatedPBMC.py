@@ -20,7 +20,7 @@ import constants as const
 ## SET SEED
 np.random.seed(0)
 
-data_file_path = './Data/PBMC_Lupus_Kang8vs8_data.h5ad'
+data_file_path = '/home/delaram/sciFA/Data/PBMC_Lupus_Kang8vs8_data.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
 
@@ -40,7 +40,7 @@ data = data[~NA_index,:]
 '''
 
 ### randomly subsample the cells to 2000 cells
-sample_size = 2000
+sample_size = 10000
 subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
 y = y[subsample_index,:]
 data = data[subsample_index,:]
@@ -55,7 +55,7 @@ x = fproc.get_lib_designmat(data, lib_size='nCount_originalexp')
 
 #### design matrix - library size and sample
 x_sample = fproc.get_design_mat('sample', data) 
-x = np.column_stack((data.obs.total_counts, x_sample)) 
+x = np.column_stack((data.obs.nCount_originalexp, x_sample)) 
 x = sm.add_constant(x) ## adding the intercept
 
 ### fit GLM to each gene
@@ -65,6 +65,13 @@ print('pearson residuals: ', resid_pearson.shape) # numpy array of shape (num_ge
 print('y shape: ', y.shape) # (num_cells, num_genes)
 y = resid_pearson.T # (num_cells, num_genes)
 print('y shape: ', y.shape) # (num_cells, num_genes)
+
+
+genes = data.var_names
+colors_dict_humanPBMC = fplot.get_colors_dict_humanPBMC(y_sample, y_stim, y_cell_type)
+plt_legend_sample = fplot.get_legend_patch(y_sample, colors_dict_humanPBMC['sample'] )
+plt_legend_stim = fplot.get_legend_patch(y_stim, colors_dict_humanPBMC['stim'] )
+plt_legend_cell_type = fplot.get_legend_patch(y_cell_type, colors_dict_humanPBMC['cell_type'] )
 
 
 ####################################
@@ -77,15 +84,22 @@ pca = pipeline.named_steps['pca']
 pca_loading = pca.components_ 
 pca_loading.shape #(factors, genes)
 
-colors_dict_humanPBMC = fplot.get_colors_dict_humanPBMC(y_sample, y_stim, y_cell_type)
-
 plt.plot(pca.explained_variance_ratio_)
 
-### make a dictionary of colors for each sample in y_sample
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['cell_type'])
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['stim'])
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['sample'])
 
+### make a dictionary of colors for each sample in y_sample
+fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['cell_type'],
+               legend_handles=True,
+               title='PCA of gene expression data',
+               plt_legend_list=plt_legend_cell_type)
+fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['stim'],
+               legend_handles=True,
+               title='PCA of gene expression data',
+               plt_legend_list=plt_legend_stim)
+fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanPBMC['sample'],
+               legend_handles=True,
+               title='PCA of gene expression data',
+               plt_legend_list=plt_legend_sample)
 #### plot the loadings of the factors
 fplot.plot_factor_loading(pca_loading.T, genes, 0, 1, fontsize=10, 
                     num_gene_labels=2,title='Scatter plot of the loading vectors', 
@@ -104,9 +118,18 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanPBMC['sample'])
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanPBMC['cell_type'])
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanPBMC['stim'])
+fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanPBMC['sample'],
+               legend_handles=True,
+               title='varimax-PCA of library-regressed data',
+               plt_legend_list=plt_legend_sample)
+fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanPBMC['cell_type'],
+               legend_handles=True,
+               title='varimax-PCA of library-regressed data',
+               plt_legend_list=plt_legend_cell_type)
+fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanPBMC['stim'],
+               legend_handles=True,
+               title='varimax-PCA of library-regressed data',
+               plt_legend_list=plt_legend_stim)
 
 
 
@@ -188,18 +211,25 @@ y_cell_type_unique = np.unique(y_cell_type)
 ####################################
 
 ### calculate the mean importance of each covariate level
-mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores)
-mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_scores)
-mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores)
+mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores,scale='standard', mean='arithmatic')
+mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_scores,scale='standard', mean='arithmatic')
+mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores,scale='standard', mean='arithmatic')
 
-### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
+### concatenate mean_importance_df of all the covariates
+#### including "individuals"/sample as a covariate
 mean_importance_df = pd.concat([mean_importance_df_sample, mean_importance_df_stim, mean_importance_df_cell_type], axis=0)
-mean_importance_df.shape
-
 ### remove the rownames called NA from the mean_importance_df
 mean_importance_df = mean_importance_df[mean_importance_df.index != 'NA']
-
 fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
+
+
+### excluding "individuals" as a covariate
+mean_importance_df = pd.concat([mean_importance_df_stim, mean_importance_df_cell_type], axis=0)
+### remove the rownames called NA from the mean_importance_df
+mean_importance_df = mean_importance_df[mean_importance_df.index != 'NA']
+fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
+
+
 ## getting rownnammes of the mean_importance_df
 all_covariate_levels = mean_importance_df.index.values
 
@@ -230,11 +260,19 @@ AUC_all_factors_df_stim, wilcoxon_pvalue_all_factors_df_stim = fmet.get_AUC_all_
 AUC_all_factors_df_cell_type, wilcoxon_pvalue_all_factors_df_cell_type = fmet.get_AUC_all_factors_df(factor_scores, y_cell_type)
 
 AUC_all_factors_df = pd.concat([AUC_all_factors_df_sample, AUC_all_factors_df_stim, AUC_all_factors_df_cell_type], axis=0)
-wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_sample, wilcoxon_pvalue_all_factors_df_cell_type], axis=0)
 AUC_all_factors_df = AUC_all_factors_df[AUC_all_factors_df.index != 'NA']
 
 fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
                                  title='F-C Match: AUC scores', color='coolwarm') #'YlOrBr'
+
+
+
+AUC_all_factors_df = pd.concat([AUC_all_factors_df_stim, AUC_all_factors_df_cell_type], axis=0)
+AUC_all_factors_df = AUC_all_factors_df[AUC_all_factors_df.index != 'NA']
+
+fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
+                                 title='F-C Match: AUC scores', color='coolwarm') #'YlOrBr'
+
 
 ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
 ## list of color maps: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
@@ -251,6 +289,12 @@ print('percent_matched_cov: ', percent_matched_cov)
 fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
+
+
+#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
+AUC_mean_importance_df = (5*AUC_all_factors_df + mean_importance_df)/6
+fplot.plot_all_factors_levels_df(AUC_mean_importance_df, 
+                                 title='F-C Match', color='coolwarm') #'YlOrBr'
 
 ####################################
 ##### Factor metrics #####

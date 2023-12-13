@@ -20,7 +20,7 @@ import constants as const
 ## SET SEED
 np.random.seed(0)
 
-data_file_path = './Data/HumanLiverAtlas.h5ad'
+data_file_path = '/home/delaram/sciFA/Data/HumanLiverAtlas.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_cell_type = fproc.get_metadata_humanLiver(data)
@@ -65,12 +65,21 @@ pca_loading = pca.components_
 pca_loading.shape #(factors, genes)
 
 colors_dict_humanLiver = fplot.get_colors_dict_humanLiver(y_sample, y_cell_type)
+plt_legend_sample = fplot.get_legend_patch(y_sample, colors_dict_humanLiver['sample'] )
+plt_legend_cell_type = fplot.get_legend_patch(y_cell_type, colors_dict_humanLiver['cell_type'] )
+
+
 
 plt.plot(pca.explained_variance_ratio_)
 
 ### make a dictionary of colors for each sample in y_sample
-fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanLiver['cell_type'], 
-               title='PCA of pearson residuals - reg: library size')
+fplot.plot_pca(pca_scores, 4, 
+               cell_color_vec= colors_dict_humanLiver['cell_type'], 
+               legend_handles=True,
+               title='PCA of gene expression data',
+               plt_legend_list=plt_legend_cell_type)
+
+
 fplot.plot_pca(pca_scores, 4, cell_color_vec= colors_dict_humanLiver['sample'])
 
 #### plot the loadings of the factors
@@ -91,8 +100,17 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['sample'])
-fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['cell_type'])
+fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['sample'],
+               legend_handles=True,
+               title='varimax-PCA of pearson residual',
+               plt_legend_list=plt_legend_cell_type)
+fplot.plot_pca(pca_scores_varimax, 15, cell_color_vec= colors_dict_humanLiver['cell_type'],
+               legend_handles=True,
+               title='varimax-PCA of pearson residual',
+               plt_legend_list=plt_legend_cell_type)
+
+
+
 
 
 fplot.plot_factor_loading(varimax_loading, genes, 0, 1, fontsize=10, 
@@ -165,9 +183,9 @@ y_cell_type_unique = np.unique(y_cell_type)
 ####################################
 
 ### calculate the mean importance of each covariate level
-mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores)
-mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores)
-
+mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores,scale='standard', mean='arithmatic')
+mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores,scale='standard', mean='arithmatic')
+# 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
 mean_importance_df = pd.concat([mean_importance_df_sample, mean_importance_df_cell_type], axis=0)
 mean_importance_df.shape
@@ -221,6 +239,20 @@ fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
 
+
+#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
+auc_weight = 2
+AUC_mean_importance_df = (auc_weight*AUC_all_factors_df + mean_importance_df)/(auc_weight+1)
+fplot.plot_all_factors_levels_df(AUC_mean_importance_df, 
+                                 title='F-C Match', color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=32) #'YlOrBr'
+
+### remove sample covariate levels from AUC_mean_importance_df
+AUC_mean_importance_df_cell_type = AUC_mean_importance_df.loc[y_cell_type_unique]
+fplot.plot_all_factors_levels_df(AUC_mean_importance_df_cell_type,
+                                    title='F-C Match: scores', color='coolwarm',
+                                    x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=32) #'YlOrBr'
 ####################################
 ##### Factor metrics #####
 ####################################

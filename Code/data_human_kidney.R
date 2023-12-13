@@ -19,6 +19,8 @@ length(meta_data$Cell)
 sum(colnames(data_seur) != meta_data$Cell)
 
 data_seur@meta.data = cbind(data_seur@meta.data, meta_data)
+head(data_seur@meta.data )
+saveRDS(data_seur, '~/scLMM/LMM-scRNAseq/Data/Human_Kidney_data.rds')
 
 SaveH5Seurat(data_seur, filename = "~/sciFA/Data/Human_Kidney_data.h5Seurat")
 Convert("~/sciFA/Data/Human_Kidney_data.h5Seurat", dest = "h5ad")

@@ -22,7 +22,7 @@ np.random.seed(0)
 
 
 
-data_file_path = './Data/Human_Kidney_data.h5ad'
+data_file_path = '/home/delaram/sciFA//Data/Human_Kidney_data.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_sex, y_cell_type, y_cell_type_sub = fproc.get_metadata_humanKidney(data)
@@ -30,7 +30,7 @@ y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
 genes = data.var_names
 
 ### randomly subsample the cells to 2000 cells
-sample_size = 3000
+sample_size = 4000
 subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
 y = y[subsample_index,:]
 data = data[subsample_index,:]
@@ -106,11 +106,11 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['cell_type'],
+fplot.plot_pca(pca_scores_varimax, 27, cell_color_vec= colors_dict_humanKidney['cell_type'],
                legend_handles=True,plt_legend_list=plt_legend_celltype)
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['sex'],
+fplot.plot_pca(pca_scores_varimax, 27, cell_color_vec= colors_dict_humanKidney['sex'],
                legend_handles=True,plt_legend_list=plt_legend_sex)
-fplot.plot_pca(pca_scores_varimax, 18, cell_color_vec= colors_dict_humanKidney['sample'],
+fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanKidney['sample'],
                legend_handles=True,plt_legend_list=plt_legend_sample)
 
 
@@ -242,6 +242,21 @@ print('percent_matched_cov: ', percent_matched_cov)
 fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
+
+#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
+auc_weight = 1
+AUC_mean_importance_df = (auc_weight*AUC_all_factors_df + mean_importance_df)/(auc_weight+1)
+fplot.plot_all_factors_levels_df(AUC_mean_importance_df, 
+                                 title='F-C Match', color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=35, y_axis_tick_fontsize=39) #'YlOrBr'
+
+### remove sample covariate levels from AUC_mean_importance_df
+AUC_mean_importance_df_cell_type = AUC_mean_importance_df.loc[y_cell_type_unique]
+fplot.plot_all_factors_levels_df(AUC_mean_importance_df_cell_type,
+                                    title='F-C Match: scores', color='coolwarm',
+                                    x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=32) #'YlOrBr'
+####################################
 
 ####################################
 ##### Factor metrics #####

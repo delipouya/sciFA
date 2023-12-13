@@ -31,6 +31,9 @@ data_list_3cl = list(sc_10x=sce_sc_10x_qc,
                      Dropseq=sce_sc_Dropseq_qc)
 
 data_list_3cl = lapply(data_list_3cl, function(x) as.Seurat(x, counts = "counts", data = "counts")) 
+#data_list_3cl = lapply(data_list_3cl, function(x) as.Seurat(x, counts = "logcounts", data = "logcounts")) 
+
+data_list_3cl = lapply(data_list_3cl, function(x) {SCTransform(x, variable.features.n = nrow(x),assay='originalexp')}) 
 names(data_list_3cl) = c('sc_10X', 'CELseq2', 'Dropseq')
 data_list_3cl = sapply(1:length(data_list_3cl), 
                        function(i) {data_list_3cl[[i]]$sample=names(data_list_3cl)[i]; data_list_3cl[[i]]}, simplify = F)
@@ -50,6 +53,8 @@ head(scMix_3cl_merged)
 
 GetAssayData(scMix_3cl_merged)[1:5, 1:5]
 colSums(GetAssayData(scMix_3cl_merged))
+saveRDS(scMix_3cl_merged, file = '~/scLMM/LMM-scRNAseq/Data/scMix_3cl_merged_sctransform.rds')
+saveRDS(scMix_3cl_merged, file = '~/scLMM/LMM-scRNAseq/Data/scMix_3cl_merged_logcounts.rds')
 SaveH5Seurat(scMix_3cl_merged, filename = "~/scLMM/sc_mixology/scMix_3cl_merged.h5Seurat")
 Convert("~/scLMM/sc_mixology/scMix_3cl_merged.h5Seurat", dest = "h5ad")
 

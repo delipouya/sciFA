@@ -68,7 +68,7 @@ fplot.plot_pca(pca_scores, 4,
 fplot.plot_factor_loading(pca_loading.T, genes, 0, 2, fontsize=10, 
                     num_gene_labels=2,
                     title='Scatter plot of the loading vectors', 
-                    label_x=True, label_y=True)
+                    label_x=False, label_y=False)
 
 ####################################
 #### fit GLM to each gene ######
@@ -166,9 +166,9 @@ fplot.plot_pca(pca_scores_promax, 4,
 
 
 #### plot the loadings of the factors
-fplot.plot_factor_loading(varimax_loading, genes, 0, 2, fontsize=10, 
+fplot.plot_factor_loading(varimax_loading, genes, 0, 4, fontsize=10, 
                     num_gene_labels=6,title='Scatter plot of the loading vectors', 
-                    label_x=True, label_y=True)
+                    label_x=False, label_y=False)
 
 
 ####################################
@@ -195,13 +195,16 @@ factor_scores = pca_scores_varimax
 ####################################
 
 ### calculate the mean importance of each covariate level
-mean_importance_df_protocol = fmatch.get_mean_importance_all_levels(y_protocol, factor_scores, scale='rank', mean='geometric')
-mean_importance_df_cell_line = fmatch.get_mean_importance_all_levels(y_cell_line, factor_scores, scale='rank', mean='geometric')
+mean_importance_df_protocol = fmatch.get_mean_importance_all_levels(y_protocol, factor_scores, scale='standard', mean='arithmatic')
+mean_importance_df_cell_line = fmatch.get_mean_importance_all_levels(y_cell_line, factor_scores, scale='standard', mean='arithmatic')
 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
 mean_importance_df = pd.concat([mean_importance_df_protocol, mean_importance_df_cell_line], axis=0)
 mean_importance_df.shape
-fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
+fplot.plot_all_factors_levels_df(mean_importance_df, 
+                                 title='F-C Match: Feature importance scores', 
+                                 color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=34)
 ## getting rownnammes of the mean_importance_df
 all_covariate_levels = mean_importance_df.index.values
 
@@ -247,7 +250,9 @@ AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_
 wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_cell_line], axis=0)
 
 fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
-                                 title='F-C Match: AUC scores', color='coolwarm') #'YlOrBr'
+                                 title='F-C Match: AUC scores', color='coolwarm',
+                                 x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=34) #'YlOrBr'
 
 ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
 ## list of color maps: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
@@ -270,6 +275,20 @@ fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_c
 AUC_all_factors_df_binary = AUC_all_factors_df.apply(lambda x: (x > threshold).astype(int))
 fplot.plot_all_factors_levels_df(AUC_all_factors_df_binary, 
                                  title='F-C Match: binary AUC scores', color='coolwarm') #'YlOrBr'
+
+
+
+
+
+#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
+auc_weight = 4
+AUC_mean_importance_df = (auc_weight*AUC_all_factors_df + mean_importance_df)/(auc_weight+1)
+fplot.plot_all_factors_levels_df(AUC_mean_importance_df, 
+                                 title='', color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=32) #'YlOrBr'
+
+
+
 
 
 ####################################
