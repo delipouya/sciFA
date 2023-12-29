@@ -1,12 +1,6 @@
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from xgboost import XGBClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.inspection import permutation_importance
 import seaborn as sns
 
 import functions_processing as fproc
@@ -24,61 +18,11 @@ import scipy.stats as ss
  
 
 np.random.seed(10)
-import time
-
-
-
-
-# training classifiers for feature importance on a classification problem
-# matching pca factors to different covariates in the data
-
-def get_importance_df_v_comp(factor_scores, a_binary_cov) -> pd.DataFrame:
-    '''
-    calculate the importance of each factor for a given covariate level - model comparison version
-    returns a dataframe of size (num_models, num_components)
-    factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
-    a_binary_cov: numpy array of the binary covariate for a covariate level (n_cells, )
-    '''
-
-    models = {'LogisticRegression': LogisticRegression(), 
-              'DecisionTree': DecisionTreeClassifier(), 
-              'RandomForest': RandomForestClassifier(), 
-              'XGB': XGBClassifier(), 
-              'KNeighbors_permute': KNeighborsClassifier()}
-
-    importance_dict = {}
-    ### save the time of the fit for each model
-    time_dict = {}
-
-    for model_name, model in models.items():
-        X, y = factor_scores, a_binary_cov
-
-        t_start= time.time()
-        model.fit(X, y)
-        t_end = time.time()
-        time_dict[model_name] = t_end - t_start
-
-        if model_name == 'LogisticRegression':
-            importance_dict[model_name] = model.coef_[0]
-
-        elif model_name in ['DecisionTree', 'RandomForest', 'XGB']:
-            # get importance
-            importance_dict[model_name] = model.feature_importances_
-        else:
-            # perform permutation importance
-            results = permutation_importance(model, X, y, scoring='accuracy')
-            importance_dict[model_name] = results.importances_mean
-
-    importance_df = pd.DataFrame.from_dict(importance_dict, orient='index', 
-                                           columns=['F'+str(i) for i in range(1, factor_scores.shape[1]+1)])
-    return importance_df, time_dict
-
-
 
 def get_importance_all_levels_dict(covariate_vec, factor_scores) -> dict:
     '''
-    calculate the mean importance of all levels of a given covariate
-    returns a dictionary of length num_levels. dictionalry keys are covariate levels and values are dataframes of size (num_levels, num_components)
+    calculate the importance of all levels of a given covariate
+    returns a dictionary of length num_levels. dictionalry keys are covariate levels and values are dataframes of size (num_models, num_components)
     each dataframe is the importance of each factor for a given covariate level
     
     covariate_vec: numpy array of the covariate vector (n_cells, )
@@ -93,7 +37,7 @@ def get_importance_all_levels_dict(covariate_vec, factor_scores) -> dict:
 
         ### get the importance_df for each covariate level
         a_binary_cov = fproc.get_binary_covariate(covariate_vec, covariate_level)
-        importance_df_a_level, time_dict = get_importance_df_v_comp(factor_scores, a_binary_cov)
+        importance_df_a_level, time_dict = fmatch.get_importance_df(factor_scores, a_binary_cov)
 
         ### save the importance_df (each column's a model) for each covariate level
         importance_df_a_level_dict[covariate_level] = importance_df_a_level
@@ -105,7 +49,7 @@ def get_importance_all_levels_dict(covariate_vec, factor_scores) -> dict:
 
 
 
-def get_mean_importance_df_v_comp(importance_df_levels_dict) -> pd.DataFrame:
+def get_mean_importance_df_list(importance_df_levels_dict) -> pd.DataFrame:
         '''
         calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, num_components)
         the mean importance is calculated with different scaling and mean calculation methods for comparison
@@ -147,6 +91,7 @@ def get_mean_importance_df_v_comp(importance_df_levels_dict) -> pd.DataFrame:
             mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='minmax', mean='geometric')
             mean_imp_minmax_geom_df.loc[covariate_level] = mean_importance_a_level
 
+            
             #### scale: rank - mean: arithmatic
             mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='rank', mean='arithmatic')
             mean_imp_rank_arith_df.loc[covariate_level] = mean_importance_a_level
@@ -154,9 +99,10 @@ def get_mean_importance_df_v_comp(importance_df_levels_dict) -> pd.DataFrame:
             #### scale: rank - mean: geometric
             mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='rank', mean='geometric')
             mean_imp_rank_geom_df.loc[covariate_level] = mean_importance_a_level
+            
 
 
-        return mean_imp_standard_arith_df, mean_imp_standard_geom_df, mean_imp_minmax_arith_df, mean_imp_minmax_geom_df, mean_imp_rank_arith_df, mean_imp_rank_geom_df
+        return mean_imp_standard_arith_df, mean_imp_standard_geom_df, mean_imp_minmax_arith_df, mean_imp_minmax_geom_df , mean_imp_rank_arith_df, mean_imp_rank_geom_df
 
 
 #importance_df_levels_dict = importance_df_dict_protocol
@@ -190,7 +136,7 @@ def plot_runtime_barplot(time_df):
     sns.set(style='white')
     #create grouped bar chart with x-tick labels rotated 90 degrees
     sns.barplot(x='model', y='time', hue='covariate_level', data=time_df_m)
-    plt.title('Model run time comparison' + ' (' + FA_type + ')')
+    plt.title('Model run time comparison', fontsize=20)
     plt.xticks(rotation=45)
 
 

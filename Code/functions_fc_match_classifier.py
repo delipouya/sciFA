@@ -1,4 +1,7 @@
 
+# training classifiers for feature importance on a classification problem
+# matching pca factors to different covariates in the data
+
 import sys
 sys.path.append('./Code/')
 import numpy as np
@@ -17,11 +20,60 @@ import constants as const
 import skimage as ski
 import skimage.filters as skif
 import scipy.stats as ss
+import scipy as sp
+import time
 
-# training classifiers for feature importance on a classification problem
-# matching pca factors to different covariates in the data
 
-def get_importance_df(factor_scores, a_binary_cov, time_eff=True, force_all = False) -> pd.DataFrame:
+
+def get_AUC_alevel(a_factor, a_binary_cov) -> float:
+    '''
+    calculate the AUC of a factor for a covariate level
+    return the AUC and the p-value of the U test
+    a_factor: a factor score
+    covariate_vector: a vector of the covariate
+    covariate_level: a level of the covariate
+
+    '''
+    n1 = np.sum(a_binary_cov==1)
+    n0 = len(a_factor)-n1
+    
+    ### U score manual calculation
+    #order = np.argsort(a_factor)
+    #rank = np.argsort(order)
+    #rank += 1   
+    #U1 = np.sum(rank[covariate_vector == covariate_level]) - n1*(n1+1)/2
+
+    ### calculate the U score using scipy
+    scipy_U = sp.stats.mannwhitneyu(a_factor[a_binary_cov == 1] , 
+                                    a_factor[a_binary_cov != 1] , 
+                                    alternative="two-sided", use_continuity=False)
+    
+    AUC1 = scipy_U.statistic/ (n1*n0)
+    return AUC1, scipy_U.pvalue
+
+
+
+def get_AUC_all_factors_alevel(factor_scores, a_binary_cov) -> list:
+    '''
+    calculate the AUC of all the factors for a covariate level
+    return a list of AUCs for all the factors
+    factor_scores: a matrix of factor scores
+    a_binary_cov: a binnary vector of the covariate
+    '''
+    AUC_alevel_factors = []
+    wilcoxon_pvalue_alevel_factors = []
+    for i in range(factor_scores.shape[1]):
+        a_factor = factor_scores[:,i]
+        AUC, wilcoxon_pvalue = get_AUC_alevel(a_factor, a_binary_cov)
+        AUC_alevel_factors.append(AUC)
+        wilcoxon_pvalue_alevel_factors.append(wilcoxon_pvalue)
+    ### convert AUC_alevel_factors to a numpy array
+    AUC_alevel_factors = np.asarray(AUC_alevel_factors)
+    return AUC_alevel_factors, wilcoxon_pvalue_alevel_factors
+
+
+
+def get_importance_df(factor_scores, a_binary_cov, time_eff=False) -> pd.DataFrame:
     '''
     calculate the importance of each factor for each covariate level
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
@@ -32,18 +84,20 @@ def get_importance_df(factor_scores, a_binary_cov, time_eff=True, force_all = Fa
 
     models = {'LogisticRegression': LogisticRegression(), 
               'DecisionTree': DecisionTreeClassifier(), 
-              'XGB': XGBClassifier()}
-    
-    if not time_eff:
-        models['RandomForest'] = RandomForestClassifier()
-
-    if force_all:
-        models['KNeighbors_permute'] =  KNeighborsClassifier()
+              'RandomForest': RandomForestClassifier(), 
+              'XGB': XGBClassifier(), 
+              'KNeighbors_permute': KNeighborsClassifier()}
 
     importance_dict = {}
+    ### save the time of the fit for each model
+    time_dict = {}
+
     for model_name, model in models.items():
         X, y = factor_scores, a_binary_cov
+        t_start= time.time()
         model.fit(X, y)
+        t_end = time.time()
+        time_dict[model_name] = t_end - t_start
 
         if model_name == 'LogisticRegression':
             ### use the absolute value of the logistic reg coefficients as the importance - for consistency with other classifiers
@@ -59,10 +113,91 @@ def get_importance_df(factor_scores, a_binary_cov, time_eff=True, force_all = Fa
             results = permutation_importance(model, X, y, scoring='accuracy')
             importance_dict[model_name] = np.abs(results.importances_mean)
 
+    
+    #### adding AUC as a measure of importance
+    t_start= time.time()
+    AUC_alevel, wilcoxon_pvalue_alevel = get_AUC_all_factors_alevel(factor_scores, a_binary_cov)
+    importance_dict['AUC'] = AUC_alevel
+    t_end = time.time()
+    time_dict['AUC'] = t_end - t_start
+
     importance_df = pd.DataFrame.from_dict(importance_dict, orient='index', 
                                            columns=['F'+str(i) for i in range(1, factor_scores.shape[1]+1)])
-    return importance_df
+    return importance_df, time_dict
 
+
+
+
+
+#########
+
+def get_AUC_all_levels(a_factor, covariate_vector) -> list:
+    '''
+    calculate the AUC of a factor for all the covariate levels
+    return a list of AUCs for all the covariate levels
+    a_factor: a factor score
+    covariate_vector: a vector of the covariate
+    '''
+    AUC_all = []
+    wilcoxon_pvalue_all = []
+    for covariate_level in np.unique(covariate_vector):
+        AUC1, pvalue = get_AUC_alevel(a_factor, covariate_vector, covariate_level)
+        ### AUC: 0.5 is random, 1 is perfect 
+        ### to convert to feature importance, subtract 0.5 and multiply by 2
+        AUC1_scaled = np.abs((AUC1*2)-1)
+        AUC_all.append(AUC1_scaled)
+        ### convert the pvalue to a -log10 scale to handle the exponential distribution. High values are better? #TODO: check this - remove the negative sign??
+        wilcoxon_pvalue_all.append(-np.log10(pvalue))
+
+    ### scale the wilcoxon pvalues to be between 0 and 1
+    wilcoxon_pvalue_all = fproc.get_scaled_vector(wilcoxon_pvalue_all)
+    ## reverse the direction of the scaled pvalues
+    wilcoxon_pvalue_all = 1 - wilcoxon_pvalue_all
+    return AUC_all, wilcoxon_pvalue_all
+
+
+
+def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
+    '''
+    calculate the AUC of all the factors for all the covariate levels
+    return a list of AUCs for all the factors
+    factor_scores: a matrix of factor scores
+    covariate_vector: a vector of the covariate
+    '''
+    AUC_all_factors = []
+    wilcoxon_pvalue_all_factors = []
+    for i in range(factor_scores.shape[1]):
+        a_factor = factor_scores[:,i]
+        AUC_all, wilcoxon_pvalue_all = get_AUC_all_levels(a_factor, covariate_vector)
+        AUC_all_factors.append(AUC_all)
+        wilcoxon_pvalue_all_factors.append(wilcoxon_pvalue_all)
+    return AUC_all_factors, wilcoxon_pvalue_all_factors
+
+
+
+def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
+    '''
+    calculate the AUC of all the factors for all the covariate levels
+    return a dataframe of AUCs for all the factors
+    factor_scores: a matrix of factor scores
+    covariate_vector: a vector of the covariate
+    '''
+    AUC_all_factors, wilcoxon_pvalue_all_factors = get_AUC_all_factors(factor_scores, covariate_vector)
+
+    AUC_all_factors_df = pd.DataFrame(AUC_all_factors).T
+    AUC_all_factors_df.columns = ['F'+str(i+1) for i in range(factor_scores.shape[1])]
+    AUC_all_factors_df.index = np.unique(covariate_vector)
+
+    wilcoxon_pvalue_all_factors_df = pd.DataFrame(wilcoxon_pvalue_all_factors).T
+    wilcoxon_pvalue_all_factors_df.columns = ['F'+str(i+1) for i in range(factor_scores.shape[1])]
+    wilcoxon_pvalue_all_factors_df.index = np.unique(covariate_vector)
+
+
+    return AUC_all_factors_df, wilcoxon_pvalue_all_factors_df
+
+
+
+###########################
 
 
 def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:

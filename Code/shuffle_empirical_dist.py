@@ -28,13 +28,15 @@ np.random.seed(10)
 import time
 
 #### Function to concatenate mean importance dataframes specific to scMix data
-def concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list):
+def concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list, residual_type):
     for i in range(len(meanimp_df_list)):
         meanimp_df_list[i]['mean_type'] = [mean_type_list[i]]*meanimp_df_list[i].shape[0]
         meanimp_df_list[i]['scale_type'] = [scale_type_list[i]]*meanimp_df_list[i].shape[0]
         meanimp_df_list[i]['scores_included'] = [scores_included_list[i]]*meanimp_df_list[i].shape[0]
         meanimp_df_list[i]['covariate'] = covariate_list
     meanimp_df = pd.concat(meanimp_df_list, axis=0)
+    ### add a column for resiudal type name
+    meanimp_df['residual_type'] = [residual_type]*meanimp_df.shape[0]
     return meanimp_df
 
 ######################################################################################
@@ -73,6 +75,7 @@ factor_scores = pca_scores_varimax
 
 
 FA_type = 'varimax'#'PCA'
+residual_type = 'pearson'
 scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA' 
 n = 1000
 
@@ -84,8 +87,8 @@ importance_df_dict_protocol, time_dict_a_level_dict_protocol = flabel.get_import
 importance_df_dict_cell_line, time_dict_a_level_dict_cell_line = flabel.get_importance_all_levels_dict(y_cell_line, factor_scores) 
 
 
-meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_v_comp(importance_df_dict_protocol)
-meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_v_comp(importance_df_dict_cell_line)
+meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_list(importance_df_dict_protocol)
+meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_list(importance_df_dict_cell_line)
 
 
 meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_protocol, meanimp_standard_arith_cell_line], axis=0)
@@ -96,63 +99,40 @@ meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_ari
 meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
 
 
-####################################
-#### AUC score
-####################################
-#### calculate the AUC of all the factors for all the covariate levels
-AUC_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
-AUC_all_factors_df_cell_line, wilcoxon_pvalue_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
-
-AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
-
-#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
-auc_weight = 2
-AUC_mean_importance_standard_arith_df = (auc_weight*AUC_all_factors_df + meanimp_standard_arith_df)/(auc_weight+1)
-AUC_mean_importance_standard_geom_df = (auc_weight*AUC_all_factors_df + meanimp_standard_geom_df)/(auc_weight+1)
-AUC_mean_importance_minmax_arith_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_arith_df)/(auc_weight+1)
-AUC_mean_importance_minmax_geom_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_geom_df)/(auc_weight+1)
-
-
-
 
 meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
                    meanimp_minmax_arith_df, meanimp_minmax_geom_df, 
-                   meanimp_rank_arith_df, meanimp_rank_geom_df,
-                   AUC_all_factors_df,
-                   AUC_mean_importance_standard_arith_df, AUC_mean_importance_standard_geom_df,
-                   AUC_mean_importance_minmax_arith_df, AUC_mean_importance_minmax_geom_df]
+                   meanimp_rank_arith_df, meanimp_rank_geom_df]
 
 mean_type_list = ['arithmatic', 'geometric', 
                   'arithmatic', 'geometric', 
-                  'arithmatic', 'geometric', 
-                  'AUC', 
-                  'AUC_arithmatic', 'AUC_geometric', 
-                  'AUC_arithmatic', 'AUC_geometric']
+                  'arithmatic', 'geometric']
 
-scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank', 
-                   'AUC', 
-                   'AUC_standard', 'AUC_standard', 'AUC_minmax', 'AUC_minmax']
+scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
 
-scores_included_list = [scores_included]*11
+scores_included_list = [scores_included]*6
 covariate_list = ['protocol']*3 + ['cell_line']*3
 
 meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, 
-                                    scale_type_list, scores_included_list)
+                                    scale_type_list, scores_included_list, 
+                                    residual_type=residual_type)
 
 
 ############################################################
 
 
 ########### Comparing model run times
-#time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
+time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
 ########## Comparing time differences between models
-#time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
-#plot_runtime_barplot(time_df)
+time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
+flabel.plot_runtime_barplot(time_df)
 
 ########## Comparing factor scores between models
 #### merge two importance_df_dict_protocol and importance_df_dict_cell_line dicts
 importance_df_dict = {**importance_df_dict_protocol, **importance_df_dict_cell_line}
 importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
+### add a column for residual type name to importance_df_m
+importance_df_m['residual_type'] = [residual_type]*importance_df_m.shape[0]
 
 
 ### save importance_df_m and meanimp_df to csv
@@ -187,8 +167,8 @@ for i in range(n):
 
     ####################################
     ##### Mean importance calculation ########
-    meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_v_comp(importance_df_dict_protocol)
-    meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_v_comp(importance_df_dict_cell_line)
+    meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_list(importance_df_dict_protocol)
+    meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_list(importance_df_dict_cell_line)
 
 
     meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_protocol, meanimp_standard_arith_cell_line], axis=0)
@@ -199,49 +179,23 @@ for i in range(n):
     meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
 
 
-    ####################################
-    #### AUC score
-    ####################################
-    #### calculate the AUC of all the factors for all the covariate levels
-    AUC_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
-    AUC_all_factors_df_cell_line, wilcoxon_pvalue_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
-
-    AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
-
-    #### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
-    auc_weight = 2
-    AUC_mean_importance_standard_arith_df = (auc_weight*AUC_all_factors_df + meanimp_standard_arith_df)/(auc_weight+1)
-    AUC_mean_importance_standard_geom_df = (auc_weight*AUC_all_factors_df + meanimp_standard_geom_df)/(auc_weight+1)
-    AUC_mean_importance_minmax_arith_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_arith_df)/(auc_weight+1)
-    AUC_mean_importance_minmax_geom_df = (auc_weight*AUC_all_factors_df + meanimp_minmax_geom_df)/(auc_weight+1)
-
-
-
 
     meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
                     meanimp_minmax_arith_df, meanimp_minmax_geom_df, 
-                    meanimp_rank_arith_df, meanimp_rank_geom_df,
-                    AUC_all_factors_df,
-                    AUC_mean_importance_standard_arith_df, AUC_mean_importance_standard_geom_df,
-                    AUC_mean_importance_minmax_arith_df, AUC_mean_importance_minmax_geom_df]
+                    meanimp_rank_arith_df, meanimp_rank_geom_df]
 
     mean_type_list = ['arithmatic', 'geometric', 
                     'arithmatic', 'geometric', 
-                    'arithmatic', 'geometric', 
-                    'AUC', 
-                    'AUC_arithmatic', 'AUC_geometric', 
-                    'AUC_arithmatic', 'AUC_geometric']
+                    'arithmatic', 'geometric']
 
-    scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank', 
-                    'AUC', 
-                    'AUC_standard', 'AUC_standard', 'AUC_minmax', 'AUC_minmax']
+    scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
 
     scores_included = 'shuffle'#'baseline'#'top_cov' 'top_FA' 
-    scores_included_list = [scores_included]*11
+    scores_included_list = [scores_included]*6
     covariate_list = ['protocol']*3 + ['cell_line']*3
 
     meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, 
-                                        scale_type_list, scores_included_list)
+                                        scale_type_list, scores_included_list, residual_type=residual_type)
 
 
 
@@ -251,6 +205,8 @@ for i in range(n):
     #### merge two importance_df_dict_protocol and importance_df_dict_cell_line dicts
     importance_df_dict = {**importance_df_dict_protocol, **importance_df_dict_cell_line}
     importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
+    ### add a column for residual type name to importance_df_m
+    importance_df_m['residual_type'] = [residual_type]*importance_df_m.shape[0]
 
     ### save importance_df_m to csv
     importance_df_m.to_csv('/home/delaram/sciFA/Results/shuffle_empirical_dist_V3/importance_df_melted_'+
