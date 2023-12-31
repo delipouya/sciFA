@@ -86,10 +86,8 @@ n = 1000
 importance_df_dict_protocol, time_dict_a_level_dict_protocol = flabel.get_importance_all_levels_dict(y_protocol, factor_scores) 
 importance_df_dict_cell_line, time_dict_a_level_dict_cell_line = flabel.get_importance_all_levels_dict(y_cell_line, factor_scores) 
 
-
 meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_list(importance_df_dict_protocol)
 meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_list(importance_df_dict_cell_line)
-
 
 meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_protocol, meanimp_standard_arith_cell_line], axis=0)
 meanimp_standard_geom_df = pd.concat([meanimp_standard_geom_protocol, meanimp_standard_geom_cell_line], axis=0)
@@ -97,7 +95,6 @@ meanimp_minmax_arith_df = pd.concat([meanimp_minmax_arith_protocol, meanimp_minm
 meanimp_minmax_geom_df = pd.concat([meanimp_minmax_geom_protocol, meanimp_minmax_geom_cell_line], axis=0)
 meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_arith_cell_line], axis=0)
 meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
-
 
 
 meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
@@ -119,12 +116,11 @@ meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list,
 
 
 ############################################################
-
-
 ########### Comparing model run times
 time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
 ########## Comparing time differences between models
-time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
+time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', 
+                                 columns=list(time_df_dict.values())[0].keys())
 flabel.plot_runtime_barplot(time_df)
 
 ########## Comparing factor scores between models
@@ -136,8 +132,7 @@ importance_df_m['residual_type'] = [residual_type]*importance_df_m.shape[0]
 
 
 ### save importance_df_m and meanimp_df to csv
-#importance_df_m.to_csv('/home/delaram/sciFA/Results/importance_df_melted_'+
-#                        'scMixology_'+FA_type+'_'+'baseline_n1000_V2.csv')
+importance_df_m.to_csv('/home/delaram/sciFA/Results/importance_df_melted_'+'scMixology_'+FA_type+'_'+'baseline_n1000_V2.csv')
 meanimp_df.to_csv('/home/delaram/sciFA/Results/meanimp_df_'+'scMixology_'+FA_type+'_'+'baseline_V3.csv')
 
 t_start_total = time.time()
@@ -195,8 +190,8 @@ for i in range(n):
     covariate_list = ['protocol']*3 + ['cell_line']*3
 
     meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, 
-                                        scale_type_list, scores_included_list, residual_type=residual_type)
-
+                                        scale_type_list, scores_included_list, 
+                                        residual_type=residual_type)
 
 
     ############################################################

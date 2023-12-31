@@ -18,8 +18,6 @@ from sklearn.metrics import calinski_harabasz_score
 import diptest
 
 
-
-
 def get_factor_simpson_index(x):
     '''
     calculate the simpson index of a factor
