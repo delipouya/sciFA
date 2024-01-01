@@ -89,10 +89,10 @@ importance_df_dict = {}
 time_dict_a_level_dict = {}
 
 
-for resid_type in resid_dict.keys():
+for residual_type in resid_dict.keys():
     print('--'*20)
-    print('residual type: ', resid_type)
-    resid = resid_dict[resid_type]
+    print('residual type: ', residual_type)
+    resid = resid_dict[residual_type]
 
     ### using pipeline to scale the gene expression data first
     print('y shape: ', y.shape) # (num_cells, num_genes)
@@ -112,8 +112,6 @@ for resid_type in resid_dict.keys():
     pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 
     factor_scores = pca_scores_varimax
-
-    residual_type = resid_type
     scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA' 
     n = 1000
 
@@ -159,7 +157,7 @@ for resid_type in resid_dict.keys():
     ########## Comparing time differences between models
     time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', 
                                     columns=list(time_df_dict.values())[0].keys())
-    flabel.plot_runtime_barplot(time_df)
+    #flabel.plot_runtime_barplot(time_df)
 
     ########## Comparing factor scores between models
     #### merge two importance_df_dict_protocol and importance_df_dict_cell_line dicts
@@ -212,7 +210,6 @@ for resid_type in resid_dict.keys():
         meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
 
 
-
         meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
                         meanimp_minmax_arith_df, meanimp_minmax_geom_df, 
                         meanimp_rank_arith_df, meanimp_rank_geom_df]
@@ -231,7 +228,6 @@ for resid_type in resid_dict.keys():
                                             scale_type_list, scores_included_list, 
                                             residual_type=residual_type)
 
-
         ############################################################
         ########## Comparing factor scores between models
         ############################################################
@@ -241,9 +237,12 @@ for resid_type in resid_dict.keys():
         ### add a column for residual type name to importance_df_m
         importance_df_m['residual_type'] = [residual_type]*importance_df_m.shape[0]
 
-        importance_df_m.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/'+'importance_df_melted_scMixology_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
-        meanimp_df.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/'+'meanimp_df_'+'scMixology_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
 
+        ### save importance_df_m and meanimp_df to csv
+        importance_df_m.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/imp/'+
+                               'importance_df_melted_scMixology_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
+        meanimp_df.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/meanimp/'+
+                          'meanimp_df_'+'scMixology_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
 
 
     t_end_total = time.time()
