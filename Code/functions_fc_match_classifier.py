@@ -257,7 +257,7 @@ def get_mean_importance_all_levels(covariate_vec, factor_scores, scale='standard
         print('covariate_level: ', covariate_level)
 
         a_binary_cov = fproc.get_binary_covariate(covariate_vec, covariate_level)
-        importance_df_a_level = get_importance_df(factor_scores, a_binary_cov)
+        importance_df_a_level = get_importance_df(factor_scores, a_binary_cov)[0]
         mean_importance_a_level = get_mean_importance_level(importance_df_a_level, scale, mean)
 
         print('mean_importance_a_level:', mean_importance_a_level)

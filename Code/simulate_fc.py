@@ -14,7 +14,7 @@ import functions_simulation as fsim
 
 num_factors = 15 ### put this to 100-1000 
 num_mixtures = 2 ## each gaussian represents a covariate level 
-num_samples = 10000
+num_samples = 1000
 
 sim_factors_list = []
 overlap_mat_list = []
@@ -46,51 +46,37 @@ covariate_vector = pd.Series(covariate_list[0])
 
 ### calculate the mean importance of each covariate level
 mean_importance_df = fmatch.get_mean_importance_all_levels(covariate_vector, factor_scores)
-fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
+fplot.plot_all_factors_levels_df(mean_importance_df, 
+                                 title='F-C Match: Feature importance scores', color='coolwarm')
 all_covariate_levels = mean_importance_df.index.values
-
-#### AUC score
-#### calculate the AUC of all the factors for all the covariate levels
-AUC_all_factors_df, wilcoxon_pvalue_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
-fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
-                                 title='F-C Match: AUC scores', color='YlOrBr')
 
 #################################### 
 #### Evaluate overlap and match scores for a single factor
 #################################### 
 factor_index = 0
-match_score_mat_AUC = fsim.get_pairwise_match_score_matrix(AUC_all_factors_df,factor_index)
 match_score_mat_meanImp = fsim.get_pairwise_match_score_matrix(mean_importance_df,factor_index)
 overlap_mat = overlap_mat_list[factor_index]
 
 ### plot the scatter plot of the overlap and match scores
-fsim.plot_scatter(overlap_mat.flatten(), match_score_mat_AUC.flatten(), title='AUC')
 fsim.plot_scatter(overlap_mat.flatten(), match_score_mat_meanImp.flatten(), title='feature importance')
 
 #################################### 
 #### calculate the overlap and matching scores for all the factors
 #################################### 
-match_score_mat_AUC_list = []
 match_score_mat_meanImp_list = []
 
 for i in range(num_factors): ## i is the factor index
-    match_score_mat_AUC_list.append(fsim.get_pairwise_match_score_matrix(AUC_all_factors_df,i))
     match_score_mat_meanImp_list.append(fsim.get_pairwise_match_score_matrix(mean_importance_df,i))
 
-match_score_mat_AUC_flat = fsim.convert_matrix_list_to_vector(match_score_mat_AUC_list)
 match_score_mat_meanImp_flat = fsim.convert_matrix_list_to_vector(match_score_mat_meanImp_list)
 
 #### plot the scatter plot of the overlap and match scores
 fsim.plot_scatter(overlap_mat_flat, match_score_mat_meanImp_flat, title='feature importance')
-fsim.plot_scatter(overlap_mat_flat, match_score_mat_AUC_flat, title='AUC')
 
 
 ####################################
 #### evaluating bimodality score using simulated factors ####
 ####################################
-overlap_mat_flat
-
-factor_scores
 
 bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
       vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores)
@@ -130,18 +116,14 @@ fsim.plot_scatter(overlap_mat_flat, ASV_all_geo, title='ASV - geometric')
 
 
 ### calculate diversity metrics
-factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
-factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
-
-factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
-factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
-
-factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
-factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
+factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
+factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
 
 
-fsim.plot_scatter(overlap_mat_flat, factor_gini_meanimp, title='factor gini - mean importance')
-fsim.plot_scatter(overlap_mat_flat, factor_gini_AUC, title='factor gini - AUC')
+##### this comparison is not reliable as the number of levels are too small (two) to calculate diversity metrics
+fsim.plot_scatter(overlap_mat_flat, factor_simpson_meanimp, title='factor simpson - mean importance')
+fsim.plot_scatter(overlap_mat_flat, factor_entropy_meanimp, title='factor entropy - mean importance')
 
 
 #### label free factor metrics

@@ -20,7 +20,7 @@ import diptest
 
 def get_factor_simpson_index(x):
     '''
-    calculate the simpson index of a factor
+    calculate the simpson index of a factor - "a single factor" specificity based on feature importance scores
     x: numpy array of the factor match scores based on feature importance
     simpson index = 1 - simpson diversity index
     simpson diversity index = sum of the square of the probability of a factor being selected
