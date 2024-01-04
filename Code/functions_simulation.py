@@ -250,7 +250,6 @@ def convert_matrix_list_to_vector(matrix_list):
     return vector_list
 
 
-### define a function to mask the upper triangle of a matrix
 def mask_upper_triangle(mat):
     '''
     mask the upper triangle of a matrix

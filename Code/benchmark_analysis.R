@@ -14,7 +14,12 @@ importance_df_m_merged_response = read.csv('/home/delaram/sciFA/Results/benchmar
 importance_df_m_merged_response$res = 'response'
 dim(importance_df_m_merged_response)
 
-importance_df_residual_baseline = rbind(rbind(importance_df_m_merged_response, importance_df_m_merged_pearson)) #importance_df_m_merged_deviance
+
+importance_df_m_merged_deviance = read.csv('/home/delaram/sciFA/Results/benchmark/deviance//base/importance_df_melted_scMixology_deviance_baseline.csv')
+importance_df_m_merged_deviance$res = 'deviance'
+dim(importance_df_m_merged_deviance)
+
+importance_df_residual_baseline = rbind(rbind(importance_df_m_merged_response, importance_df_m_merged_pearson),importance_df_m_merged_deviance) #
 head(importance_df_residual_baseline)
 importance_df_residual_baseline$type = 'baseline'
 dim(importance_df_residual_baseline)
@@ -32,13 +37,13 @@ imp_shuffle_response$res = 'response'
 head(imp_shuffle_response)
 
 file = '/home/delaram/sciFA/Results/benchmark/deviance/shuffle/imp//'
-imp_list = lapply(list.files(file, pattern = "importance_df*", full.names = T), read.csv)
+imp_list = lapply(list.files(file, pattern = "importance_df*", full.names = T)[1:500], read.csv)
 imp_shuffle_deviance <- Reduce(rbind,imp_list)
 imp_shuffle_deviance$res = 'deviance'
 head(imp_shuffle_deviance)
 dim(imp_shuffle_deviance)
 
-importance_df_residual_shuffle = rbind(rbind(imp_shuffle_pearson, imp_shuffle_response)) #imp_shuffle_deviance
+importance_df_residual_shuffle = rbind(rbind(imp_shuffle_pearson, imp_shuffle_response),imp_shuffle_deviance) #
 importance_df_residual_shuffle$type = 'shuffle'
 head(importance_df_residual_shuffle)
 
@@ -155,12 +160,12 @@ ggplot(summary_df_m_imp, aes(y=value,x=Var2))+geom_boxplot()+
 
 meanimp_df_merged_pearson = read.csv('~/sciFA/Results/benchmark/pearson/base/meanimp_df_scMixology_pearson_baseline.csv')
 meanimp_df_merged_pearson$res = 'pearson'
-meanimp_df_merged_response = read.csv('~/sciFA/Results/benchmark/response///base/meanimp_df_scMixology_response_baseline.csv')
+meanimp_df_merged_response = read.csv('~/sciFA/Results/benchmark/response/base/meanimp_df_scMixology_response_baseline.csv')
 meanimp_df_merged_response$res = 'response'
-meanimp_df_merged_deviance = read.csv('~/sciFA/Results/benchmark/deviance//base/meanimp_df_scMixology_deviance_baseline.csv')
+meanimp_df_merged_deviance = read.csv('~/sciFA/Results/benchmark/deviance/base/meanimp_df_scMixology_deviance_baseline.csv')
 meanimp_df_merged_deviance$res = 'deviance'
 
-meanimp_df_residual_baseline = rbind(rbind(meanimp_df_merged_response, meanimp_df_merged_pearson)) #meanimp_df_merged_deviance
+meanimp_df_residual_baseline = rbind(rbind(meanimp_df_merged_response, meanimp_df_merged_pearson),meanimp_df_merged_deviance) #
 head(meanimp_df_residual_baseline)
 meanimp_df_residual_baseline$type = 'baseline'
 
@@ -183,7 +188,7 @@ meanimp_shuffle_deviance <- Reduce(rbind,meanimp_list)
 meanimp_shuffle_deviance$res = 'deviance'
 head(meanimp_shuffle_deviance)
 
-meanimp_residual_shuffle = rbind(rbind(meanimp_list_shuffle_pearson, meanimp_shuffle_response))#meanimp_shuffle_deviance
+meanimp_residual_shuffle = rbind(rbind(meanimp_list_shuffle_pearson, meanimp_shuffle_response),meanimp_shuffle_deviance)#
 head(meanimp_residual_shuffle)
 meanimp_residual_shuffle$type = 'shuffle'
 
@@ -220,7 +225,7 @@ for (residual_type in residual_type_names){
       res_df_mean_scale = res_df_mean[res_df_mean$scale_type==scale_type,]
       print(head(res_df_mean_scale, 20))
       print(paste0(residual_type, '_', mean_type, '_', scale_type,'.csv'))
-      #write.csv(res_df_mean_scale,paste0('~/sciFA/Results/benchmark/analysis/baseline_df_',residual_type, '_', mean_type, '_', scale_type,'.csv'))
+      write.csv(res_df_mean_scale,paste0('~/sciFA/Results/benchmark/analysis/meanimp/baseline_df_',residual_type, '_', mean_type, '_', scale_type,'.csv'))
     }
   }
 }
@@ -243,7 +248,7 @@ for (residual_type in residual_type_names){
       print(dim(res_df_mean_scale))
       print(head(res_df_mean_scale, 3))
       print(paste0(residual_type, '_', mean_type, '_', scale_type,'.csv'))
-      write.csv(res_df_mean_scale,paste0('~/sciFA/Results/benchmark/analysis/shuffle_df_',residual_type, '_', mean_type, '_', scale_type,'.csv'))
+      write.csv(res_df_mean_scale,paste0('~/sciFA/Results/benchmark/analysis/meanimp/shuffle_df_',residual_type, '_', mean_type, '_', scale_type,'.csv'))
     }
   }
 }
@@ -310,4 +315,13 @@ ggplot(summary_df_m_both, aes(y=value,x=Var2))+geom_boxplot()+
   ggtitle(paste0('pvalue threshold=',thr))
 
 
+summary_df_m_both$cov=ifelse(summary_df_m_both$Var1 %in% c('H1975', 'H2228', 'HCC827'), 'cell', 'protocol')
+table(summary_df_m_both$cov)
+
+ggplot(summary_df_m_both, aes(y=value,x=Var2, color=cov))+geom_point()+
+  theme_classic()+
+  coord_flip()+theme(text = element_text(size=17))+xlab('')+
+  ylab('Average #sig matched factors per covariate level')+
+  geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
+  ggtitle(paste0('pvalue threshold=',thr))
 

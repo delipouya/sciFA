@@ -83,7 +83,8 @@ print('response residuals: ', resid_response.shape)
 print('deviance residuals: ', resid_deviance.shape) 
 
 ### make a dictionary of residuals
-resid_dict = {'pearson': resid_pearson, 'response': resid_response, 'deviance': resid_deviance}
+#resid_dict = {'pearson': resid_pearson, 'response': resid_response, 'deviance': resid_deviance}
+resid_dict = {'deviance': resid_deviance}
 ### make a for loop to calculate the importance scores for each residual type
 importance_df_dict = {}
 time_dict_a_level_dict = {}
@@ -113,7 +114,8 @@ for residual_type in resid_dict.keys():
 
     factor_scores = pca_scores_varimax
     scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA' 
-    n = 1000
+    #n = 1000
+    n = 500
 
     ####################################
     #### Baseline importance calculation and run time ######

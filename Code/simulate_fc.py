@@ -67,7 +67,6 @@ match_score_mat_meanImp_list = []
 
 for i in range(num_factors): ## i is the factor index
     match_score_mat_meanImp_list.append(fsim.get_pairwise_match_score_matrix(mean_importance_df,i))
-
 match_score_mat_meanImp_flat = fsim.convert_matrix_list_to_vector(match_score_mat_meanImp_list)
 
 #### plot the scatter plot of the overlap and match scores
@@ -128,11 +127,11 @@ fsim.plot_scatter(overlap_mat_flat, factor_entropy_meanimp, title='factor entrop
 
 #### label free factor metrics
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
-
 fsim.plot_scatter(overlap_mat_flat, factor_variance_all, title='factor variance')
 
 
 ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
+AUC_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
 AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
 fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
                                     title='Homogeneity: 1-AUC scores', color='hot')
@@ -149,14 +148,9 @@ corr_df['SV_cov2'] = [np.corrcoef(overlap_mat_flat, SV_all_factors[1])[0,1]]
 corr_df['ASV_arith'] = [np.corrcoef(overlap_mat_flat, ASV_all_arith)[0,1]]
 corr_df['ASV_geo'] = [np.corrcoef(overlap_mat_flat, ASV_all_geo)[0,1]]
 
-corr_df['factor_gini_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_gini_meanimp)[0,1]]
-corr_df['factor_gini_AUC'] = [np.corrcoef(overlap_mat_flat, factor_gini_AUC)[0,1]]
-
-corr_df['factor_entropy_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_entropy_meanimp)[0,1]]
-corr_df['factor_entropy_AUC'] = [np.corrcoef(overlap_mat_flat, factor_entropy_AUC)[0,1]]
-
-corr_df['factor_simpon_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_simpson_meanimp)[0,1]]
-corr_df['factor_simpson_AUC'] = [np.corrcoef(overlap_mat_flat, factor_simpson_AUC)[0,1]]
+## only include in case #covariate levels > 3 
+#corr_df['factor_entropy_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_entropy_meanimp)[0,1]]
+#corr_df['factor_simpon_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_simpson_meanimp)[0,1]]
 
 corr_df['factor_variance'] = [np.corrcoef(overlap_mat_flat, factor_variance_all)[0,1]]
 corr_df['1-AUC_cov1'] = [np.corrcoef(overlap_mat_flat, AUC_all_factors_df_1.iloc[0,:])[0,1]]

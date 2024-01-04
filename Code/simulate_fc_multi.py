@@ -44,8 +44,8 @@ for i in range(num_sim_rounds):
 
     for i in range(num_factors):
         a_random_factor, overlap_matrix, mu_list, sigma_list, p_list = fsim.get_simulated_factor_object(n=num_samples, num_mixtures=num_mixtures, 
-                                                                                                   mu_min=0, mu_max=None,
-                                                                                                   sigma_min=0.5, sigma_max=1, p_equals=True)  
+                                                                                                mu_min=0, mu_max=None,
+                                                                                                sigma_min=0.5, sigma_max=1, p_equals=True)  
         sim_factors_list.append(fsim.unlist(a_random_factor))
         overlap_mat_list.append(overlap_matrix)
         covariate_list.append(fsim.get_sim_factor_covariates(a_random_factor))
@@ -60,32 +60,16 @@ for i in range(num_sim_rounds):
 
     ### calculate the mean importance of each covariate level
     mean_importance_df = fmatch.get_mean_importance_all_levels(covariate_vector, factor_scores)
-    all_covariate_levels = mean_importance_df.index.values
-
-    #### AUC score
-    #### calculate the AUC of all the factors for all the covariate levels
-    AUC_all_factors_df, wilcoxon_pvalue_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
-    ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
-    AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
-
-    ### calculate arithmatic and geometric mean of each factor using AUC_all_factors_df_1
-    AUC_1_arith_mean = fsim.get_arithmatic_mean_df(AUC_all_factors_df_1)
-    AUC_1_geo_mean = fsim.get_geometric_mean_df(AUC_all_factors_df_1)
+    all_covariate_levels = mean_importance_df.index.values 
 
     #################################### 
     #### calculate the overlap and matching scores for all the factors
     #################################### 
-    ### TODO: match score matrix seems not useful - consider removing it?
-    match_score_mat_AUC_list = []
     match_score_mat_meanImp_list = []
 
     for i in range(num_factors): ## i is the factor index
-        match_score_mat_AUC_list.append(fsim.get_pairwise_match_score_matrix(AUC_all_factors_df,i))
         match_score_mat_meanImp_list.append(fsim.get_pairwise_match_score_matrix(mean_importance_df,i))
-
-    match_score_mat_AUC_flat = fsim.convert_matrix_list_to_vector(match_score_mat_AUC_list)
     match_score_mat_meanImp_flat = fsim.convert_matrix_list_to_vector(match_score_mat_meanImp_list)
-    ####################################  
 
 
     bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
@@ -114,19 +98,21 @@ for i in range(num_sim_rounds):
     ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='arithmetic')
     ASV_all_geo = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='geometric')
 
+    ### calculate diversity metrics
+    factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+    factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
+    factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
+
     #### label free factor metrics
     factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 
-    ### calculate diversity metrics
-    factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
-    factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
 
-    factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
-    factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
-
-    factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
-    factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
-
+    ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
+    AUC_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
+    AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
+    ### calculate arithmatic and geometric mean of each factor using AUC_all_factors_df_1
+    AUC_1_arith_mean = fsim.get_arithmatic_mean_df(AUC_all_factors_df_1)
+    AUC_1_geo_mean = fsim.get_geometric_mean_df(AUC_all_factors_df_1)
 
     #### calculate the correlation between the overlap and all of the scores and save in a dataframe
     corr_df_temp = pd.DataFrame()
@@ -142,15 +128,9 @@ for i in range(num_sim_rounds):
 
     corr_df_temp['factor_variance'] = [np.corrcoef(overlap_mat_flat, factor_variance_all)[0,1]]
 
-
-    corr_df_temp['factor_gini_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_gini_meanimp)[0,1]]
-    corr_df_temp['factor_gini_AUC'] = [np.corrcoef(overlap_mat_flat, factor_gini_AUC)[0,1]]
-
+    ## only include in case #covariate levels > 3 - gini is a single value cant be saved in corr_df_temp
     corr_df_temp['factor_entropy_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_entropy_meanimp)[0,1]]
-    corr_df_temp['factor_entropy_AUC'] = [np.corrcoef(overlap_mat_flat, factor_entropy_AUC)[0,1]]
-
     corr_df_temp['factor_simpon_meanImp'] = [np.corrcoef(overlap_mat_flat, factor_simpson_meanimp)[0,1]]
-    corr_df_temp['factor_simpson_AUC'] = [np.corrcoef(overlap_mat_flat, factor_simpson_AUC)[0,1]]
 
     corr_df_temp['factor_variance'] = [np.corrcoef(overlap_mat_flat, factor_variance_all)[0,1]]
         
@@ -174,4 +154,4 @@ corr_df = pd.concat(corr_df_list, axis=1)
 ### name the columns as overlap + column number
 corr_df.columns = ['overlap_'+str(i) for i in range(corr_df.shape[1])]
 ### save as a csv file
-corr_df.to_csv('metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_v3_nov1.csv')
+corr_df.to_csv('metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_Jan2024.csv')

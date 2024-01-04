@@ -598,6 +598,7 @@ def get_AUC_all_levels(a_factor, covariate_vector) -> list:
 
 
 
+
 def get_AUC_all_factors(factor_scores, covariate_vector) -> list:
     '''
     calculate the AUC of all the factors for all the covariate levels
@@ -629,12 +630,12 @@ def get_AUC_all_factors_df(factor_scores, covariate_vector) -> pd.DataFrame:
     AUC_all_factors_df.columns = ['F'+str(i+1) for i in range(factor_scores.shape[1])]
     AUC_all_factors_df.index = np.unique(covariate_vector)
 
-    wilcoxon_pvalue_all_factors_df = pd.DataFrame(wilcoxon_pvalue_all_factors).T
-    wilcoxon_pvalue_all_factors_df.columns = ['F'+str(i+1) for i in range(factor_scores.shape[1])]
-    wilcoxon_pvalue_all_factors_df.index = np.unique(covariate_vector)
+    #wilcoxon_pvalue_all_factors_df = pd.DataFrame(wilcoxon_pvalue_all_factors).T
+    #wilcoxon_pvalue_all_factors_df.columns = ['F'+str(i+1) for i in range(factor_scores.shape[1])]
+    #wilcoxon_pvalue_all_factors_df.index = np.unique(covariate_vector)
 
 
-    return AUC_all_factors_df, wilcoxon_pvalue_all_factors_df
+    return AUC_all_factors_df
 
 
 
