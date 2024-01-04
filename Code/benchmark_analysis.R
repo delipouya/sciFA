@@ -325,3 +325,35 @@ ggplot(summary_df_m_both, aes(y=value,x=Var2, color=cov))+geom_point()+
   #geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
   
 
+
+
+
+
+
+
+
+
+
+library(reshape2)
+
+#######################################################################
+file = '/home/delaram/sciFA/Results/benchmark/pearson/shuffle/imp//'
+imp_list = lapply(list.files(file, pattern = "importance_df*", full.names = T), read.csv)
+imp_shuffle_pearson <- Reduce(rbind,imp_list)
+imp_shuffle_pearson$res = 'pearson'
+head(imp_shuffle_pearson)
+dim(imp_shuffle_pearson)
+imp_shuffle_pearson_model = split(imp_shuffle_pearson,imp_shuffle_pearson$model)
+
+imp_shuffle_pearson_a_model = imp_shuffle_pearson_model[[1]]
+head(imp_shuffle_pearson_a_model)
+imp_shuffle_pearson_a_model = imp_shuffle_pearson_a_model[,c('factor', 'importance', 'covariate_level')]
+imp_shuffle_pearson_a_model
+reshape(imp_shuffle_pearson_a_model, idvar = "covariate_level", timevar = "factor", direction = "wide")
+
+
+
+
+
+
+
