@@ -320,8 +320,8 @@ table(summary_df_m_both$cov)
 
 ggplot(summary_df_m_both, aes(y=value,x=Var2, color=cov))+geom_point()+
   theme_classic()+
-  coord_flip()+theme(text = element_text(size=17))+xlab('')+
-  ylab('Average #sig matched factors per covariate level')+
-  geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
-  ggtitle(paste0('pvalue threshold=',thr))
+  coord_flip()+theme(text = element_text(size=15))+xlab('')+
+  ylab('Average #sig matched factors per covariate level')+ggtitle(paste0('pvalue threshold=',thr))
+  #geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
+  
 

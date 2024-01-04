@@ -4,22 +4,44 @@ library(ggplot2)
 df = read.csv('~/sciFA/metric_overlap_corr_df_sim20.csv')
 df = read.csv('~/sciFA/metric_overlap_corr_df_sim20_v2.csv')
 df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_v3_nov1.csv')
+df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_Jan2024.csv')
+
 
 df = data.frame(t(df))
 colnames(df) = df[1,]
 df = df[-1,]
 head(df)
 
-cols_to_remove = c('factor_gini_meanImp', 'factor_gini_AUC', 'factor_entropy_meanImp', 'factor_entropy_AUC', 'factor_simpon_meanImp', 'factor_simpson_AUC')
+cols_to_remove = c('factor_gini_meanImp', 'factor_gini_AUC', 
+                   'factor_entropy_meanImp', 'factor_entropy_AUC',
+                   'factor_simpon_meanImp', 'factor_simpson_AUC', 'dip_pval')
 df = df[,!colnames(df) %in% cols_to_remove]
 head(df)
 
 df_melt = melt(t(df))
 colnames(df_melt) = c('metric', 'overlap', 'R')
 df_melt$R = as.numeric(df_melt$R)
+head(df_melt)
+bimodality_metric=c( "bic_km","calinski_harabasz_km", "davies_bouldin_km","silhouette_km",
+   "vrs_km","wvrs_km","bic_gmm", "silhouette_gmm",
+   "vrs_gmm","wvrs_gmm","likelihood_ratio","bimodality_index","dip_score",
+   "kurtosis","outlier_sum" )
+heterogeneity_metric=c("ASV_arith","ASV_geo","1-AUC_arith","1-AUC_geo")
+effect_size_metric=c('factor_variance')
+df_melt$metric_type[df_melt$metric %in% bimodality_metric]='separability'
+df_melt$metric_type[df_melt$metric %in% heterogeneity_metric]='heterogeneity'
+df_melt$metric_type[df_melt$metric %in% effect_size_metric]='effect size'
+
 
 ggplot(df_melt, aes(x=metric,y=R))+geom_boxplot(notch = TRUE, fill='maroon')+
-  coord_flip()+ylab('Correlation with overlap value')+theme_classic()
+  coord_flip()+ylab('Correlation with overlap value')+theme(text = element_text(size=16))
+
+
+ggplot(df_melt, aes(x=metric,y=R,fill=metric_type))+
+  geom_boxplot(notch = TRUE)+
+  coord_flip()+ylab('Correlation with overlap value')+
+  theme(text = element_text(size=16))#+theme_classic()
+
 
 df.t = data.frame(t(data.frame(df)))
 df.t_num = data.frame(lapply(df.t, as.numeric))
@@ -32,5 +54,7 @@ head(df.t_num)
 ncol(df.t_num)
 
 dev.off()
-gridExtra::grid.table(round(df.t_num[,c(21,22)],3))
-View(round(df.t_num[,c(21,22)],3))
+gridExtra::grid.table(round(df.t_num[,c('mean','sd')],3))
+gridExtra::grid.table(round(df.t_num,3))
+
+View(round(df.t_num[,c('mean','sd')],3))
