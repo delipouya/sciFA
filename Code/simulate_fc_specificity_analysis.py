@@ -70,6 +70,7 @@ gini_list_dict_base = {'pearson': {'AUC': [0.16617428267212767],
   'RandomForest': [0.6176133625207837],
   'XGB': [0.7225796703025885]}}
 
+
 ### make a boxplot for each model in each residual type
 for key, values in gini_list_dict.items():
     fig, ax = plt.subplots(figsize=(7, 5))
