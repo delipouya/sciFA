@@ -474,9 +474,9 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics,
 
 
 
-def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",
-                               x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
-                               x_axis_tick_fontsize=21, y_axis_tick_fontsize=24, figsize_x=None, figsize_y=None):
+def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",x_axis_label=None,
+                               x_axis_fontsize=38, y_axis_fontsize=38, title_fontsize=38,
+                               x_axis_tick_fontsize=33, y_axis_tick_fontsize=36, figsize_x=None, figsize_y=None):
     '''
     colors: SV: 'RdPu', AUC/: 'YlOrBr', wilcoxon: rocket_r, featureImp: coolwarm
     plot the score of all the factors for all the covariate levels
@@ -496,15 +496,19 @@ def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",
     ax.xaxis.label.set_size(x_axis_fontsize)
     ax.yaxis.label.set_size(y_axis_fontsize)
     ### increase the fontsize of the x and y ticks
-    ax.tick_params(axis='x', labelsize=x_axis_tick_fontsize)
-    ax.tick_params(axis='y', labelsize=y_axis_tick_fontsize)
+    
     ### set title fontsize
     ax.title.set_size(title_fontsize)
 
     ## add F1, F2, ... to the x-axis ticks
-    x_axis_label = ['F'+str(i) for i in range(1, all_factors_df.shape[1]+1)]
+    ### if x_axis_label is not None, use x_axis_label as the x-axis ticks
+    if x_axis_label is None:
+         x_axis_label = ['F'+str(i) for i in range(1, all_factors_df.shape[1]+1)]
+    
     ax.set_xticklabels(x_axis_label, rotation=45, ha="right",)
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    ax.tick_params(axis='x', labelsize=x_axis_tick_fontsize)
+    ax.tick_params(axis='y', labelsize=y_axis_tick_fontsize)
     plt.show()
 
 def plot_all_factors_levels(SV_all_factors, covariate_levels, title='', color='RdPu'):

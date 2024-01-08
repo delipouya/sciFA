@@ -27,6 +27,7 @@ y_sample, y_cell_type = fproc.get_metadata_humanLiver(data)
 y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
 genes = data.var_names
 
+'''
 ### randomly subsample the cells to 2000 cells
 sample_size = 2000
 subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
@@ -34,7 +35,7 @@ y = y[subsample_index,:]
 data = data[subsample_index,:]
 y_sample = y_sample[subsample_index]
 y_cell_type = y_cell_type[subsample_index]
-
+'''
 ### get the indices of the highly variable genes
 
 #### design matrix - library size only

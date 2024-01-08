@@ -66,10 +66,12 @@ plt_legend_protocol = fplot.get_legend_patch(y_sample, colors_dict_scMix['protoc
 #### design matrix - library size only
 x = fproc.get_lib_designmat(data, lib_size='nCount_originalexp')
 
+'''
 #### design matrix - library size and sample
 x_protocol = fproc.get_design_mat('protocol', data) 
 x = np.column_stack((data.obs.nCount_originalexp, x_protocol)) 
 x = sm.add_constant(x) ## adding the intercept
+'''
 
 glm_fit_dict = fglm.fit_poisson_GLM(y, x)
 
@@ -84,7 +86,9 @@ print('deviance residuals: ', resid_deviance.shape)
 
 ### make a dictionary of residuals
 #resid_dict = {'pearson': resid_pearson, 'response': resid_response, 'deviance': resid_deviance}
-resid_dict = {'deviance': resid_deviance}
+#resid_dict = {'deviance': resid_deviance}
+resid_dict = {'pearson': resid_pearson, 'response': resid_response}
+
 ### make a for loop to calculate the importance scores for each residual type
 importance_df_dict = {}
 time_dict_a_level_dict = {}
@@ -115,7 +119,7 @@ for residual_type in resid_dict.keys():
     factor_scores = pca_scores_varimax
     scores_included = 'baseline'#'baseline'#'top_cov' 'top_FA' 
     #n = 1000
-    n = 500
+    n = 100
 
     ####################################
     #### Baseline importance calculation and run time ######

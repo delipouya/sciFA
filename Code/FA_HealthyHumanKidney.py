@@ -21,7 +21,6 @@ import constants as const
 np.random.seed(0)
 
 
-
 data_file_path = '/home/delaram/sciFA//Data/Human_Kidney_data.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
@@ -29,6 +28,7 @@ y_sample, y_sex, y_cell_type, y_cell_type_sub = fproc.get_metadata_humanKidney(d
 y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
 genes = data.var_names
 
+'''
 ### randomly subsample the cells to 2000 cells
 sample_size = 4000
 subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
@@ -38,20 +38,22 @@ y_sample = y_sample[subsample_index]
 y_sex = y_sex[subsample_index]
 y_cell_type = y_cell_type[subsample_index]
 
+
 ### get the indices of the highly variable genes
 
 #### design matrix - library size only
 x = fproc.get_lib_designmat(data, lib_size='nCount_RNA')
+
 
 #### design matrix - library size and sample
 x_sample = fproc.get_design_mat('sampleID', data) 
 x = np.column_stack((data.obs.nCount_RNA, x_sample)) 
 x = sm.add_constant(x) ## adding the intercept
 
-
 #### design matrix - sample only
 x_sample = fproc.get_design_mat('sampleID', data) 
 x = sm.add_constant(x_sample) ## adding the intercept
+
 
 ### fit GLM to each gene
 glm_fit_dict = fglm.fit_poisson_GLM(y, x)
@@ -60,7 +62,7 @@ print('pearson residuals: ', resid_pearson.shape) # numpy array of shape (num_ge
 print('y shape: ', y.shape) # (num_cells, num_genes)
 y = resid_pearson.T # (num_cells, num_genes)
 print('y shape: ', y.shape) # (num_cells, num_genes)
-
+'''
 
 ####################################
 #### Running PCA on the data ######
@@ -81,11 +83,11 @@ plt_legend_sample = fplot.get_legend_patch(y_sample, colors_dict_humanKidney['sa
 plt.plot(pca.explained_variance_ratio_)
 
 ### make a dictionary of colors for each sample in y_sample
-fplot.plot_pca(pca_scores, 11, cell_color_vec= colors_dict_humanKidney['cell_type'], 
+fplot.plot_pca(pca_scores, 3, cell_color_vec= colors_dict_humanKidney['cell_type'], 
                legend_handles=True,plt_legend_list=plt_legend_celltype)
-fplot.plot_pca(pca_scores, 11, cell_color_vec= colors_dict_humanKidney['sex'],
+fplot.plot_pca(pca_scores, 5, cell_color_vec= colors_dict_humanKidney['sex'],
                legend_handles=True,plt_legend_list=plt_legend_sex)
-fplot.plot_pca(pca_scores, 11, cell_color_vec= colors_dict_humanKidney['sample'],
+fplot.plot_pca(pca_scores, 3, cell_color_vec= colors_dict_humanKidney['sample'],
                legend_handles=True,plt_legend_list=plt_legend_sample)
 
 #### plot the loadings of the factors
@@ -106,11 +108,14 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 27, cell_color_vec= colors_dict_humanKidney['cell_type'],
+
+num_pcs = 18
+fplot.plot_pca(pca_scores_varimax, num_pcs, cell_color_vec= colors_dict_humanKidney['cell_type'],
                legend_handles=True,plt_legend_list=plt_legend_celltype)
-fplot.plot_pca(pca_scores_varimax, 27, cell_color_vec= colors_dict_humanKidney['sex'],
+fplot.plot_pca(pca_scores_varimax, num_pcs, cell_color_vec= colors_dict_humanKidney['sex'],
                legend_handles=True,plt_legend_list=plt_legend_sex)
-fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanKidney['sample'],
+
+fplot.plot_pca(pca_scores_varimax, num_pcs, cell_color_vec= colors_dict_humanKidney['sample'],
                legend_handles=True,plt_legend_list=plt_legend_sample)
 
 
@@ -173,6 +178,8 @@ fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanKidney['cl
 factor_loading = pca_loading
 factor_scores = pca_scores
 ########################
+
+
 factor_loading = rotation_results_varimax['rotloading']
 factor_scores = pca_scores_varimax
 ########################
@@ -184,12 +191,19 @@ y_cell_type_unique = np.unique(y_cell_type)
 ####################################
 
 ### calculate the mean importance of each covariate level
-mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores)
-mean_importance_df_sex = fmatch.get_mean_importance_all_levels(y_sex, factor_scores)
-mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores)
+
+mean_importance_df_sex = fmatch.get_mean_importance_all_levels(y_sex, factor_scores, time_eff=True,
+                                                               scale='standard', mean='geometric')
+mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores, time_eff=True,
+                                                                     scale='standard', mean='geometric')
+
+mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores, time_eff=True,
+                                                                  scale='standard', mean='arithmatic')
 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
+mean_importance_df = pd.concat([mean_importance_df_sex, mean_importance_df_cell_type,mean_importance_df_sample], axis=0)
 mean_importance_df = pd.concat([mean_importance_df_sex, mean_importance_df_cell_type], axis=0)
+
 ### remove the rows with NaN
 mean_importance_df = mean_importance_df.dropna(axis=0)
 
@@ -215,129 +229,70 @@ print('percent_matched_cov: ', percent_matched_cov)
 fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
-####################################
-#### AUC score
-####################################
-#### calculate the AUC of all the factors for all the covariate levels
-AUC_all_factors_df_sex, wilcoxon_pvalue_all_factors_df_sex = fmet.get_AUC_all_factors_df(factor_scores, y_sex)
-AUC_all_factors_df_cell_type, wilcoxon_pvalue_all_factors_df_cell_type = fmet.get_AUC_all_factors_df(factor_scores, y_cell_type)
+### select the factors that are matched with any covariate level
+matched_factor_index = np.where(matched_factor_dist>0)[0] 
+### subset mean_importance_df to the matched factors
+mean_importance_df_matched = mean_importance_df.iloc[:,matched_factor_index] 
+## subset x axis labels based on het matched factors
+x_labels_matched = mean_importance_df_matched.columns.values
 
-AUC_all_factors_df = pd.concat([AUC_all_factors_df_sex, AUC_all_factors_df_cell_type], axis=0)
+fplot.plot_all_factors_levels_df(mean_importance_df_matched, x_axis_label=x_labels_matched,
+                                 title='F-C Match: Feature importance scores', color='coolwarm')
 
-fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
-                                 title='F-C Match: AUC scores', color='coolwarm') #'YlOrBr'
+
+####################################
+#### evaluating bimodality score using simulated factors ####
+####################################
+
+#bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
+#      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=False)
+#bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores, time_eff=False)
+
+silhouette_scores_km, vrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=True)
+silhouette_scores_gmm = fmet.get_gmm_scores(factor_scores, time_eff=True)
+bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
+
+### silhouette_gmm is slow - remove it next time
+bimodality_metrics = ['silhouette_km', 'vrs_km', 'silhouette_gmm', 'bimodality_index']
+bimodality_scores = [silhouette_scores_km, vrs_km, silhouette_scores_gmm, bimodality_index_scores]
+
+#### Scaled variance
+SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)
+
+### label dependent factor metrics
+ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='arithmetic')
+ASV_all_geo = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='geometric')
+
+### calculate diversity metrics
+factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
+factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
+
+
+#### label free factor metrics
+factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 
 ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
-## list of color maps: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
-
-threshold = fmatch.get_otsu_threshold(AUC_all_factors_df.values.flatten())
-fplot.plot_histogram(AUC_all_factors_df.values.flatten(), xlabel='AUC scores',
-                        title='F-C Match: AUC score', threshold=threshold)
-
-matched_factor_dist, percent_matched_fact = fmatch.get_percent_matched_factors(mean_importance_df, threshold)
-matched_covariate_dist, percent_matched_cov = fmatch.get_percent_matched_covariate(mean_importance_df, threshold=threshold)
-
-print('percent_matched_fact: ', percent_matched_fact)
-print('percent_matched_cov: ', percent_matched_cov)
-fplot.plot_matched_factor_dist(matched_factor_dist)
-fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
+AUC_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
+AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
+fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
+                                    title='Homogeneity: 1-AUC scores', color='hot')
 
 
-#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
-auc_weight = 1
-AUC_mean_importance_df = (auc_weight*AUC_all_factors_df + mean_importance_df)/(auc_weight+1)
-fplot.plot_all_factors_levels_df(AUC_mean_importance_df, 
-                                 title='F-C Match', color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
-                               x_axis_tick_fontsize=35, y_axis_tick_fontsize=39) #'YlOrBr'
 
-### remove sample covariate levels from AUC_mean_importance_df
-AUC_mean_importance_df_cell_type = AUC_mean_importance_df.loc[y_cell_type_unique]
-fplot.plot_all_factors_levels_df(AUC_mean_importance_df_cell_type,
-                                    title='F-C Match: scores', color='coolwarm',
-                                    x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
-                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=32) #'YlOrBr'
-####################################
 
 ####################################
 ##### Factor metrics #####
 ####################################
 
-AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
-fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
-                                    title='Homogeneity: 1-AUC scores', color='RdPu') #viridis
+all_metrics_dict = {'silhouette_km':silhouette_scores_km, 'vrs_km':vrs_km, 'silhouette_gmm':silhouette_scores_gmm, 
+                    'bimodality_index':bimodality_index_scores,
+                    'factor_variance':factor_variance_all, 'ASV_geo':ASV_all_geo,
+                    'factor_simpson_meanimp':factor_simpson_meanimp, 'factor_entropy_meanimp':factor_entropy_meanimp}
 
-#### Scaled variance
-SV_all_factors_sample = fmet.get_factors_SV_all_levels(factor_scores, y_sample)
-SV_all_factors_cell_type = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type)
-SV_all_factors = np.concatenate((SV_all_factors_sample, SV_all_factors_cell_type), axis=0)
-
-### convert to SV_all_factors to dataframe
-SV_all_factors_df = pd.DataFrame(SV_all_factors)
-SV_all_factors_df.columns = AUC_all_factors_df.columns
-SV_all_factors_df.index = AUC_all_factors_df.index
-## scale each factor from 0 to 1
-SV_all_factors_df = SV_all_factors_df.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
-
-fplot.plot_all_factors_levels_df(SV_all_factors_df,
-                                    title='Homogeneity: scaled variance scores', color='RdPu')
-
-#### label free factor metrics
-factor_entropy_all = fmet.get_factor_entropy_all(factor_scores)
-factor_variance_all = fmet.get_factor_variance_all(factor_scores)
-
-### bimoality metrics
-bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
-      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores)
-bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores)
-likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
-bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
-dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
-kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
-outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
-
-
-### label dependent factor metrics
-ASV_sample_all_arith = fmet.get_ASV_all(factor_scores, y_sample, mean_type='arithmetic')
-ASV_cell_type_all_arith = fmet.get_ASV_all(factor_scores, y_cell_type, mean_type='arithmetic')
-ASV_sample_all_geo = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
-ASV_cell_type_all_geo = fmet.get_ASV_all(factor_scores, y_cell_type, mean_type='geometric')
-
-### create a dictionaty annd thenn a dataframe of all the ASV metrics arrays
-ASV_all_factors_dict = {'ASV_protocol_arith': ASV_sample_all_arith, 'ASV_protocol_geo': ASV_sample_all_geo,
-                        'ASV_cell_line_arith': ASV_cell_type_all_arith, 'ASV_cell_line_geo': ASV_cell_type_all_geo}
-ASV_all_factors_df = pd.DataFrame(ASV_all_factors_dict)
-### visualize the table with numbers using sns
-import seaborn as sns
-sns.set(font_scale=0.7)
-### change teh figure size
-plt.figure(figsize=(5, 10))
-sns.heatmap(ASV_all_factors_df, cmap='coolwarm', annot=True, fmt='.2f', cbar=False)
-plt.xlabel('Covariate levels')
-plt.ylabel('Factor number')
-plt.title('ASV scores for all the factors')
-plt.show()
-
-### calculate specificity
-factor_specificity_meanimp = fmet.get_all_factors_specificity(mean_importance_df)
-factor_specificity_AUC = fmet.get_all_factors_specificity(AUC_all_factors_df)
-
-
-#### make a dictionary of all the metrics
-all_metrics_dict = {'factor_entropy': factor_entropy_all,
-                    'factor_variance': factor_variance_all, 
-                    'ASV_sample_arith': ASV_sample_all_arith, 'ASV_sample_geo': ASV_sample_all_geo,
-                    'ASV_cell_type_arith': ASV_cell_type_all_arith, 'ASV_cell_type_geo': ASV_cell_type_all_geo,
-                    'factor_specificity_meanimp': factor_specificity_meanimp, 'factor_specificity_AUC':factor_specificity_AUC,
-
-                    'bic_km': bic_scores_km, 'calinski_harabasz_km': calinski_harabasz_scores_km,
-                    'davies_bouldin_km': davies_bouldin_scores_km, 'silhouette_km': silhouette_scores_km,
-                    'vrs_km': vrs_km, 'wvrs_km': wvrs_km,
-                    'bic_gmm': bic_scores_gmm, 'silhouette_gmm': silhouette_scores_gmm,
-                    'vrs_gmm': vrs_gmm, 'wvrs_gmm': wvrs_gmm,
-                    'likelihood_ratio': likelihood_ratio_scores, 'bimodality_index': bimodality_index_scores,
-                    'dip_score': dip_scores, 'dip_pval': pval_scores, 'kurtosis': kurtosis_scores,
-                    'outlier_sum': outlier_sum_scores}
-
+### check the length of all the metrics
+for key in all_metrics_dict.keys():
+    print(key, len(all_metrics_dict[key]))
 all_metrics_df = pd.DataFrame(all_metrics_dict)
 factor_metrics = list(all_metrics_df.columns)
 all_metrics_df.head()
