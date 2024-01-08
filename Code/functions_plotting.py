@@ -444,7 +444,7 @@ def plot_metric_dendrogram(all_metrics_df, distance='ward') -> None:
 
 
 
-def plot_metric_heatmap(all_metrics_scaled, factor_metrics, 
+def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None,
                            title='Scaled factor metrics for all factors'):
     '''
     plot the heatmap of the scaled factor metrics for all the factors using seaborn
@@ -466,8 +466,9 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics,
     plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
     plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = 30)
     ## add F1, F2, ... to the heatmap x axis
-
-    g.ax_heatmap.set_xticklabels(['F'+str(i+1) for i in range(all_metrics_scaled_df.T.shape[1])])
+    if x_axis_label is None:
+         x_axis_label = ['F'+str(i) for i in range(1, all_metrics_scaled.shape[0]+1)]
+    g.ax_heatmap.set_xticklabels(x_axis_label)
     g.ax_heatmap.set_yticklabels(factor_metrics)
 
     plt.show()

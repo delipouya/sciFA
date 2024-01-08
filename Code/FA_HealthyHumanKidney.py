@@ -25,7 +25,7 @@ data_file_path = '/home/delaram/sciFA//Data/Human_Kidney_data.h5ad'
 data = fproc.import_AnnData(data_file_path)
 y, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_sex, y_cell_type, y_cell_type_sub = fproc.get_metadata_humanKidney(data)
-y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
+y, gene_idx = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
 genes = data.var_names
 
 '''
@@ -120,11 +120,15 @@ fplot.plot_pca(pca_scores_varimax, num_pcs, cell_color_vec= colors_dict_humanKid
 
 
 
-fplot.plot_factor_loading(varimax_loading, genes, 0, 1, fontsize=10, 
+fplot.plot_factor_loading(varimax_loading, genes, 6, 17, fontsize=10, 
                     num_gene_labels=2,title='Scatter plot of the loading vectors', 
                     label_x=True, label_y=True)
 
-
+### convert the varimax_loading to a dataframe
+varimax_loading_df = pd.DataFrame(varimax_loading)
+### name columns F1 to F30
+varimax_loading_df.columns = ['F'+str(i) for i in range(1, varimax_loading_df.shape[1]+1)]
+varimax_loading_df.index = genes
 
 
 ################################################
@@ -201,7 +205,7 @@ mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, fact
                                                                   scale='standard', mean='arithmatic')
 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cell_line
-mean_importance_df = pd.concat([mean_importance_df_sex, mean_importance_df_cell_type,mean_importance_df_sample], axis=0)
+#mean_importance_df = pd.concat([mean_importance_df_sex, mean_importance_df_cell_type,mean_importance_df_sample], axis=0)
 mean_importance_df = pd.concat([mean_importance_df_sex, mean_importance_df_cell_type], axis=0)
 
 ### remove the rows with NaN
@@ -249,24 +253,30 @@ fplot.plot_all_factors_levels_df(mean_importance_df_matched, x_axis_label=x_labe
 #bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores, time_eff=False)
 
 silhouette_scores_km, vrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=True)
-silhouette_scores_gmm = fmet.get_gmm_scores(factor_scores, time_eff=True)
+# silhouette_scores_gmm = fmet.get_gmm_scores(factor_scores, time_eff=True)
 bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
-
-### silhouette_gmm is slow - remove it next time
-bimodality_metrics = ['silhouette_km', 'vrs_km', 'silhouette_gmm', 'bimodality_index']
-bimodality_scores = [silhouette_scores_km, vrs_km, silhouette_scores_gmm, bimodality_index_scores]
+### calculate the average between the silhouette_scores_km, vrs_km and bimodality_index_scores
+bimodality_scores = np.mean([silhouette_scores_km, vrs_km, bimodality_index_scores], axis=0)
 
 #### Scaled variance
-SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)
-
+SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
 ### label dependent factor metrics
-ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='arithmetic')
-ASV_all_geo = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='geometric')
+ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
+
+ASV_all_geo_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='geometric')
+ASV_all_geo_sex = fmet.get_ASV_all(factor_scores, y_sex, mean_type='geometric')
+ASV_all_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
+
 
 ### calculate diversity metrics
+## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
+## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level
 factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
 factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
 factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
+
+### calculate the average of the simpson index and entropy index
+factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy_meanimp], axis=0)
 
 
 #### label free factor metrics
@@ -287,12 +297,19 @@ fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
 
 all_metrics_dict = {'silhouette_km':silhouette_scores_km, 'vrs_km':vrs_km, 'silhouette_gmm':silhouette_scores_gmm, 
                     'bimodality_index':bimodality_index_scores,
-                    'factor_variance':factor_variance_all, 'ASV_geo':ASV_all_geo,
+                    'factor_variance':factor_variance_all, 'ASV_geo_cell':ASV_all_geo_cell, 
                     'factor_simpson_meanimp':factor_simpson_meanimp, 'factor_entropy_meanimp':factor_entropy_meanimp}
 
+
+all_metrics_dict = {'bimodality':bimodality_scores, 
+                    'specificity':1-factor_simpson_entropy_meanimp,
+                    'effect_size': factor_variance_all,
+                    'homogeneity_cell':ASV_all_geo_cell,
+                    'homogeneity_sex':ASV_all_geo_sex,
+                    'homogeneity_sample':ASV_all_geo_sample}
+
 ### check the length of all the metrics
-for key in all_metrics_dict.keys():
-    print(key, len(all_metrics_dict[key]))
+
 all_metrics_df = pd.DataFrame(all_metrics_dict)
 factor_metrics = list(all_metrics_df.columns)
 all_metrics_df.head()
@@ -302,6 +319,17 @@ all_metrics_scaled = fmet.get_scaled_metrics(all_metrics_df)
 fplot.plot_metric_correlation_clustermap(all_metrics_df)
 fplot.plot_metric_dendrogram(all_metrics_df)
 fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metrics for all the factors')
+
+
+### subset all_merrics_scaled numpy array to only include the matched factors
+all_metrics_scaled_matched = all_metrics_scaled[matched_factor_index,:]
+fplot.plot_metric_heatmap(all_metrics_scaled_matched, factor_metrics, x_axis_label=x_labels_matched,
+                          title='Scaled metrics for all the factors')
+
+## subset x axis labels based on het matched factors
+x_labels_matched = mean_importance_df_matched.columns.values
+
+
 
 fplot.plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics)
 fplot.plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics)

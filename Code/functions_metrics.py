@@ -307,10 +307,10 @@ def get_kmeans_scores(factor_scores, num_groups=2, time_eff=True) -> list:
             wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
 
         
-        if not time_eff:    
-            return bic_scores, calinski_harabasz_scores, davies_bouldin_scores, silhouette_scores, vrs, wvrs
-        
-        return silhouette_scores, vrs
+    if not time_eff:    
+        return bic_scores, calinski_harabasz_scores, davies_bouldin_scores, silhouette_scores, vrs, wvrs
+    
+    return silhouette_scores, vrs
 
 
 
