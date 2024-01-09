@@ -105,19 +105,16 @@ def get_data_array(data) -> np.array:
     """
 
     data_numpy = data.X.toarray()
-    
-    cell_sums = np.sum(data_numpy,axis=1) # row sums - library size
-    gene_sums = np.sum(data_numpy,axis=0) # col sums - sum reads in a gene
-    data_numpy = data_numpy[:,gene_sums != 0]
-
 
     ## working with the rat data
     num_cells = data_numpy.shape[0]
     num_genes = data_numpy.shape[1]
 
+    genes = data.var_names
+
     print(num_cells, num_genes)
 
-    return data_numpy, num_cells, num_genes
+    return data_numpy, genes, num_cells, num_genes
 
 
 def get_highly_variable_gene_indices(data_numpy, num_genes=const.num_genes, random=False):
@@ -136,21 +133,37 @@ def get_highly_variable_gene_indices(data_numpy, num_genes=const.num_genes, rand
         ### select the top num_genes genes with the highest variance
         gene_idx = np.argsort(gene_vars)[-num_genes:]
 
+
     return gene_idx
 
 
 
-def get_sub_data(y, num_genes=const.num_genes, random=False) -> np.array:    
+def get_sub_data(data, num_genes=const.num_genes, random=False) -> tuple:    
     ''' subset the data matrix to the top num_genes genes
     y: numpy array of the gene expression matrix (n_cells, n_genes)
     random: whether to randomly select the genes or select the genes with highest variance
     num_genes: number of genes to select
     '''
+
+
+    data_numpy = data.X.toarray()
+    cell_sums = np.sum(data_numpy,axis=1) # row sums - library size
+    gene_sums = np.sum(data_numpy,axis=0) # col sums - sum reads in a gene
+    data = data[cell_sums!=0,gene_sums != 0] ## cells, genes
+
+    data_numpy = data.X.toarray()
+    ### calculate the variance for each gene
+    gene_vars = np.var(data_numpy, axis=0)
+    ### select the top num_genes genes with the highest variance
+    gene_idx = np.argsort(gene_vars)[-num_genes:]
+
     #### select num_genes genes based on variance
-    gene_idx = get_highly_variable_gene_indices(y, num_genes=num_genes, random=random)
+    ## sort the gene_idx in ascending order
+    gene_idx = np.sort(gene_idx)
+    data = data[:,gene_idx]
 
     ### subset the data matrix to the top num_genes genes
-    return y[:, gene_idx]
+    return data, gene_idx
 
 
 def get_binary_covariate_v1(covariate, covariate_level, data) -> np.array:

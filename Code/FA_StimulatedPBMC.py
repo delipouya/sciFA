@@ -22,11 +22,12 @@ np.random.seed(0)
 
 data_file_path = '/home/delaram/sciFA/Data/PBMC_Lupus_Kang8vs8_data.h5ad'
 data = fproc.import_AnnData(data_file_path)
-y, num_cells, num_genes = fproc.get_data_array(data)
-
+data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num_genes HVGs
+y, genes, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_stim, y_cell_type, y_cluster  = fproc.get_metadata_humanPBMC(data)
-y = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
-genes = data.var_names
+
+### calculate teh row sum of y
+row_sums = np.sum(y, axis=1)
 
 '''
 ### check which cells have y_cell_type as NA and remove them from data
@@ -118,15 +119,16 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanPBMC['sample'],
+num_pc = 5
+fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanPBMC['sample'],
                legend_handles=True,
                title='varimax-PCA of library-regressed data',
                plt_legend_list=plt_legend_sample)
-fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanPBMC['cell_type'],
+fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanPBMC['cell_type'],
                legend_handles=True,
                title='varimax-PCA of library-regressed data',
                plt_legend_list=plt_legend_cell_type)
-fplot.plot_pca(pca_scores_varimax, 20, cell_color_vec= colors_dict_humanPBMC['stim'],
+fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanPBMC['stim'],
                legend_handles=True,
                title='varimax-PCA of library-regressed data',
                plt_legend_list=plt_legend_stim)
@@ -211,9 +213,9 @@ y_cell_type_unique = np.unique(y_cell_type)
 ####################################
 
 ### calculate the mean importance of each covariate level
-mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores,scale='standard', mean='arithmatic')
-mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_scores,scale='standard', mean='arithmatic')
-mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores,scale='standard', mean='arithmatic')
+mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores,scale='standard', mean='geometric')
+mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_scores,scale='standard', mean='geometric')
+mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores,scale='standard', mean='geometric')
 
 ### concatenate mean_importance_df of all the covariates
 #### including "individuals"/sample as a covariate

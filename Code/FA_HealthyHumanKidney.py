@@ -23,46 +23,11 @@ np.random.seed(0)
 
 data_file_path = '/home/delaram/sciFA//Data/Human_Kidney_data.h5ad'
 data = fproc.import_AnnData(data_file_path)
-y, num_cells, num_genes = fproc.get_data_array(data)
+
+data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num_genes HVGs
+y, genes, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_sex, y_cell_type, y_cell_type_sub = fproc.get_metadata_humanKidney(data)
-y, gene_idx = fproc.get_sub_data(y, random=False) # subset the data to num_genes HVGs
-genes = data.var_names
 
-'''
-### randomly subsample the cells to 2000 cells
-sample_size = 4000
-subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
-y = y[subsample_index,:]
-data = data[subsample_index,:]
-y_sample = y_sample[subsample_index]
-y_sex = y_sex[subsample_index]
-y_cell_type = y_cell_type[subsample_index]
-
-
-### get the indices of the highly variable genes
-
-#### design matrix - library size only
-x = fproc.get_lib_designmat(data, lib_size='nCount_RNA')
-
-
-#### design matrix - library size and sample
-x_sample = fproc.get_design_mat('sampleID', data) 
-x = np.column_stack((data.obs.nCount_RNA, x_sample)) 
-x = sm.add_constant(x) ## adding the intercept
-
-#### design matrix - sample only
-x_sample = fproc.get_design_mat('sampleID', data) 
-x = sm.add_constant(x_sample) ## adding the intercept
-
-
-### fit GLM to each gene
-glm_fit_dict = fglm.fit_poisson_GLM(y, x)
-resid_pearson = glm_fit_dict['resid_pearson'] 
-print('pearson residuals: ', resid_pearson.shape) # numpy array of shape (num_genes, num_cells)
-print('y shape: ', y.shape) # (num_cells, num_genes)
-y = resid_pearson.T # (num_cells, num_genes)
-print('y shape: ', y.shape) # (num_cells, num_genes)
-'''
 
 ####################################
 #### Running PCA on the data ######
@@ -109,7 +74,7 @@ rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 
-num_pcs = 18
+num_pcs = 5
 fplot.plot_pca(pca_scores_varimax, num_pcs, cell_color_vec= colors_dict_humanKidney['cell_type'],
                legend_handles=True,plt_legend_list=plt_legend_celltype)
 fplot.plot_pca(pca_scores_varimax, num_pcs, cell_color_vec= colors_dict_humanKidney['sex'],
@@ -120,7 +85,7 @@ fplot.plot_pca(pca_scores_varimax, num_pcs, cell_color_vec= colors_dict_humanKid
 
 
 
-fplot.plot_factor_loading(varimax_loading, genes, 6, 17, fontsize=10, 
+fplot.plot_factor_loading(varimax_loading, genes, 0, 17, fontsize=10, 
                     num_gene_labels=2,title='Scatter plot of the loading vectors', 
                     label_x=True, label_y=True)
 
@@ -130,6 +95,28 @@ varimax_loading_df = pd.DataFrame(varimax_loading)
 varimax_loading_df.columns = ['F'+str(i) for i in range(1, varimax_loading_df.shape[1]+1)]
 varimax_loading_df.index = genes
 
+### concatenate the pca_scores_varimax with the data.obs dataframe in a separate dataframe
+pca_scores_varimax_df = pd.DataFrame(pca_scores_varimax)
+pca_scores_varimax_df.columns = ['F'+str(i) for i in range(1, pca_scores_varimax_df.shape[1]+1)]
+pca_scores_varimax_df.index = data.obs.index.values
+pca_scores_varimax_df_merged = pd.concat([data.obs, pca_scores_varimax_df], axis=1)
+### save the pca_scores_varimax_df_merged to a csv file
+pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_merged_kidneyMap.csv')
+
+## save the varimax_loading_df and varimax_scores to a csv file
+varimax_loading_df.to_csv('../Results/varimax_loading_df_kidneyMap.csv')
+
+
+
+
+#### list the top 10 genes with the highest loading for each factor
+for i in range(varimax_loading_df.shape[1]):
+    print('factor: ', i)
+    print('high loading genes: ')
+    print(varimax_loading_df.iloc[:,i].sort_values(ascending=False)[0:10])
+    print('-----------------------------')
+    print('low loading genes: ')
+    print(varimax_loading_df.iloc[:,i].sort_values(ascending=True)[0:10])
 
 ################################################
 #### make the loading scatter plot with histograms on the sides
@@ -359,3 +346,42 @@ fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=200)
 fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=500)
 
 
+
+
+
+
+'''
+### randomly subsample the cells to 2000 cells
+sample_size = 4000
+subsample_index = np.random.choice(y.shape[0], size=sample_size, replace=False)
+y = y[subsample_index,:]
+data = data[subsample_index,:]
+y_sample = y_sample[subsample_index]
+y_sex = y_sex[subsample_index]
+y_cell_type = y_cell_type[subsample_index]
+
+
+### get the indices of the highly variable genes
+
+#### design matrix - library size only
+x = fproc.get_lib_designmat(data, lib_size='nCount_RNA')
+
+
+#### design matrix - library size and sample
+x_sample = fproc.get_design_mat('sampleID', data) 
+x = np.column_stack((data.obs.nCount_RNA, x_sample)) 
+x = sm.add_constant(x) ## adding the intercept
+
+#### design matrix - sample only
+x_sample = fproc.get_design_mat('sampleID', data) 
+x = sm.add_constant(x_sample) ## adding the intercept
+
+
+### fit GLM to each gene
+glm_fit_dict = fglm.fit_poisson_GLM(y, x)
+resid_pearson = glm_fit_dict['resid_pearson'] 
+print('pearson residuals: ', resid_pearson.shape) # numpy array of shape (num_genes, num_cells)
+print('y shape: ', y.shape) # (num_cells, num_genes)
+y = resid_pearson.T # (num_cells, num_genes)
+print('y shape: ', y.shape) # (num_cells, num_genes)
+'''
