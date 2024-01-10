@@ -38,7 +38,7 @@ y_stim = np.delete(y_stim, NA_index, axis=0)
 y_cell_type = np.delete(y_cell_type, NA_index, axis=0)
 ### remove cells that have NA_index from data
 data = data[~NA_index,:]
-'''
+
 
 ### randomly subsample the cells to 2000 cells
 sample_size = 10000
@@ -48,7 +48,7 @@ data = data[subsample_index,:]
 y_sample = y_sample[subsample_index]
 y_stim = y_stim[subsample_index]
 y_cell_type = y_cell_type[subsample_index]
-
+'''
 ### get the indices of the highly variable genes
 
 #### design matrix - library size only
@@ -119,7 +119,7 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-num_pc = 20
+num_pc = 5
 fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanPBMC['sample'],
                legend_handles=True,
                title='varimax-PCA of library-regressed data',
@@ -281,7 +281,7 @@ def plot_barplot(factor_libsize_correlation, x_labels=None, title=''):
     plt.xticks(rotation=90)
     plt.title(title)
     plt.show()
-    
+
 plot_barplot(factor_libsize_correlation, 
              title='Correlation of factors with library size')
 
@@ -299,15 +299,29 @@ bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
 ### calculate the average between the silhouette_scores_km, vrs_km and bimodality_index_scores
 bimodality_scores = np.mean([silhouette_scores_km, bimodality_index_scores], axis=0)
 
-#### Scaled variance
-SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
+
 ### label dependent factor metrics
-ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
+ASV_geo_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='geometric')
+ASV_geo_stim = fmet.get_ASV_all(factor_scores, y_stim, mean_type='geometric')
+ASV_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
 
-ASV_all_geo_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='geometric')
-ASV_all_geo_stim = fmet.get_ASV_all(factor_scores, y_stim, mean_type='geometric')
-ASV_all_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='arithmetic')
 
+ASV_simpson_sample = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
+ASV_simpson_cell = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_type)))
+ASV_simpson_stim = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_stim)))
+
+## calculate correlation between all ASV scores
+ASV_list = [ASV_geo_cell, ASV_geo_stim, ASV_geo_sample, ASV_simpson_sample, ASV_simpson_cell, ASV_simpson_stim]
+ASV_names = ['ASV_geo_cell', 'ASV_geo_stim', 'ASV_geo_sample', 'ASV_simpson_sample', 'ASV_simpson_cell', 'ASV_simpson_stim']
+### calculate the correlation between all ASV scores without a function
+ASV_corr = np.zeros((len(ASV_list), len(ASV_list)))
+for i in range(len(ASV_list)):
+    for j in range(len(ASV_list)):
+        ASV_corr[i,j] = np.corrcoef(ASV_list[i], ASV_list[j])[0,1]
+ASV_corr_df = pd.DataFrame(ASV_corr)
+### set the row and column names of ASV_corr_df
+ASV_corr_df.index = ASV_names
+ASV_corr_df.columns = ASV_names
 
 ### calculate diversity metrics
 ## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
@@ -323,17 +337,6 @@ factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy
 #### label free factor metrics
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 
-### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
-AUC_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
-AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
-fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
-                                    title='Homogeneity: 1-AUC scores', color='hot')
-
-
-#sub tract factor simpson index from 1 to get factor specificity
-## leads to error: TypeError: unsupported operand type(s) for -: 'int' and 'list'
-factor_specificity_meanimp = 1-factor_simpson_meanimp
-
 
 ####################################
 ##### Factor metrics #####
@@ -343,9 +346,11 @@ all_metrics_dict = {'silhouette_km':silhouette_scores_km,
                     'vrs_km':vrs_km, #'silhouette_gmm':silhouette_scores_gmm, 
                     'bimodality_index':bimodality_index_scores,
                     'factor_variance':factor_variance_all, 
-                    'ASV_geo_cell':ASV_all_geo_cell, 
-                    'ASV_geo_stim':ASV_all_geo_stim,
-                    'ASV_geo_sample':ASV_all_geo_sample,
+
+                    'homogeneity_cell':ASV_simpson_cell,
+                    'homogeneity_stim': ASV_simpson_stim,
+                    'homogeneity_sample':ASV_simpson_sample,
+                
                     'factor_simpson_meanimp':[1-x for x in factor_simpson_meanimp], 
                     'factor_entropy_meanimp':[1-x for x in factor_entropy_meanimp]}
 
@@ -353,9 +358,9 @@ all_metrics_dict = {'silhouette_km':silhouette_scores_km,
 all_metrics_dict = {'bimodality':bimodality_scores, 
                     'specificity':[1-x for x in factor_simpson_entropy_meanimp],
                     'effect_size': factor_variance_all,
-                    'homogeneity_cell':ASV_all_geo_cell,
-                    'homogeneity_sex':ASV_all_geo_stim,
-                    'homogeneity_sample':ASV_all_geo_sample}
+                    'homogeneity_cell':ASV_simpson_cell,
+                    'homogeneity_stim': ASV_simpson_stim,
+                    'homogeneity_sample':ASV_simpson_sample}
 
 ### check the length of all the metrics
 
