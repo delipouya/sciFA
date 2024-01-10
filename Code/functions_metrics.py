@@ -168,12 +168,16 @@ def get_a_factor_ASV(a_factor, covariate_vector, mean_type='geometric') -> float
     ### calculate the geometric mean of the scaled variance for all levels of the covariate
     if mean_type == 'geometric':
         #RSV = np.exp(np.mean(np.log(scaled_variance_all))) 
-        RSV = np.exp(np.log(scaled_variance_all).mean())
-        
+        #RSV = np.exp(np.log(scaled_variance_all).mean())
+        ### replace the zero values with a small number
+        scaled_variance_all[scaled_variance_all == 0] = 1e-10
+        ### calculate the geometric mean using the scipy gmean function
+        RSV = sp.stats.gmean(scaled_variance_all)
+
 
     elif mean_type == 'arithmetic':
-        ### sum of the scaled variance for all levels of the covariate / number of levels in the covariate
-        RSV = sum(scaled_variance_all)/len(np.unique(covariate_vector)) 
+        # calculate the arithmetic mean using the numpy mean function
+        RSV = np.mean(scaled_variance_all)
 
     return RSV
 

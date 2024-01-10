@@ -262,7 +262,28 @@ x_labels_matched = mean_importance_df_matched.columns.values
 fplot.plot_all_factors_levels_df(mean_importance_df_matched, x_axis_label=x_labels_matched,
                                  title='F-C Match: Feature importance scores', color='coolwarm')
 
+#### calculate the correlation of factors with library size
+def get_factor_libsize_correlation(factor_scores, library_size):
+    factor_libsize_correlation = np.zeros(factor_scores.shape[1])
+    for i in range(factor_scores.shape[1]):
+        factor_libsize_correlation[i] = np.corrcoef(factor_scores[:,i], library_size)[0,1]
+    return factor_libsize_correlation
 
+library_size = data.obs.nCount_originalexp
+factor_libsize_correlation = get_factor_libsize_correlation(factor_scores, library_size)
+### create a barplot of the factor_libsize_correlation
+
+def plot_barplot(factor_libsize_correlation, x_labels=None, title=''):
+    plt.figure(figsize=(10,5))
+    if x_labels is None:
+        x_labels = np.arange(factor_libsize_correlation.shape[0])
+    plt.bar(x_labels, factor_libsize_correlation)
+    plt.xticks(rotation=90)
+    plt.title(title)
+    plt.show()
+    
+plot_barplot(factor_libsize_correlation, 
+             title='Correlation of factors with library size')
 
 ####################################
 #### evaluating bimodality score using simulated factors ####
@@ -285,7 +306,7 @@ ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, me
 
 ASV_all_geo_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='geometric')
 ASV_all_geo_stim = fmet.get_ASV_all(factor_scores, y_stim, mean_type='geometric')
-ASV_all_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
+ASV_all_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='arithmetic')
 
 
 ### calculate diversity metrics
