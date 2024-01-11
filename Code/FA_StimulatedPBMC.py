@@ -134,6 +134,22 @@ fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanPBMC
                plt_legend_list=plt_legend_stim)
 
 
+factor_scores = pca_scores_varimax
+covariate_vec = y_stim
+covariate_level = np.unique(covariate_vec)[1]
+covariate_level
+a_binary_cov = fproc.get_binary_covariate(covariate_vec, covariate_level)
+importance_df_a_level = get_importance_df(factor_scores, a_binary_cov, time_eff=True)[0]
+importance_df_a_level
+### show this dataframe (importance_df_a_level) as a heatmap using seaborn
+### plot the heatmap of the importance_df_a_level using seaborn without a function
+import seaborn as sns
+sns.heatmap(importance_df_a_level, cmap='coolwarm', vmin=-1, vmax=1, center=0, annot=False, fmt='.2f')
+plt.title('F-C Match: Feature importance scores for covariate level: '+covariate_level)
+
+
+
+
 
 fplot.plot_factor_loading(varimax_loading, genes, 0, 1, fontsize=10, 
                     num_gene_labels=2,title='Scatter plot of the loading vectors', 
@@ -211,9 +227,9 @@ y_cell_type_unique = np.unique(y_cell_type)
 ####################################
 
 ### calculate the mean importance of each covariate level
-mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores,scale='standard', mean='geometric',time_eff=True)
-mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_scores,scale='standard', mean='geometric',time_eff=True)
-mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores,scale='standard', mean='geometric',time_eff=True)
+mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, factor_scores,scale='standard', mean='arithmatic',time_eff=True)
+mean_importance_df_stim = fmatch.get_mean_importance_all_levels(y_stim, factor_scores,scale='standard', mean='arithmatic',time_eff=True)
+mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores,scale='standard', mean='arithmatic',time_eff=True)
 
 ### concatenate mean_importance_df of all the covariates
 #### including "individuals"/sample as a covariate
@@ -284,6 +300,26 @@ def plot_barplot(factor_libsize_correlation, x_labels=None, title=''):
 
 plot_barplot(factor_libsize_correlation, 
              title='Correlation of factors with library size')
+
+
+
+### convert the varimax_loading to a dataframe
+varimax_loading_df = pd.DataFrame(varimax_loading)
+### name columns F1 to F30
+varimax_loading_df.columns = ['F'+str(i) for i in range(1, varimax_loading_df.shape[1]+1)]
+varimax_loading_df.index = genes
+
+### concatenate the pca_scores_varimax with the data.obs dataframe in a separate dataframe
+pca_scores_varimax_df = pd.DataFrame(pca_scores_varimax)
+pca_scores_varimax_df.columns = ['F'+str(i) for i in range(1, pca_scores_varimax_df.shape[1]+1)]
+pca_scores_varimax_df.index = data.obs.index.values
+pca_scores_varimax_df_merged = pd.concat([data.obs, pca_scores_varimax_df], axis=1)
+### save the pca_scores_varimax_df_merged to a csv file
+pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_stimPBMC.csv')
+## save the varimax_loading_df and varimax_scores to a csv file
+varimax_loading_df.to_csv('../Results/varimax_loading_df_stimPBMC.csv')
+
+
 
 ####################################
 #### evaluating bimodality score using simulated factors ####

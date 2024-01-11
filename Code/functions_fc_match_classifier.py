@@ -65,6 +65,11 @@ def get_AUC_all_factors_alevel(factor_scores, a_binary_cov) -> list:
     for i in range(factor_scores.shape[1]):
         a_factor = factor_scores[:,i]
         AUC, wilcoxon_pvalue = get_AUC_alevel(a_factor, a_binary_cov)
+
+        ### AUC: 0.5 is random, 1 is perfect 
+        ### to convert to feature importance, subtract 0.5 and multiply by 2
+        AUC = abs((AUC - 0.5)*2)
+
         AUC_alevel_factors.append(AUC)
         wilcoxon_pvalue_alevel_factors.append(wilcoxon_pvalue)
     ### convert AUC_alevel_factors to a numpy array
@@ -92,7 +97,7 @@ def get_importance_df(factor_scores, a_binary_cov, time_eff=False) -> pd.DataFra
         ### remove RandomForest, KN and LogisticRegression from the models dictionary
         models.pop('RandomForest')
         models.pop('KNeighbors_permute')
-        models.pop('LogisticRegression')
+        #models.pop('LogisticRegression')
         
     importance_dict = {}
     ### save the time of the fit for each model
@@ -215,7 +220,6 @@ def get_mean_importance_all_levels(covariate_vec, factor_scores,
         mean_importance_df.loc[covariate_level] = mean_importance_a_level
 
     return mean_importance_df
-
 
 
 def get_percent_matched_factors(mean_importance_df, threshold) -> float:
