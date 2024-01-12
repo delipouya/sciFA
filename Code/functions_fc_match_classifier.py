@@ -78,7 +78,7 @@ def get_AUC_all_factors_alevel(factor_scores, a_binary_cov) -> list:
 
 
 
-def get_importance_df(factor_scores, a_binary_cov, time_eff=False) -> pd.DataFrame:
+def get_importance_df(factor_scores, a_binary_cov, time_eff=True) -> pd.DataFrame:
     '''
     calculate the importance of each factor for each covariate level
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
@@ -199,7 +199,7 @@ def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
 
 
 def get_mean_importance_all_levels(covariate_vec, factor_scores, 
-                                   scale='standard', mean='arithmatic', time_eff=False) -> pd.DataFrame:
+                                   scale='standard', mean='arithmatic', time_eff=True) -> pd.DataFrame:
     '''
     calculate the mean importance of all levels of a given covariate and returns a dataframe of size (num_levels, num_components)
     covariate_vec: numpy array of the covariate vector (n_cells, )

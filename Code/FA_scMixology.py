@@ -23,52 +23,22 @@ import statsmodels.api as sm
 
 np.random.seed(10)
 
-data = fproc.import_AnnData('/home/delaram/sciFA/Data/scMix_3cl_merged.h5ad')
-y_cell_line, y_sample, y_protocol = fproc.get_metadata_scMix(data)
 
+
+data_file_path = '/home/delaram/sciFA/Data/scMix_3cl_merged.h5ad'
+data = fproc.import_AnnData(data_file_path)
+data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num_genes HVGs
+y, genes, num_cells, num_genes = fproc.get_data_array(data)
+y_cell_line, y_sample, y_protocol = fproc.get_metadata_scMix(data)
 data.obs['protocol'] = y_protocol.to_numpy()
 data.obs['cell_line'] = y_cell_line.to_numpy()
 data.obs['sample'] = y_sample.to_numpy()
-y, num_cells, num_genes = fproc.get_data_array(data)
-y = fproc.get_sub_data(y)
+
 colors_dict_scMix = fplot.get_colors_dict_scMix(y_protocol, y_cell_line)
-genes = data.var_names
 
 plt_legend_cell_line = fplot.get_legend_patch(y_sample, colors_dict_scMix['cell_line'] )
 plt_legend_protocol = fplot.get_legend_patch(y_sample, colors_dict_scMix['protocol'] )
 
-
-####################################
-#### Running PCA on the data ######
-####################################
-pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=const.num_components))])
-pca_scores = pipeline.fit_transform(y)
-pca = pipeline.named_steps['pca']
-pca_loading = pca.components_
-pca_loading.shape #(factors, genes)
-plt.plot(pca.explained_variance_ratio_)
-
-plt.plot(pca.explained_variance_ratio_)
-
-### make a dictionary of colors for each sample in y_sample
-fplot.plot_pca(pca_scores, 4, 
-               cell_color_vec= colors_dict_scMix['cell_line'], 
-               legend_handles=True,
-               title='PCA of gene expression data',
-               plt_legend_list=plt_legend_cell_line)
-
-
-fplot.plot_pca(pca_scores, 4, 
-               cell_color_vec= colors_dict_scMix['protocol'], 
-               legend_handles=True,
-               title='PCA of gene expression data',
-               plt_legend_list=plt_legend_protocol)
-
-#### plot the loadings of the factors
-fplot.plot_factor_loading(pca_loading.T, genes, 0, 2, fontsize=10, 
-                    num_gene_labels=2,
-                    title='Scatter plot of the loading vectors', 
-                    label_x=False, label_y=False)
 
 ####################################
 #### fit GLM to each gene ######
@@ -101,20 +71,28 @@ pca_loading = pca.components_
 pca_loading.shape
 plt.plot(pca.explained_variance_ratio_)
 
-
+num_pc = 5
 ### make a dictionary of colors for each sample in y_sample
-fplot.plot_pca(pca_scores, 4, 
+fplot.plot_pca(pca_scores, num_pc, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
                legend_handles=True,
                title='PCA of pearson residuals - reg: lib size/protocol',
                plt_legend_list=plt_legend_cell_line)
 
 
-fplot.plot_pca(pca_scores, 4, 
+fplot.plot_pca(pca_scores, num_pc, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                legend_handles=True,
                title='PCA of pearson residuals - reg: lib size/protocol',
                plt_legend_list=plt_legend_protocol)
+
+
+
+#### plot the loadings of the factors
+fplot.plot_factor_loading(pca_loading.T, genes, 0, 2, fontsize=10, 
+                    num_gene_labels=2,
+                    title='Scatter plot of the loading vectors', 
+                    label_x=False, label_y=False)
 
 fplot.plot_umap_scMix(pca_scores, colors_dict_scMix['protocol'] , covariate='protocol', title='UMAP')
 fplot.plot_umap_scMix(pca_scores, colors_dict_scMix['cell_line'] , covariate='cell_line',title='UMAP')
@@ -135,13 +113,14 @@ rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 
-fplot.plot_pca(pca_scores_varimax, 4, 
+num_pc=29
+fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                legend_handles=True,
                title='Varimax PCA of pearson residuals ',
                plt_legend_list=plt_legend_protocol)
 
-fplot.plot_pca(pca_scores_varimax, 4, 
+fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
                legend_handles=True,
                title='Varimax PCA of pearson residuals ',
@@ -231,320 +210,133 @@ fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
 
-#### convert the mean importance matirx to a zero-one matrix based on the threshold value
-mean_importance_df_binary = mean_importance_df.apply(lambda x: (x > threshold).astype(int))
-fplot.plot_all_factors_levels_df(mean_importance_df_binary, 
-                                 title='F-C Match: binary mean importance scores', 
-                                 color='coolwarm') #'YlOrBr'
+
+### select the factors that are matched with any covariate level
+matched_factor_index = np.where(matched_factor_dist>0)[0] 
+### subset mean_importance_df to the matched factors
+mean_importance_df_matched = mean_importance_df.iloc[:,matched_factor_index] 
+## subset x axis labels based on het matched factors
+x_labels_matched = mean_importance_df_matched.columns.values
+
+fplot.plot_all_factors_levels_df(mean_importance_df_matched, x_axis_label=x_labels_matched,
+                                 title='F-C Match: Feature importance scores', color='coolwarm')
+
+#### calculate the correlation of factors with library size
+def get_factor_libsize_correlation(factor_scores, library_size):
+    factor_libsize_correlation = np.zeros(factor_scores.shape[1])
+    for i in range(factor_scores.shape[1]):
+        factor_libsize_correlation[i] = np.corrcoef(factor_scores[:,i], library_size)[0,1]
+    return factor_libsize_correlation
+
+library_size = data.obs.nCount_originalexp
+factor_libsize_correlation = get_factor_libsize_correlation(factor_scores, library_size)
+### create a barplot of the factor_libsize_correlation
+
+def plot_barplot(factor_libsize_correlation, x_labels=None, title=''):
+    plt.figure(figsize=(10,5))
+    if x_labels is None:
+        x_labels = np.arange(factor_libsize_correlation.shape[0])
+    plt.bar(x_labels, factor_libsize_correlation)
+    plt.xticks(rotation=90)
+    plt.title(title)
+    plt.show()
+
+plot_barplot(factor_libsize_correlation, 
+             title='Correlation of factors with library size')
 
 
 
 ####################################
-#### AUC score
+#### evaluating bimodality score using simulated factors ####
 ####################################
-#### calculate the AUC of all the factors for all the covariate levels
-AUC_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_protocol = fmet.get_AUC_all_factors_df(factor_scores, y_protocol)
-AUC_all_factors_df_cell_line, wilcoxon_pvalue_all_factors_df_cell_line = fmet.get_AUC_all_factors_df(factor_scores, y_cell_line)
 
-AUC_all_factors_df = pd.concat([AUC_all_factors_df_protocol, AUC_all_factors_df_cell_line], axis=0)
-wilcoxon_pvalue_all_factors_df = pd.concat([wilcoxon_pvalue_all_factors_df_protocol, wilcoxon_pvalue_all_factors_df_cell_line], axis=0)
+#bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
+#      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=False)
+#bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores, time_eff=False)
 
-fplot.plot_all_factors_levels_df(AUC_all_factors_df, 
-                                 title='F-C Match: AUC scores', color='coolwarm',
-                                 x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
-                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=34) #'YlOrBr'
-
-### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
-## list of color maps: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
-
-threshold = 0.3
-threshold = fmatch.get_otsu_threshold(AUC_all_factors_df.values.flatten())
-
-fplot.plot_histogram(AUC_all_factors_df.values.flatten(), xlabel='AUC scores',
-                        title='F-C Match: AUC score', threshold=threshold)
-
-matched_factor_dist, percent_matched_fact = fmatch.get_percent_matched_factors(mean_importance_df, threshold)
-matched_covariate_dist, percent_matched_cov = fmatch.get_percent_matched_covariate(mean_importance_df, threshold=threshold)
-
-print('percent_matched_fact: ', percent_matched_fact)
-print('percent_matched_cov: ', percent_matched_cov)
-fplot.plot_matched_factor_dist(matched_factor_dist)
-fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
-
-### convert the AUC matirx to a zero-one matrix based on a threshold
-AUC_all_factors_df_binary = AUC_all_factors_df.apply(lambda x: (x > threshold).astype(int))
-fplot.plot_all_factors_levels_df(AUC_all_factors_df_binary, 
-                                 title='F-C Match: binary AUC scores', color='coolwarm') #'YlOrBr'
+silhouette_scores_km, vrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=True)
+# silhouette_scores_gmm = fmet.get_gmm_scores(factor_scores, time_eff=True)
+bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
+### calculate the average between the silhouette_scores_km, vrs_km and bimodality_index_scores
+bimodality_scores = np.mean([silhouette_scores_km, bimodality_index_scores], axis=0)
 
 
+### label dependent factor metrics
+ASV_geo_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_line, mean_type='geometric')
+ASV_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
 
 
+ASV_simpson_sample = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
+ASV_simpson_cell = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_line)))
 
-#### make the elementwise average data frrame of AUC_all_factors_df annd mean_importance_df
-auc_weight = 4
-AUC_mean_importance_df = (auc_weight*AUC_all_factors_df + mean_importance_df)/(auc_weight+1)
-fplot.plot_all_factors_levels_df(AUC_mean_importance_df, 
-                                 title='', color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
-                               x_axis_tick_fontsize=32, y_axis_tick_fontsize=32) #'YlOrBr'
+## calculate correlation between all ASV scores
+ASV_list = [ASV_geo_cell, ASV_geo_sample, ASV_simpson_sample, ASV_simpson_cell]
+ASV_names = ['ASV_geo_cell', 'ASV_geo_sample', 'ASV_simpson_sample', 'ASV_simpson_cell']
+### calculate the correlation between all ASV scores without a function
+ASV_corr = np.zeros((len(ASV_list), len(ASV_list)))
+for i in range(len(ASV_list)):
+    for j in range(len(ASV_list)):
+        ASV_corr[i,j] = np.corrcoef(ASV_list[i], ASV_list[j])[0,1]
+ASV_corr_df = pd.DataFrame(ASV_corr)
+### set the row and column names of ASV_corr_df
+ASV_corr_df.index = ASV_names
+ASV_corr_df.columns = ASV_names
+
+### calculate diversity metrics
+## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
+## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level
+factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
+factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
+
+### calculate the average of the simpson index and entropy index
+factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy_meanimp], axis=0)
 
 
-
+#### label free factor metrics
+factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 
 
 ####################################
 ##### Factor metrics #####
 ####################################
 
-AUC_all_factors_df_1 = fmet.get_reversed_AUC_df(AUC_all_factors_df)
-fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
-                                    title='Homogeneity: 1-AUC scores', color='viridis') #
+all_metrics_dict = {'silhouette_km':silhouette_scores_km, 
+                    'vrs_km':vrs_km, #'silhouette_gmm':silhouette_scores_gmm, 
+                    'bimodality_index':bimodality_index_scores,
+                    'factor_variance':factor_variance_all, 
 
-### p value score is not a good indicative of the homogeneity of the factors
-#fplot.plot_all_factors_levels_df(wilcoxon_pvalue_all_factors_df, 
-#                                 title='Homogeneity: Wilcoxon pvalue', color='rocket_r')
-
-
- ### calculate diversity metrics
- #### originnal importance scores
-factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
-factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
-factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
-print('mean importance matrix gini index is: ', factor_gini_meanimp)
-fplot.plot_metric_barplot(factor_simpson_meanimp, 'simpson index of each factor - mean importance')
-fplot.plot_metric_barplot(factor_entropy_meanimp, 'entropy of each factor - mean importance')
-
-### AUC scores
-factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
-factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
-factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
-print('AUC matrix gini index is: ', factor_gini_AUC)
-fplot.plot_metric_barplot(factor_simpson_AUC, 'simpson index of each factor - AUC')
-fplot.plot_metric_barplot(factor_entropy_AUC, 'entropy of each factor - AUC')
-
-#### binary AUC scores
-factor_gini_AUC_binary = fmet.get_all_factors_gini(AUC_all_factors_df_binary)
-factor_simpson_AUC_binary = fmet.get_all_factors_simpson(AUC_all_factors_df_binary)
-factor_entropy_AUC_binary = fmet.get_factor_entropy_all(AUC_all_factors_df_binary)
-print('binary AUC matrix gini index is: ', factor_gini_AUC_binary)
-fplot.plot_metric_barplot(factor_simpson_AUC_binary, 'simpson index of each factor - binary AUC')
-fplot.plot_metric_barplot(factor_entropy_AUC_binary, 'entropy of each factor - binary AUC')
+                    'homogeneity_cell':ASV_simpson_cell,
+                    'homogeneity_sample':ASV_simpson_sample,
+                
+                    'factor_simpson_meanimp':[1-x for x in factor_simpson_meanimp], 
+                    'factor_entropy_meanimp':[1-x for x in factor_entropy_meanimp]}
 
 
-#### binary mean importance scores
-factor_gini_meanimp_binary = fmet.get_all_factors_gini(mean_importance_df_binary)
-factor_simpson_meanimp_binary = fmet.get_all_factors_simpson(mean_importance_df_binary)
-factor_entropy_meanimp_binary = fmet.get_factor_entropy_all(mean_importance_df_binary)
-print('binary mean importance matrix gini index is: ', factor_gini_meanimp_binary)
-fplot.plot_metric_barplot(factor_simpson_meanimp_binary, 'simpson index of each factor - binary mean importance')
-fplot.plot_metric_barplot(factor_entropy_meanimp_binary, 'entropy of each factor - binary mean importance')
+all_metrics_dict = {'bimodality':bimodality_scores, 
+                    'specificity':[1-x for x in factor_simpson_entropy_meanimp],
+                    'effect_size': factor_variance_all,
+                    'homogeneity_cell':ASV_simpson_cell,
+                    'homogeneity_sample':ASV_simpson_sample}
 
-
-#### Variance
-factor_variance_all = fmet.get_factor_variance_all(factor_scores)
-fplot.plot_metric_barplot(factor_variance_all, 'Variance of each factor')
-fplot.plot_factor_scatter(factor_scores, 0, np.argmin(factor_variance_all), colors_dict_scMix['protocol'], 
-                          covariate='protocol', title='factor with the minimum variance')
-
-#### Scaled variance
-SV_all_factors_protocol = fmet.get_factors_SV_all_levels(factor_scores, y_protocol)
-SV_all_factors_cell_line = fmet.get_factors_SV_all_levels(factor_scores, y_cell_line)
-SV_all_factors = np.concatenate((SV_all_factors_protocol, SV_all_factors_cell_line), axis=0)
-#all_covariate_levels = np.concatenate((y_protocol.unique(), y_cell_line.unique()), axis=0)
-
-### convert to SV_all_factors to dataframe
-SV_all_factors_df = pd.DataFrame(SV_all_factors)
-SV_all_factors_df.columns = AUC_all_factors_df.columns
-SV_all_factors_df.index = AUC_all_factors_df.index
-## scale each factor from 0 to 1
-SV_all_factors_df = SV_all_factors_df.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
-
-fplot.plot_all_factors_levels_df(SV_all_factors_df,
-                                    title='Homogeneity: scaled variance scores', color='RdPu')
-fplot.plot_all_factors_levels(SV_all_factors, all_covariate_levels, 
-                              title='Scaled variance for all the factors', color='RdPu')
-
-
-fplot.plot_all_factors_levels(SV_all_factors, all_covariate_levels, 
-                              title='Scaled variance for all the factors', color='RdPu')
-
-
-ASV_protocol_all = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='arithmetic')
-ASV_cell_line_all = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='arithmetic')
-fplot.plot_factor_scatter(factor_scores, 0, np.argmax(ASV_protocol_all), colors_dict_scMix['protocol'], 
-                          covariate='protocol', title='factor with maximum ASV of protocol')
-
-
-
-#### bimodality scores
-
-### kmeans clustering based bimodality metrics
-### TODO: try initializing kmeans with the min and max factor scores for cluster centers
-bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
-      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores)
-
-fplot.plot_metric_barplot(silhouette_scores_km, 'Silhouette score of each factor')
-fplot.plot_metric_barplot(calinski_harabasz_scores_km, 'Calinski Harabasz score of each factor')
-fplot.plot_metric_barplot(wvrs_km, 'weighted variance ratio score of each factor')
-fplot.plot_factor_scatter(factor_scores, 0, np.argmax(silhouette_scores_km), colors_dict_scMix['protocol'],
-                            covariate='protocol', title='factor with maximum silhouette score')
-fplot.plot_histogram(factor_scores[:,np.argmin(silhouette_scores_km)], 
-                     title='factor with the minimum silhouette score')
-
-### plot the correlation of the metrics
-bimodality_metrics = ['bic_km', 'calinski_harabasz', 'davies_bouldin', 'silhouette', 'vrs', 'wvrs']
-bimodality_scores = np.concatenate((bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
-                                    silhouette_scores_km, vrs_km, wvrs_km), axis=0).reshape(len(bimodality_metrics), -1)
-#fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
-
-
-
-### gmm clustering based bimodality metrics #### model-based clustering fmet.
-bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores)
-fplot.plot_metric_barplot(silhouette_scores_gmm, 'Silhouette score of each factor')
-fplot.plot_metric_barplot(bic_scores_gmm, 'BIC score of each factor')
-
-### plot the correlation of the metrics
-bimodality_metrics = ['bic', 'silhouette', 'vrs', 'wvrs']
-bimodality_scores = np.concatenate((bic_scores_gmm, silhouette_scores_gmm, 
-                                    vrs_gmm, wvrs_gmm), axis=0).reshape(len(bimodality_metrics), -1)
-#fplot.plot_metric_correlation(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
-
-### likelihood test 
-likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
-fplot.plot_metric_barplot(likelihood_ratio_scores, 'Likelihood ratio score of each factor')
-
-### bimodality index metric
-bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
-fplot.plot_metric_barplot(bimodality_index_scores, 'Bimodality index score of each factor')
-
-
-### dip test based bimodality metrics
-dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
-fplot.plot_metric_barplot(dip_scores, 'Dip test score of each factor')
-fplot.plot_metric_barplot(pval_scores, 'Dip test p values of each factor')
-
-
-#### kurtosis
-kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
-fplot.plot_metric_barplot(kurtosis_scores, 'Kurtosis score of each factor')
-
-#### outlier sum statistic 
-outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
-fplot.plot_metric_barplot(outlier_sum_scores, 'Outlier sum score of each factor')
-
-
-### plot the correlation of all the bimodality metrics
-bimodality_metrics = ['bic_km', 'calinski_harabasz_km', 'davies_bouldin_km', 'silhouette_km', 'vrs_km', 'wvrs_km',
-                      'bic_gmm', 'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm', 'likelihood_ratio', 'bimodality_index',
-                          'dip_score', 'dip_pval', 'kurtosis', 'outlier_sum']
-bimodality_scores = np.concatenate((bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
-                                    silhouette_scores_km, vrs_km, wvrs_km,
-                                    bic_scores_gmm, silhouette_scores_gmm,
-                                    vrs_gmm, wvrs_gmm, likelihood_ratio_scores, bimodality_index_scores,
-                                    dip_scores, pval_scores, kurtosis_scores, outlier_sum_scores), axis=0).reshape(len(bimodality_metrics), -1)
-fplot.plot_metric_correlation_clustermap(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
-fplot.plot_metric_dendrogram(pd.DataFrame(bimodality_scores.T, columns=bimodality_metrics))
-
-
-
-####################################
-
-#### label free factor metrics
-factor_variance_all = fmet.get_factor_variance_all(factor_scores)
-factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df)
-factor_gini_AUC = fmet.get_all_factors_gini(AUC_all_factors_df)
-
-
-### bimoality metrics
-bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
-      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores)
-bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores)
-likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
-bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
-dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
-kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
-outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
-
-
-### label dependent factor metrics
-ASV_protocol_all_arith = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='arithmetic')
-ASV_cell_line_all_arith = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='arithmetic')
-ASV_protocol_all_geo = fmet.get_ASV_all(factor_scores, y_protocol, mean_type='geometric')
-ASV_cell_line_all_geo = fmet.get_ASV_all(factor_scores, y_cell_line, mean_type='geometric')
-
-
-factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df)
-factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)
-factor_simpson_AUC = fmet.get_all_factors_simpson(AUC_all_factors_df)
-factor_entropy_AUC = fmet.get_factor_entropy_all(AUC_all_factors_df)
-
-
-### create a dictionaty annd thenn a dataframe of all the ASV metrics arrays
-ASV_all_factors_dict = {'ASV_protocol_arith': ASV_protocol_all_arith, 'ASV_protocol_geo': ASV_protocol_all_geo,
-                        'ASV_cell_line_arith': ASV_cell_line_all_arith, 'ASV_cell_line_geo': ASV_cell_line_all_geo}
-ASV_all_factors_df = pd.DataFrame(ASV_all_factors_dict)
-### visualize the table with numbers using sns
-import seaborn as sns
-sns.set(font_scale=0.7)
-### change teh figure size
-plt.figure(figsize=(5, 10))
-sns.heatmap(ASV_all_factors_df, cmap='coolwarm', annot=True, fmt='.2f', cbar=False)
-plt.xlabel('Covariate levels')
-plt.ylabel('Factor number')
-plt.title('ASV scores for all the factors')
-plt.show()
-
-#### Scaled variance
-SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)
-
-
-#### make a dictionary of all the metrics
-all_metrics_dict = {'factor_entropy_meanimp': factor_entropy_meanimp,
-                        'factor_entropy_AUC': factor_entropy_AUC,
-                        'factor_simpson_meanimp': factor_simpson_meanimp, 
-                        'factor_simpson_AUC': factor_simpson_AUC,
-                    
-                    'factor_variance': factor_variance_all, 
-                    'ASV_protocol_arith': ASV_protocol_all_arith, 'ASV_protocol_geo': ASV_protocol_all_geo,
-                    'ASV_cell_line_arith': ASV_cell_line_all_arith, 'ASV_cell_line_geo': ASV_cell_line_all_geo,
-
-                    'bic_km': bic_scores_km, 'calinski_harabasz_km': calinski_harabasz_scores_km,
-                    'davies_bouldin_km': davies_bouldin_scores_km, 'silhouette_km': silhouette_scores_km,
-                    'vrs_km': vrs_km, 'wvrs_km': wvrs_km,
-                    'bic_gmm': bic_scores_gmm, 'silhouette_gmm': silhouette_scores_gmm,
-                    'vrs_gmm': vrs_gmm, 'wvrs_gmm': wvrs_gmm,
-                    'likelihood_ratio': likelihood_ratio_scores, 'bimodality_index': bimodality_index_scores,
-                    'dip_score': dip_scores, 'dip_pval': pval_scores, 'kurtosis': kurtosis_scores,
-                    'outlier_sum': outlier_sum_scores}
+### check the length of all the metrics
 
 all_metrics_df = pd.DataFrame(all_metrics_dict)
 factor_metrics = list(all_metrics_df.columns)
 all_metrics_df.head()
 
-
-
-
 all_metrics_scaled = fmet.get_scaled_metrics(all_metrics_df)
 
 fplot.plot_metric_correlation_clustermap(all_metrics_df)
 fplot.plot_metric_dendrogram(all_metrics_df)
-
 fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metrics for all the factors')
-fplot.plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics)
-
-### subset the all_metrics_df to the metrics_to_keep
-metrics_to_keep = ['vrs_km', 'silhouette_gmm', 'bimodality_index', 
- 'factor_variance', 'factor_specificity_meanimp', 'ASV_protocol_geo', 'ASV_cell_line_geo']
-
-all_metrics_df_sub = all_metrics_df[metrics_to_keep]
-factor_metrics_sub = list(all_metrics_df_sub.columns)
-all_metrics_scaled_sub = fmet.get_scaled_metrics(all_metrics_df_sub)
-fplot.plot_metric_heatmap(all_metrics_scaled_sub, factor_metrics_sub, title='Scaled metrics for all the factors')
 
 
-fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=50)
-fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=100)
-fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=200)
-fplot.plot_factor_dendogram(factor_scores, distance='ward',num_var=500)
+### subset all_merrics_scaled numpy array to only include the matched factors
+all_metrics_scaled_matched = all_metrics_scaled[matched_factor_index,:]
+fplot.plot_metric_heatmap(all_metrics_scaled_matched, factor_metrics, x_axis_label=x_labels_matched,
+                          title='Scaled metrics for all the factors')
 
+## subset x axis labels based on het matched factors
+x_labels_matched = mean_importance_df_matched.columns.values
 

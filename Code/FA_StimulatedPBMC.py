@@ -119,7 +119,7 @@ covariate_vector = y_cell_type
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-num_pc = 5
+num_pc = 10
 fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanPBMC['sample'],
                legend_handles=True,
                title='varimax-PCA of library-regressed data',
@@ -137,9 +137,8 @@ fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanPBMC
 factor_scores = pca_scores_varimax
 covariate_vec = y_stim
 covariate_level = np.unique(covariate_vec)[1]
-covariate_level
 a_binary_cov = fproc.get_binary_covariate(covariate_vec, covariate_level)
-importance_df_a_level = get_importance_df(factor_scores, a_binary_cov, time_eff=True)[0]
+importance_df_a_level = fmatch.get_importance_df(factor_scores, a_binary_cov, time_eff=True)[0]
 importance_df_a_level
 ### show this dataframe (importance_df_a_level) as a heatmap using seaborn
 ### plot the heatmap of the importance_df_a_level using seaborn without a function
@@ -315,9 +314,9 @@ pca_scores_varimax_df.columns = ['F'+str(i) for i in range(1, pca_scores_varimax
 pca_scores_varimax_df.index = data.obs.index.values
 pca_scores_varimax_df_merged = pd.concat([data.obs, pca_scores_varimax_df], axis=1)
 ### save the pca_scores_varimax_df_merged to a csv file
-pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_stimPBMC.csv')
+pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_stimPBMC_libReg.csv')
 ## save the varimax_loading_df and varimax_scores to a csv file
-varimax_loading_df.to_csv('../Results/varimax_loading_df_stimPBMC.csv')
+varimax_loading_df.to_csv('../Results/varimax_loading_df_stimPBMC_libReg.csv')
 
 
 
