@@ -345,6 +345,11 @@ ASV_simpson_sample = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_
 ASV_simpson_cell = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_type)))
 ASV_simpson_stim = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_stim)))
 
+### calculate ASV based on entropy on the scaled variance per covariate for each factor
+ASV_entropy_sample = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
+ASV_entropy_cell = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_type)))
+ASV_entropy_stim = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_stim)))
+
 ## calculate correlation between all ASV scores
 ASV_list = [ASV_geo_cell, ASV_geo_stim, ASV_geo_sample, ASV_simpson_sample, ASV_simpson_cell, ASV_simpson_stim]
 ASV_names = ['ASV_geo_cell', 'ASV_geo_stim', 'ASV_geo_sample', 'ASV_simpson_sample', 'ASV_simpson_cell', 'ASV_simpson_stim']

@@ -269,9 +269,20 @@ ASV_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric'
 ASV_simpson_sample = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
 ASV_simpson_cell = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_line)))
 
+
+### calculate ASV based on entropy on the scaled variance per covariate for each factor
+ASV_entropy_sample = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
+ASV_entropy_cell = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_line)))
+
 ## calculate correlation between all ASV scores
-ASV_list = [ASV_geo_cell, ASV_geo_sample, ASV_simpson_sample, ASV_simpson_cell]
-ASV_names = ['ASV_geo_cell', 'ASV_geo_sample', 'ASV_simpson_sample', 'ASV_simpson_cell']
+ASV_list = [ASV_geo_cell, ASV_geo_sample, 
+            ASV_simpson_sample, ASV_simpson_cell,
+            ASV_entropy_sample, ASV_entropy_cell]
+ASV_names = ['ASV_geo_cell',  'ASV_geo_sample', 
+             'ASV_simpson_sample', 'ASV_simpson_cell', 
+             'ASV_entropy_sample', 'ASV_entropy_cell']
+
+
 ### calculate the correlation between all ASV scores without a function
 ASV_corr = np.zeros((len(ASV_list), len(ASV_list)))
 for i in range(len(ASV_list)):
@@ -281,6 +292,7 @@ ASV_corr_df = pd.DataFrame(ASV_corr)
 ### set the row and column names of ASV_corr_df
 ASV_corr_df.index = ASV_names
 ASV_corr_df.columns = ASV_names
+
 
 ### calculate diversity metrics
 ## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
@@ -308,6 +320,9 @@ all_metrics_dict = {'silhouette_km':silhouette_scores_km,
 
                     'homogeneity_cell':ASV_simpson_cell,
                     'homogeneity_sample':ASV_simpson_sample,
+
+                    'homogeneity_cell_entropy':ASV_entropy_cell,
+                    'homogeneity_sample_entropy':ASV_entropy_sample,
                 
                     'factor_simpson_meanimp':[1-x for x in factor_simpson_meanimp], 
                     'factor_entropy_meanimp':[1-x for x in factor_entropy_meanimp]}
