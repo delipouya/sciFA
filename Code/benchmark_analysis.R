@@ -19,6 +19,7 @@ importance_df_m_merged_deviance = read.csv('/home/delaram/sciFA/Results/benchmar
 importance_df_m_merged_deviance$res = 'deviance'
 dim(importance_df_m_merged_deviance)
 
+importance_df_residual_baseline = importance_df_m_merged_pearson
 importance_df_residual_baseline = rbind(rbind(importance_df_m_merged_response, importance_df_m_merged_pearson),importance_df_m_merged_deviance) #
 head(importance_df_residual_baseline)
 importance_df_residual_baseline$type = 'baseline'
@@ -44,6 +45,7 @@ head(imp_shuffle_deviance)
 dim(imp_shuffle_deviance)
 
 importance_df_residual_shuffle = rbind(rbind(imp_shuffle_pearson, imp_shuffle_response),imp_shuffle_deviance) #
+importance_df_residual_shuffle = imp_shuffle_pearson
 importance_df_residual_shuffle$type = 'shuffle'
 head(importance_df_residual_shuffle)
 
@@ -79,7 +81,7 @@ for (residual_type in residual_type_names){
     res_df_model = res_df[res_df$model==model_type,]
     print(head(res_df_model, 3))
     print(paste0(residual_type, '_', model_type))
-    write.csv(res_df_model,paste0('~/sciFA/Results/benchmark/analysis/imp/baseline_df_',residual_type, '_', model_type,'.csv'))
+    write.csv(res_df_model,paste0('~/sciFA/Results/benchmark//analysis/imp/baseline_df_',residual_type, '_', model_type,'.csv'))
   }
 }
 
@@ -166,6 +168,7 @@ meanimp_df_merged_deviance = read.csv('~/sciFA/Results/benchmark/deviance/base/m
 meanimp_df_merged_deviance$res = 'deviance'
 
 meanimp_df_residual_baseline = rbind(rbind(meanimp_df_merged_response, meanimp_df_merged_pearson),meanimp_df_merged_deviance) #
+meanimp_df_residual_baseline = meanimp_df_merged_pearson
 head(meanimp_df_residual_baseline)
 meanimp_df_residual_baseline$type = 'baseline'
 
@@ -189,6 +192,7 @@ meanimp_shuffle_deviance$res = 'deviance'
 head(meanimp_shuffle_deviance)
 
 meanimp_residual_shuffle = rbind(rbind(meanimp_list_shuffle_pearson, meanimp_shuffle_response),meanimp_shuffle_deviance)#
+meanimp_residual_shuffle = meanimp_list_shuffle_pearson
 head(meanimp_residual_shuffle)
 meanimp_residual_shuffle$type = 'shuffle'
 
@@ -307,11 +311,29 @@ ggplot(summary_df_m_meanimp, aes(y=value,x=Var2))+geom_boxplot()+
 
 
 summary_df_m_both = rbind(summary_df_m_meanimp, summary_df_m_imp)
-ggplot(summary_df_m_both, aes(y=value,x=Var2))+geom_boxplot()+
+summary_df_m_both$Var2 = gsub('pearson-', '', summary_df_m_both$Var2)
+summary_df_m_both$model_type = ''
+summary_df_m_both$mean_type = ''
+summary_df_m_both$scale_type = ''
+
+summary_df_m_both$model_type[1:36] = 'ensemble'
+summary_df_m_both$model_type[37:nrow(summary_df_m_both)] = 'single'
+table(summary_df_m_both$model_type)
+mean_type = lapply(strsplit(summary_df_m_both$Var2, '-')[1:36], '[[', 1)
+scale_type = lapply(strsplit(summary_df_m_both$Var2, '-')[1:36], '[[', 2)
+summary_df_m_both$mean_type[1:36] = mean_type
+summary_df_m_both$scale_type[1:36] = scale_type
+head(summary_df_m_both)
+
+summary_df_m_both
+ggplot(summary_df_m_both, aes(y=value,x=reorder(Var2, value), fill=model_type))+geom_boxplot()+
   theme_classic()+scale_fill_brewer(palette = 'Set1')+
   coord_flip()+theme(text = element_text(size=17))+xlab('')+
   ylab('Average #sig matched factors per covariate level')+
+  #geom_ribbon(aes(ymin = 0, ymax = 3), fill = "grey70") +
   geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
+  #geom_hline(yintercept=3, color = "red", size=1, linetype="dashed")+
+  geom_area(mapping = aes(y = ifelse(value>0 & value< 3 , 1, 0)), fill = "grey70") +
   ggtitle(paste0('pvalue threshold=',thr))
 
 

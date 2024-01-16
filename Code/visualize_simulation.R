@@ -5,13 +5,14 @@ df = read.csv('~/sciFA/metric_overlap_corr_df_sim20.csv')
 df = read.csv('~/sciFA/metric_overlap_corr_df_sim20_v2.csv')
 df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_v3_nov1.csv')
 df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_Jan2024.csv')
+df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_Jan2024_v2.csv')
 
 
 df = data.frame(t(df))
 colnames(df) = df[1,]
 df = df[-1,]
 head(df)
-
+colnames(df)
 cols_to_remove = c('factor_gini_meanImp', 'factor_gini_AUC', 
                    'factor_entropy_meanImp', 'factor_entropy_AUC',
                    'factor_simpon_meanImp', 'factor_simpson_AUC', 'dip_pval')
@@ -26,7 +27,7 @@ bimodality_metric=c( "bic_km","calinski_harabasz_km", "davies_bouldin_km","silho
    "vrs_km","wvrs_km","bic_gmm", "silhouette_gmm",
    "vrs_gmm","wvrs_gmm","likelihood_ratio","bimodality_index","dip_score",
    "kurtosis","outlier_sum" )
-heterogeneity_metric=c("ASV_arith","ASV_geo","1-AUC_arith","1-AUC_geo")
+heterogeneity_metric=c("ASV_arith","ASV_geo","1-AUC_arith","1-AUC_geo",'ASV_simpson','ASV_entropy')
 effect_size_metric=c('factor_variance')
 df_melt$metric_type[df_melt$metric %in% bimodality_metric]='separability'
 df_melt$metric_type[df_melt$metric %in% heterogeneity_metric]='heterogeneity'
