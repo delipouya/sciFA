@@ -257,6 +257,7 @@ plot_barplot(factor_libsize_correlation,
 silhouette_scores_km, vrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=True)
 # silhouette_scores_gmm = fmet.get_gmm_scores(factor_scores, time_eff=True)
 bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
+bimodality_scores = bimodality_index_scores
 ### calculate the average between the silhouette_scores_km, vrs_km and bimodality_index_scores
 bimodality_scores = np.mean([silhouette_scores_km, bimodality_index_scores], axis=0)
 
@@ -313,8 +314,8 @@ factor_variance_all = fmet.get_factor_variance_all(factor_scores)
 ##### Factor metrics #####
 ####################################
 
-all_metrics_dict = {'silhouette_km':silhouette_scores_km, 
-                    'vrs_km':vrs_km, #'silhouette_gmm':silhouette_scores_gmm, 
+all_metrics_dict = {#'silhouette_km':silhouette_scores_km, 
+                    #'vrs_km':vrs_km, #'silhouette_gmm':silhouette_scores_gmm, 
                     'bimodality_index':bimodality_index_scores,
                     'factor_variance':factor_variance_all, 
 

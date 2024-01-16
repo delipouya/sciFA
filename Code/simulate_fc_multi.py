@@ -26,7 +26,7 @@ num_sim_rounds = 100
 num_factors = 10
 num_mixtures = 2 ## each gaussian represents a covariate level 
 num_samples = 10000
-#### perform the simulation nn times and calculate the average correlation between the overlap and all of the scores
+#### perform the simulation n times and calculate the average correlation between the overlap and all of the scores
 corr_df = pd.DataFrame()
 corr_df_list = []
 
@@ -60,7 +60,7 @@ for i in range(num_sim_rounds):
 
     ### calculate the mean importance of each covariate level
     mean_importance_df = fmatch.get_mean_importance_all_levels(covariate_vector, factor_scores)
-    all_covariate_levels = mean_importance_df.index.values 
+    all_covariate_levels = mean_importance_df.index.values
 
     #################################### 
     #### calculate the overlap and matching scores for all the factors
@@ -71,10 +71,9 @@ for i in range(num_sim_rounds):
         match_score_mat_meanImp_list.append(fsim.get_pairwise_match_score_matrix(mean_importance_df,i))
     match_score_mat_meanImp_flat = fsim.convert_matrix_list_to_vector(match_score_mat_meanImp_list)
 
-
     bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
-        vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores)
-    bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores)
+        vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=False)
+    bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores, time_eff=False)
     likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
     bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
     dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
@@ -90,13 +89,15 @@ for i in range(num_sim_rounds):
                                         vrs_gmm, wvrs_gmm, likelihood_ratio_scores, bimodality_index_scores,
                                         dip_scores, pval_scores, kurtosis_scores, outlier_sum_scores]
 
-
     #### Scaled variance
     SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)
 
     ### label dependent factor metrics
     ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='arithmetic')
     ASV_all_geo = fmet.get_ASV_all(factor_scores, covariate_vector, mean_type='geometric')
+    ASV_simpson = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)))
+    ### calculate ASV based on entropy on the scaled variance per covariate for each factor
+    ASV_entropy = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)))
 
     ### calculate diversity metrics
     factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
@@ -105,7 +106,6 @@ for i in range(num_sim_rounds):
 
     #### label free factor metrics
     factor_variance_all = fmet.get_factor_variance_all(factor_scores)
-
 
     ### calculate 1-AUC_all_factors_df to measure the homogeneity of the factors
     AUC_all_factors_df = fmet.get_AUC_all_factors_df(factor_scores, covariate_vector)
@@ -122,6 +122,9 @@ for i in range(num_sim_rounds):
     
     corr_df_temp['ASV_arith'] = [np.corrcoef(overlap_mat_flat, ASV_all_arith)[0,1]]
     corr_df_temp['ASV_geo'] = [np.corrcoef(overlap_mat_flat, ASV_all_geo)[0,1]]
+
+    corr_df_temp['ASV_simpson'] = [np.corrcoef(overlap_mat_flat, ASV_simpson)[0,1]]
+    corr_df_temp['ASV_entropy'] = [np.corrcoef(overlap_mat_flat, ASV_entropy)[0,1]]
     
     corr_df_temp['1-AUC_arith'] = [np.corrcoef(overlap_mat_flat, AUC_1_arith_mean)[0,1]]
     corr_df_temp['1-AUC_geo'] = [np.corrcoef(overlap_mat_flat, AUC_1_geo_mean)[0,1]]
@@ -154,4 +157,6 @@ corr_df = pd.concat(corr_df_list, axis=1)
 ### name the columns as overlap + column number
 corr_df.columns = ['overlap_'+str(i) for i in range(corr_df.shape[1])]
 ### save as a csv file
-corr_df.to_csv('metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_Jan2024.csv')
+corr_df.to_csv('metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_Jan2024_v2.csv')
+
+### visaulize the results using visualize_simulation.R

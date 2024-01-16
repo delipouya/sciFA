@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import numpy as np
 import pandas as pd
@@ -12,6 +14,8 @@ import pandas as pd
 import functions_GLM as fglm
 
 import ssl; ssl._create_default_https_context = ssl._create_unverified_context
+import functions_fc_match_classifier as fmatch 
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
@@ -25,12 +29,13 @@ import statsmodels.api as sm
 
 import rotations as rot
 import constants as const
-
-np.random.seed(10)
 import time
 
+np.random.seed(10)
+
 #### Function to concatenate mean importance dataframes specific to scMix data
-def concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, scores_included_list, residual_type):
+def concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, 
+                           scores_included_list, residual_type, covariate_list):
     for i in range(len(meanimp_df_list)):
         meanimp_df_list[i]['mean_type'] = [mean_type_list[i]]*meanimp_df_list[i].shape[0]
         meanimp_df_list[i]['scale_type'] = [scale_type_list[i]]*meanimp_df_list[i].shape[0]
@@ -41,36 +46,34 @@ def concatenate_meanimp_df(meanimp_df_list, mean_type_list, scale_type_list, sco
     meanimp_df['residual_type'] = [residual_type]*meanimp_df.shape[0]
     return meanimp_df
 
-######################################################################################
-###################################################################################
 
-data_file_path = '/home/delaram/sciFA/Data/scMix_3cl_merged.h5ad'
+
+data_file_path = '/home/delaram/sciFA//Data/HumanLiverAtlas.h5ad'
 data = fproc.import_AnnData(data_file_path)
+
 data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num_genes HVGs
 y, genes, num_cells, num_genes = fproc.get_data_array(data)
-y_cell_line, y_sample, y_protocol = fproc.get_metadata_scMix(data)
-data.obs['protocol'] = y_protocol.to_numpy()
-data.obs['cell_line'] = y_cell_line.to_numpy()
-data.obs['sample'] = y_sample.to_numpy()
+y_sample, y_cell_type = fproc.get_metadata_humanLiver(data)
+genes = data.var_names
 
-colors_dict_scMix = fplot.get_colors_dict_scMix(y_protocol, y_cell_line)
-
-plt_legend_cell_line = fplot.get_legend_patch(y_sample, colors_dict_scMix['cell_line'] )
-plt_legend_protocol = fplot.get_legend_patch(y_sample, colors_dict_scMix['protocol'] )
+### calculate row and column sums of y
+rowsum_y = np.sum(y, axis=1)
+colsum_y = np.sum(y, axis=0)
 
 
+#### design matrix - library size only
+#x = fproc.get_lib_designmat(data, lib_size='total_counts')
+
+#### design matrix - library size and sample
+x_sample = fproc.get_design_mat('sample', data) 
+x = np.column_stack((data.obs.total_counts, x_sample)) 
+x = sm.add_constant(x) ## adding the intercept
+
+num_levels_sample = len(y_sample.unique())
+num_levels_cell_type = len(y_cell_type.unique())
 ####################################
 #### fit GLM to each gene ######
 ####################################
-
-#### design matrix - library size only
-x = fproc.get_lib_designmat(data, lib_size='nCount_originalexp')
-'''
-#### design matrix - library size and sample
-x_protocol = fproc.get_design_mat('protocol', data) 
-x = np.column_stack((data.obs.nCount_originalexp, x_protocol)) 
-x = sm.add_constant(x) ## adding the intercept
-'''
 
 glm_fit_dict = fglm.fit_poisson_GLM(y, x)
 
@@ -84,8 +87,7 @@ print('response residuals: ', resid_response.shape)
 print('deviance residuals: ', resid_deviance.shape) 
 
 ### make a dictionary of residuals
-#resid_dict = {'pearson': resid_pearson, 'response': resid_response, 'deviance': resid_deviance}
-resid_dict = {'pearson': resid_pearson}
+resid_dict = {'pearson': resid_pearson, 'response': resid_response, 'deviance': resid_deviance}
 
 ### make a for loop to calculate the importance scores for each residual type
 importance_df_dict = {}
@@ -123,18 +125,18 @@ for residual_type in resid_dict.keys():
     #### Baseline importance calculation and run time ######
     #### Importance calculation and run time as baseline ######
 
-    importance_df_dict_protocol, time_dict_a_level_dict_protocol = flabel.get_importance_all_levels_dict(y_protocol, factor_scores, time_eff=True) 
-    importance_df_dict_cell_line, time_dict_a_level_dict_cell_line = flabel.get_importance_all_levels_dict(y_cell_line, factor_scores, time_eff=True) 
+    importance_df_dict_sample, time_dict_a_level_dict_sample = flabel.get_importance_all_levels_dict(y_sample, factor_scores, time_eff=True) 
+    importance_df_dict_cell_type, time_dict_a_level_dict_cell_type = flabel.get_importance_all_levels_dict(y_cell_type, factor_scores, time_eff=True) 
 
-    meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_list(importance_df_dict_protocol)
-    meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_list(importance_df_dict_cell_line)
+    meanimp_standard_arith_sample, meanimp_standard_geom_sample, meanimp_minmax_arith_sample, meanimp_minmax_geom_sample, meanimp_rank_arith_sample, meanimp_rank_geom_sample = flabel.get_mean_importance_df_list(importance_df_dict_sample)
+    meanimp_standard_arith_cell_type, meanimp_standard_geom_cell_type, meanimp_minmax_arith_cell_type, meanimp_minmax_geom_cell_type, meanimp_rank_arith_cell_type, meanimp_rank_geom_cell_type = flabel.get_mean_importance_df_list(importance_df_dict_cell_type)
 
-    meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_protocol, meanimp_standard_arith_cell_line], axis=0)
-    meanimp_standard_geom_df = pd.concat([meanimp_standard_geom_protocol, meanimp_standard_geom_cell_line], axis=0)
-    meanimp_minmax_arith_df = pd.concat([meanimp_minmax_arith_protocol, meanimp_minmax_arith_cell_line], axis=0)
-    meanimp_minmax_geom_df = pd.concat([meanimp_minmax_geom_protocol, meanimp_minmax_geom_cell_line], axis=0)
-    meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_arith_cell_line], axis=0)
-    meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
+    meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_sample, meanimp_standard_arith_cell_type], axis=0)
+    meanimp_standard_geom_df = pd.concat([meanimp_standard_geom_sample, meanimp_standard_geom_cell_type], axis=0)
+    meanimp_minmax_arith_df = pd.concat([meanimp_minmax_arith_sample, meanimp_minmax_arith_cell_type], axis=0)
+    meanimp_minmax_geom_df = pd.concat([meanimp_minmax_geom_sample, meanimp_minmax_geom_cell_type], axis=0)
+    meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_sample, meanimp_rank_arith_cell_type], axis=0)
+    meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_sample, meanimp_rank_geom_cell_type], axis=0)
 
 
     meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
@@ -147,71 +149,71 @@ for residual_type in resid_dict.keys():
 
     scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
 
-    scores_included_list = [scores_included]*6
-    covariate_list = ['protocol']*3 + ['cell_line']*3
+    scores_included_list = [scores_included]*len(meanimp_df_list)
+    covariate_list = ['sample']*num_levels_sample + ['cell_type']*num_levels_cell_type
 
     meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, 
                                         scale_type_list, scores_included_list, 
-                                        residual_type=residual_type)
+                                        residual_type=residual_type, covariate_list=covariate_list)
 
 
     ############################################################
     ########### Comparing model run times
-    time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
+    time_df_dict = {**time_dict_a_level_dict_sample, **time_dict_a_level_dict_cell_type}
     ########## Comparing time differences between models
     time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', 
                                     columns=list(time_df_dict.values())[0].keys())
     #flabel.plot_runtime_barplot(time_df)
 
     ########## Comparing factor scores between models
-    #### merge two importance_df_dict_protocol and importance_df_dict_cell_line dicts
-    importance_df_dict = {**importance_df_dict_protocol, **importance_df_dict_cell_line}
+    #### merge two importance_df_dict_sample and importance_df_dict_cell_type dicts
+    importance_df_dict = {**importance_df_dict_sample, **importance_df_dict_cell_type}
     importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
     ### add a column for residual type name to importance_df_m
     importance_df_m['residual_type'] = [residual_type]*importance_df_m.shape[0]
 
 
     ### save importance_df_m and meanimp_df to csv
-    importance_df_m.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/base/'+'importance_df_melted_scMixology_'+residual_type+'_'+'baseline.csv')
-    meanimp_df.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/base/'+'meanimp_df_'+'scMixology_'+residual_type+'_'+'baseline.csv')
+    importance_df_m.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/base/'+'importance_df_melted_human_liver_'+residual_type+'_'+'baseline.csv')
+    meanimp_df.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/base/'+'meanimp_df_'+'human_liver_'+residual_type+'_'+'baseline.csv')
 
     t_start_total = time.time()
     #### shuffle the covariate vectors n times in a loop
     for i in range(n):
         print('i: ', i)
 
-        y_protocol_shuffled = flabel.shuffle_covariate(y_protocol)
-        y_cell_line_shuffled = flabel.shuffle_covariate(y_cell_line)
+        y_sample_shuffled = flabel.shuffle_covariate(y_sample)
+        y_cell_type_shuffled = flabel.shuffle_covariate(y_cell_type)
 
         ####################################
         #### Importance calculation and run time for model comparison  ######
         ####################################
-        importance_df_dict_protocol, time_dict_a_level_dict_protocol = flabel.get_importance_all_levels_dict(y_protocol_shuffled, factor_scores, time_eff=True) 
-        importance_df_dict_cell_line, time_dict_a_level_dict_cell_line = flabel.get_importance_all_levels_dict(y_cell_line_shuffled, factor_scores, time_eff=True) 
+        importance_df_dict_sample, time_dict_a_level_dict_sample = flabel.get_importance_all_levels_dict(y_sample_shuffled, factor_scores, time_eff=True) 
+        importance_df_dict_cell_type, time_dict_a_level_dict_cell_type = flabel.get_importance_all_levels_dict(y_cell_type_shuffled, factor_scores, time_eff=True) 
         
         ####################################
         ########### Comparing model run times
         ####################################
-        time_df_dict = {**time_dict_a_level_dict_protocol, **time_dict_a_level_dict_cell_line}
+        time_df_dict = {**time_dict_a_level_dict_sample, **time_dict_a_level_dict_cell_type}
         ########## Comparing time differences between models
         time_df = pd.DataFrame.from_dict(time_df_dict, orient='index', columns=list(time_df_dict.values())[0].keys())
         #plot_runtime_barplot(time_df)
         ### save time_df to csv
-        time_df.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+
-                       '/time/' + 'time_df_scMixology_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
+        time_df.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+
+                       '/time/' + 'time_df_human_liver_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
         
         ####################################
         ##### Mean importance calculation ########
-        meanimp_standard_arith_protocol, meanimp_standard_geom_protocol, meanimp_minmax_arith_protocol, meanimp_minmax_geom_protocol, meanimp_rank_arith_protocol, meanimp_rank_geom_protocol = flabel.get_mean_importance_df_list(importance_df_dict_protocol)
-        meanimp_standard_arith_cell_line, meanimp_standard_geom_cell_line, meanimp_minmax_arith_cell_line, meanimp_minmax_geom_cell_line, meanimp_rank_arith_cell_line, meanimp_rank_geom_cell_line = flabel.get_mean_importance_df_list(importance_df_dict_cell_line)
+        meanimp_standard_arith_sample, meanimp_standard_geom_sample, meanimp_minmax_arith_sample, meanimp_minmax_geom_sample, meanimp_rank_arith_sample, meanimp_rank_geom_sample = flabel.get_mean_importance_df_list(importance_df_dict_sample)
+        meanimp_standard_arith_cell_type, meanimp_standard_geom_cell_type, meanimp_minmax_arith_cell_type, meanimp_minmax_geom_cell_type, meanimp_rank_arith_cell_type, meanimp_rank_geom_cell_type = flabel.get_mean_importance_df_list(importance_df_dict_cell_type)
 
 
-        meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_protocol, meanimp_standard_arith_cell_line], axis=0)
-        meanimp_standard_geom_df = pd.concat([meanimp_standard_geom_protocol, meanimp_standard_geom_cell_line], axis=0)
-        meanimp_minmax_arith_df = pd.concat([meanimp_minmax_arith_protocol, meanimp_minmax_arith_cell_line], axis=0)
-        meanimp_minmax_geom_df = pd.concat([meanimp_minmax_geom_protocol, meanimp_minmax_geom_cell_line], axis=0)
-        meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_protocol, meanimp_rank_arith_cell_line], axis=0)
-        meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_protocol, meanimp_rank_geom_cell_line], axis=0)
+        meanimp_standard_arith_df = pd.concat([meanimp_standard_arith_sample, meanimp_standard_arith_cell_type], axis=0)
+        meanimp_standard_geom_df = pd.concat([meanimp_standard_geom_sample, meanimp_standard_geom_cell_type], axis=0)
+        meanimp_minmax_arith_df = pd.concat([meanimp_minmax_arith_sample, meanimp_minmax_arith_cell_type], axis=0)
+        meanimp_minmax_geom_df = pd.concat([meanimp_minmax_geom_sample, meanimp_minmax_geom_cell_type], axis=0)
+        meanimp_rank_arith_df = pd.concat([meanimp_rank_arith_sample, meanimp_rank_arith_cell_type], axis=0)
+        meanimp_rank_geom_df = pd.concat([meanimp_rank_geom_sample, meanimp_rank_geom_cell_type], axis=0)
 
 
         meanimp_df_list = [meanimp_standard_arith_df, meanimp_standard_geom_df, 
@@ -225,29 +227,31 @@ for residual_type in resid_dict.keys():
         scale_type_list = ['standard', 'standard', 'minmax', 'minmax', 'rank', 'rank']
 
         scores_included = 'shuffle'#'baseline'#'top_cov' 'top_FA' 
-        scores_included_list = [scores_included]*6
-        covariate_list = ['protocol']*3 + ['cell_line']*3
+        scores_included_list = [scores_included]*len(meanimp_df_list)
+        covariate_list = ['sample']*num_levels_sample + ['cell_type']*num_levels_cell_type
 
         meanimp_df = concatenate_meanimp_df(meanimp_df_list, mean_type_list, 
                                             scale_type_list, scores_included_list, 
-                                            residual_type=residual_type)
+                                            residual_type=residual_type, covariate_list=covariate_list)
 
         ############################################################
         ########## Comparing factor scores between models
         ############################################################
-        #### merge two importance_df_dict_protocol and importance_df_dict_cell_line dicts
-        importance_df_dict = {**importance_df_dict_protocol, **importance_df_dict_cell_line}
+        #### merge two importance_df_dict_sample and importance_df_dict_cell_type dicts
+        importance_df_dict = {**importance_df_dict_sample, **importance_df_dict_cell_type}
         importance_df_m = flabel.get_melted_importance_df(importance_df_dict)
         ### add a column for residual type name to importance_df_m
         importance_df_m['residual_type'] = [residual_type]*importance_df_m.shape[0]
 
 
         ### save importance_df_m and meanimp_df to csv
-        importance_df_m.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/imp/'+
-                               'importance_df_melted_scMixology_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
-        meanimp_df.to_csv('/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/meanimp/'+
-                          'meanimp_df_'+'scMixology_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
+        importance_df_m.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/shuffle/imp/'+
+                               'importance_df_melted_human_liver_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
+        meanimp_df.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/shuffle/meanimp/'+
+                          'meanimp_df_'+'human_liver_'+residual_type+'_'+'shuffle_'+str(i)+'.csv')
 
 
     t_end_total = time.time()
     print('Total time: ', t_end_total - t_start_total)
+
+

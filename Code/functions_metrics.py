@@ -354,7 +354,7 @@ def get_gmm_scores(factor_scores, num_groups=2, time_eff=True) -> list:
         silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
 
     if not time_eff:
-        return bic_scores, silhouette_scores, vrs, wvrs, means, cov_list, weights
+        return bic_scores, silhouette_scores, vrs, wvrs #, means, cov_list, weights
     return silhouette_scores
         
 

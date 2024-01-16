@@ -19,7 +19,7 @@ import scipy.stats as ss
 
 np.random.seed(10)
 
-def get_importance_all_levels_dict(covariate_vec, factor_scores) -> dict:
+def get_importance_all_levels_dict(covariate_vec, factor_scores, time_eff=True) -> dict:
     '''
     calculate the importance of all levels of a given covariate
     returns a dictionary of length num_levels. dictionalry keys are covariate levels and values are dataframes of size (num_models, num_components)
@@ -37,7 +37,7 @@ def get_importance_all_levels_dict(covariate_vec, factor_scores) -> dict:
 
         ### get the importance_df for each covariate level
         a_binary_cov = fproc.get_binary_covariate(covariate_vec, covariate_level)
-        importance_df_a_level, time_dict = fmatch.get_importance_df(factor_scores, a_binary_cov)
+        importance_df_a_level, time_dict = fmatch.get_importance_df(factor_scores, a_binary_cov, time_eff=time_eff)
 
         ### save the importance_df (each column's a model) for each covariate level
         importance_df_a_level_dict[covariate_level] = importance_df_a_level
@@ -91,7 +91,6 @@ def get_mean_importance_df_list(importance_df_levels_dict) -> pd.DataFrame:
             mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='minmax', mean='geometric')
             mean_imp_minmax_geom_df.loc[covariate_level] = mean_importance_a_level
 
-            
             #### scale: rank - mean: arithmatic
             mean_importance_a_level = fmatch.get_mean_importance_level(importance_df_a_level, scale='rank', mean='arithmatic')
             mean_imp_rank_arith_df.loc[covariate_level] = mean_importance_a_level
@@ -119,8 +118,6 @@ def shuffle_covariate(covariate_vector) -> np.array:
     return covariate_vector_shuffled
     
     
-
-
 
 def plot_runtime_barplot(time_df):
     ''' make a barplot of time_df using sns and put the legend outside the plot
