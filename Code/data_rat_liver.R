@@ -1,35 +1,3 @@
-data_file_path = '/home/delaram/sciFA//Data/inputdata_rat_set1_countData_2.h5ad'
-library(SummarizedExperiment)
-
-sce <- readH5AD(data_file_path)
-class(assay(sce))
-
-sce2 <- readH5AD(file, use_hdf5 = TRUE)
-
-
-
-if (!requireNamespace("remotes", quietly = TRUE)) {
-  install.packages("remotes")
-}
-remotes::install_github("mojaveazure/seurat-disk")
-library(SeuratDisk)
-
-Convert("example_dir/example_ad.h5ad", ".h5seurat")
-# This creates a copy of this .h5ad object reformatted into .h5seurat inside the example_dir directory
-
-# This .d5seurat object can then be read in manually
-
-library(SeuratDisk)
-SaveH5Seurat(dat, filename = "~/scLMM/input_data_designMat/inputdata_rat_set1_countData_2.h5seurat", overwrite = TRUE)
-source_file = "~/scLMM/input_data_designMat/inputdata_rat_set1_countData_2.h5seurat"
-dest_file = "~/scLMM/input_data_designMat/inputdata_rat_set1_countData_2.h5ad"
-Convert(source_file, dest_file, assay="RNA", overwrite = TRUE)
-
-
-seuratObject <- LoadH5Seurat(data_file_path)
-
-
-
 merged_samples_cellb = readRDS('~/RatLiver/cell_browser/TLH_cellBrowser.rds')
 head(merged_samples_cellb)
 ### adding the cell-type annotation ###
@@ -48,12 +16,7 @@ table(meta_data2$strain)
 
 merged_samples_cellb@meta.data <- meta_data2
 head(merged_samples_cellb@meta.data)
-merged_samples_cellb@meta.data$umi = row.names(merged_samples_cellb@meta.data)
-meta_data = merged_samples_cellb@meta.data
-write.csv(meta_data, '/home/delaram/sciFA//Data/inputdata_rat_set1_metadat.csv')
 
-df_umap <- data.frame(UMAP_1=getEmb(merged_samples, 'umap_h')[,1], 
-                      UMAP_2=getEmb(merged_samples, 'umap_h')[,2])
 
 
 
@@ -63,15 +26,58 @@ head(merged_data_soupX)
 
 sample_names = list.dirs('~/RatLiver/Data/SoupX_data/SoupX_inputs/',recursive = FALSE, full.names = FALSE)
 
+soup_profile_list = list(NA, NA, NA, NA)
 for(i in 1:length(sample_names)){
   sample_name = sample_names[i]
   
   soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', sample_name, '_soupX_out.rds'))
   #soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/paramPlus01/', sample_name, '_soupX_out_Rhoplus.0.1.rds'))
-  #soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/paramPlus02/', sample_name, '_soupX_out_Rhoplus.0.2.rds'))
-  #soup_profile = soupX_out$sc$soupProfile
+  
+  soup_profile = data.frame(genes=row.names(soupX_out$sc$soupProfile),soup=soupX_out$sc$soupProfile$est)
+  soup_profile = soup_profile[order(soup_profile$soup, decreasing = T),]
+  soup_profile_list[[i]] = soup_profile 
 }
-head(soupX_out$sc$soupProfile)
+names(soup_profile_list) = sample_names 
+num_genes = 50
+consisitent_soup_genes_df = data.frame(table(unlist(lapply(soup_profile_list, function(x) x$genes[1:num_genes]))))
+top_soup_genes = as.character(consisitent_soup_genes_df$Var1[consisitent_soup_genes_df$Freq>1])
+
+
+############# comparing sciRED based strain differences with DE based comparison
+pca_scores_varimax_df_merged = read.csv('~/sciFA//Results/pca_scores_varimax_df_ratliver_libReg.csv')
+varimax_loading_df = read.csv('~/sciFA/Results/varimax_loading_df_ratliver_libReg.csv')
+
+head(pca_scores_varimax_df_merged)
+head(varimax_loading_df)
+
+varimax_loading_df_ord = varimax_loading_df[order(varimax_loading_df$F23, decreasing = F),]
+varimax_loading_df_ord = data.frame(genes=varimax_loading_df_ord$X,factor=varimax_loading_df_ord$F23)
+head(varimax_loading_df_ord,40)
+head(varimax_loading_df_ord,20)
+varimax_loading_df_ord[varimax_loading_df_ord$genes=='Itgal',]
 
 
 
+table(merged_samples_cellb$annotation) 
+clusters_to_include = c(  'Marco/Cd5l Mac (5)') #'Marco/Cd5l Mac (10)', 
+merged_samples_sub = merged_samples_cellb[,merged_samples_cellb$annotation %in% clusters_to_include]
+dim(merged_samples_sub)
+
+install.packages('devtools')
+devtools::install_github('immunogenomics/presto')
+
+table(merged_samples_sub$strain)
+Idents(merged_samples_sub) = merged_samples_sub$strain
+strain_markers = FindMarkers(merged_samples_sub, ident.1 = 'DA', ident.2 = 'LEW')
+head(strain_markers,20)
+strain_markers$score = -(strain_markers$avg_log2FC * log(strain_markers$p_val_adj))
+strain_markers_sort = strain_markers[order(strain_markers$score, decreasing = F),]
+head(strain_markers_sort,20)
+write.csv(strain_markers, '~/sciFA/Results/strain_markers_ratliver_DE_strain_nonInf_cluster5.csv')
+
+
+
+varimax_genes_strain = c(head(varimax_loading_df_ord$genes,20), tail(varimax_loading_df_ord$genes,20))
+row.names(strain_markers)[1:25][row.names(strain_markers)[1:25] %in% top_soup_genes]
+varimax_genes_strain[varimax_genes_strain%in% top_soup_genes]
+#its hard to claim b2m and pck1.

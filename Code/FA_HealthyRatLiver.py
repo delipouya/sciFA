@@ -37,16 +37,23 @@ data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num
 y, genes, num_clusters, num_genes = fproc.get_data_array(data)
 
 ### add the cluster annotations to teh metadata
-annotation_data_file = 'home/delaram/sciFA//Data/TLH_annotation.csv'
+annotation_data_file = '/home/delaram/sciFA//Data/TLH_annotation.csv'
 annotation_data = pd.read_csv(annotation_data_file, index_col=0)
 annotation_data['cluster_value'] = annotation_data.index.values
 annotation_data['cluster_value']=annotation_data['cluster_value'].astype(int)
 
-meta_data = data.obs
+### convert meta_data to pandas dataframe
+meta_data = pd.DataFrame(data.obs)
 meta_data['cluster']=meta_data['cluster'].astype(int)
-meta_data = meta_data.merge(annotation_data, left_on='cluster', right_on='cluster_value')
-data.obs = meta_data
 
+### check if meta_data['cluster'] and annotation_data['cluster_value'] have the same data type
+print('meta_data[cluster] data type: ', meta_data['cluster'].dtype)
+print('annotation_data[cluster_value] data type: ', annotation_data['cluster_value'].dtype
+        )
+
+### add the cluster annotations to the metadata 
+meta_data = pd.merge(meta_data, annotation_data, how='left', left_on='cluster', right_on='cluster_value')
+data.obs = meta_data
 y_sample, y_strain, y_cluster, y_cell_type = fproc.get_metadata_ratLiver(data)
 
 #### design matrix - library size only
@@ -213,6 +220,8 @@ a_cov_level_score = mean_importance_df.loc[a_cov_level,:]
 ### sort x_labels and a_cov_level_score based on a_cov_level_score
 a_cov_level_score_sorted, x_labels_sorted = zip(*sorted(zip(a_cov_level_score, x_labels), reverse=True))
 plt.bar(x_labels_sorted, a_cov_level_score_sorted)
+### add title 
+plt.title('Sorted factor feature importance scores for '+a_cov_level)
 plt.xticks(rotation=90)
 plt.show()
 
@@ -256,9 +265,9 @@ pca_scores_varimax_df.columns = ['F'+str(i) for i in range(1, pca_scores_varimax
 pca_scores_varimax_df.index = data.obs.index.values
 pca_scores_varimax_df_merged = pd.concat([data.obs, pca_scores_varimax_df], axis=1)
 ### save the pca_scores_varimax_df_merged to a csv file
-pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_ratliver_libSampleReg.csv')
+pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_ratliver_libReg.csv')
 ## save the varimax_loading_df and varimax_scores to a csv file
-varimax_loading_df.to_csv('../Results/varimax_loading_df_ratliver_libSampleReg.csv')
+varimax_loading_df.to_csv('../Results/varimax_loading_df_ratliver_libReg.csv')
 
 ####################################
 #### evaluating bimodality score using simulated factors ####
