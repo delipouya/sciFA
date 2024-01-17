@@ -60,8 +60,9 @@ def get_metadata_ratLiver(data) -> tuple:
     y_cluster = data.obs.cluster.squeeze()
     y_sample = data.obs[['sample']].squeeze()
     y_strain = data.obs.strain.squeeze()
+    y_cell_type = data.obs.annotation.squeeze()
 
-    return y_sample, y_strain, y_cluster
+    return y_sample, y_strain, y_cluster, y_cell_type
 
 
 def get_metadata_humanLiver(data) -> tuple:

@@ -57,7 +57,7 @@ def get_colors_dict_scMix(y_protocol, y_cell_line):
 
 
 
-def get_colors_dict_ratLiver(y_sample, y_strain,y_cluster):
+def get_colors_dict_ratLiver(y_sample, y_strain,y_cell_type):
     '''
     generate a dictionary of colors for each cell in the rat liver dataset
     y_sample: the sample for each cell
@@ -73,13 +73,13 @@ def get_colors_dict_ratLiver(y_sample, y_strain,y_cluster):
     strain_color = [my_color[y_strain[i]] for i in range(len(y_strain))]
 
 
-    ### make a dictionary of colors for each 16 cluster in y_cluster. use np.unique(y_cluster)
+    ### make a dictionary of colors for each 16 cluster in y_cluster. use np.unique(y_cell_type)
     ### generate 16 colors using the following code:
     my_color = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
-                        for i in np.unique(y_cluster)}
-    cluster_color = [my_color[y_cluster[i]] for i in range(len(y_cluster))]
+                        for i in np.unique(y_cell_type)}
+    cell_type_color = [my_color[y_cell_type[i]] for i in range(len(y_cell_type))]
 
-    return {'sample': sample_color, 'strain': strain_color, 'cluster':cluster_color}
+    return {'sample': sample_color, 'strain': strain_color, 'cell_type':cell_type_color}
 
 
 

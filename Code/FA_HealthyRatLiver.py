@@ -35,7 +35,19 @@ data_file_path = '/home/delaram/sciFA//Data/inputdata_rat_set1_countData_2.h5ad'
 data = fproc.import_AnnData(data_file_path)
 data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num_genes HVGs
 y, genes, num_clusters, num_genes = fproc.get_data_array(data)
-y_sample, y_strain, y_cluster = fproc.get_metadata_ratLiver(data)
+
+### add the cluster annotations to teh metadata
+annotation_data_file = 'home/delaram/sciFA//Data/TLH_annotation.csv'
+annotation_data = pd.read_csv(annotation_data_file, index_col=0)
+annotation_data['cluster_value'] = annotation_data.index.values
+annotation_data['cluster_value']=annotation_data['cluster_value'].astype(int)
+
+meta_data = data.obs
+meta_data['cluster']=meta_data['cluster'].astype(int)
+meta_data = meta_data.merge(annotation_data, left_on='cluster', right_on='cluster_value')
+data.obs = meta_data
+
+y_sample, y_strain, y_cluster, y_cell_type = fproc.get_metadata_ratLiver(data)
 
 #### design matrix - library size only
 x = fproc.get_lib_designmat(data, lib_size='nCount_RNA')
@@ -68,20 +80,20 @@ pca = pipeline.named_steps['pca']
 pca_loading = pca.components_
 pca_loading.shape #(factors, genes)
 
-colors_dict_ratLiver = fplot.get_colors_dict_ratLiver(y_sample, y_strain, y_cluster)
+colors_dict_ratLiver = fplot.get_colors_dict_ratLiver(y_sample, y_strain, y_cell_type)
 
 plt_legend_sample = fplot.get_legend_patch(y_sample, colors_dict_ratLiver['sample'] )
-plt_legend_cluster = fplot.get_legend_patch(y_cluster, colors_dict_ratLiver['cluster'] )
+plt_legend_cell_type = fplot.get_legend_patch(y_cell_type, colors_dict_ratLiver['cell_type'] )
 plt_legend_strain = fplot.get_legend_patch(y_strain, colors_dict_ratLiver['strain'] )
 plt.plot(pca.explained_variance_ratio_)
 
 
 ### make a dictionary of colors for each sample in y_sample
 fplot.plot_pca(pca_scores, 4, 
-               cluster_color_vec= colors_dict_ratLiver['cluster'], 
+               cluster_color_vec= colors_dict_ratLiver['cell_type'], 
                legend_handles=True,
                title='PCA of gene expression data',
-               plt_legend_list=plt_legend_cluster)
+               plt_legend_list=plt_legend_cell_type)
 
 fplot.plot_pca(pca_scores, 4, 
                cluster_color_vec= colors_dict_ratLiver['sample'], 
@@ -110,10 +122,10 @@ varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 num_pc = 25
 fplot.plot_pca(pca_scores_varimax, num_pc, 
-               cell_color_vec= colors_dict_ratLiver['cluster'], 
+               cell_color_vec= colors_dict_ratLiver['cell_type'], 
                legend_handles=True,
                title='PCA of gene expression data',
-               plt_legend_list=plt_legend_cluster)
+               plt_legend_list=plt_legend_cell_type)
 fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_ratLiver['strain'], 
                legend_handles=True,
@@ -128,7 +140,7 @@ rotation_results_promax = rot.promax_rotation(pca_loading.T)
 promax_loading = rotation_results_promax['rotloading']
 pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['rotmat'])
 fplot.plot_pca(pca_scores_promax, 9, cluster_color_vec= colors_dict_ratLiver['strain'])
-fplot.plot_pca(pca_scores_promax, 9, cluster_color_vec= colors_dict_ratLiver['cluster'])
+fplot.plot_pca(pca_scores_promax, 9, cluster_color_vec= colors_dict_ratLiver['cell_type'])
 
 ########################
 
@@ -145,12 +157,12 @@ mean_importance_df_sample = fmatch.get_mean_importance_all_levels(y_sample, fact
                                                                   mean='arithmatic',time_eff=True)
 mean_importance_df_strain = fmatch.get_mean_importance_all_levels(y_strain, factor_scores,scale='standard', 
                                                                   mean='arithmatic',time_eff=True)
-mean_importance_df_cluster = fmatch.get_mean_importance_all_levels(y_cluster, factor_scores,scale='standard',
+mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type, factor_scores,scale='standard',
                                                                    mean='arithmatic',time_eff=True)
 # 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cluster_line
 mean_importance_df = pd.concat([mean_importance_df_sample, mean_importance_df_strain, 
-                                mean_importance_df_cluster], axis=0)
+                                mean_importance_df_cell_type], axis=0)
 fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', 
                                  color='coolwarm')
 
@@ -197,7 +209,10 @@ x_labels = None
 if x_labels is None:
       x_labels = mean_importance_df.columns.values
 plt.figure(figsize=(10,5))
-plt.bar(x_labels, mean_importance_df.loc[a_cov_level,:])
+a_cov_level_score = mean_importance_df.loc[a_cov_level,:]
+### sort x_labels and a_cov_level_score based on a_cov_level_score
+a_cov_level_score_sorted, x_labels_sorted = zip(*sorted(zip(a_cov_level_score, x_labels), reverse=True))
+plt.bar(x_labels_sorted, a_cov_level_score_sorted)
 plt.xticks(rotation=90)
 plt.show()
 
