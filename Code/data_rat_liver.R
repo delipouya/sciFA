@@ -19,8 +19,9 @@ head(merged_samples_cellb@meta.data)
 
 
 
-
+################################################################################# 
 ########################### soupX decomtamination fraction
+###########################  Saving output - do not run!!! ########################### 
 merged_data_soupX <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_normed.rds')
 head(merged_data_soupX)
 
@@ -30,7 +31,8 @@ soup_profile_list = list(NA, NA, NA, NA)
 for(i in 1:length(sample_names)){
   sample_name = sample_names[i]
   
-  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', sample_name, '_soupX_out.rds'))
+  soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', 
+                             sample_name, '_soupX_out.rds'))
   #soupX_out = readRDS(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/paramPlus01/', sample_name, '_soupX_out_Rhoplus.0.1.rds'))
   
   soup_profile = data.frame(genes=row.names(soupX_out$sc$soupProfile),soup=soupX_out$sc$soupProfile$est)
@@ -38,24 +40,55 @@ for(i in 1:length(sample_names)){
   soup_profile_list[[i]] = soup_profile 
 }
 names(soup_profile_list) = sample_names 
+rm(soupX_out)
+gc()
+
+for(i in 1:length(soup_profile_list)){
+  soup_df_i = soup_profile_list[[i]]
+  print(head(soup_df_i))
+  sample_name = sample_names[i]
+  write.csv(soup_df_i,
+            paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', 
+                   sample_name, '_soupX_profile_df.csv'))
+}
+
+###################################################### 
+###########################  Reading the output ########################### 
+##################################################### 
+
+sample_names = list.dirs('~/RatLiver/Data/SoupX_data/SoupX_inputs/',
+                         recursive = FALSE, full.names = FALSE)
+soup_profile_list = list(NA, NA, NA, NA)
+
+for(i in 1:length(sample_names)){
+  sample_name = sample_names[i]
+  soup_df_i = read.csv(paste0('~/RatLiver/Data/SoupX_data/SoupX_outputs/default_param/', 
+                   sample_name, '_soupX_profile_df.csv'))
+  soup_profile_list[[i]] = soup_df_i
+}
+
 num_genes = 50
 consisitent_soup_genes_df = data.frame(table(unlist(lapply(soup_profile_list, function(x) x$genes[1:num_genes]))))
-top_soup_genes = as.character(consisitent_soup_genes_df$Var1[consisitent_soup_genes_df$Freq>1])
+top_soup_genes = as.character(consisitent_soup_genes_df$Var1[consisitent_soup_genes_df$Freq>2])
 
 
 ############# comparing sciRED based strain differences with DE based comparison
-pca_scores_varimax_df_merged = read.csv('~/sciFA//Results/pca_scores_varimax_df_ratliver_libReg.csv')
-varimax_loading_df = read.csv('~/sciFA/Results/varimax_loading_df_ratliver_libReg.csv')
+pca_scores_varimax_df_merged = read.csv('~/sciFA//Results/pca_scores_varimax_df_ratliver_libReg_10000.csv')
+varimax_loading_df = read.csv('~/sciFA/Results/varimax_loading_df_ratliver_libReg_10000.csv')
 
 head(pca_scores_varimax_df_merged)
 head(varimax_loading_df)
 
-varimax_loading_df_ord = varimax_loading_df[order(varimax_loading_df$F23, decreasing = F),]
-varimax_loading_df_ord = data.frame(genes=varimax_loading_df_ord$X,factor=varimax_loading_df_ord$F23)
-head(varimax_loading_df_ord,40)
+varimax_loading_df_ord = varimax_loading_df[order(varimax_loading_df$F20, decreasing = T),]
+varimax_loading_df_ord = data.frame(genes=varimax_loading_df_ord$X,factor=varimax_loading_df_ord$F20)
 head(varimax_loading_df_ord,20)
+library(tidyverse)
+tail(varimax_loading_df_ord,20) %>% map_df(rev)
 varimax_loading_df_ord[varimax_loading_df_ord$genes=='Itgal',]
 
+
+varimax_genes_strain = c(head(varimax_loading_df_ord$genes,20), tail(varimax_loading_df_ord$genes,20))
+varimax_genes_strain[varimax_genes_strain%in% top_soup_genes]
 
 
 table(merged_samples_cellb$annotation) 
@@ -73,11 +106,8 @@ head(strain_markers,20)
 strain_markers$score = -(strain_markers$avg_log2FC * log(strain_markers$p_val_adj))
 strain_markers_sort = strain_markers[order(strain_markers$score, decreasing = F),]
 head(strain_markers_sort,20)
-write.csv(strain_markers, '~/sciFA/Results/strain_markers_ratliver_DE_strain_nonInf_cluster5.csv')
+strain_markers <- read.csv('~/sciFA/Results/strain_markers_ratliver_DE_strain_nonInf_cluster5.csv')
 
-
-
-varimax_genes_strain = c(head(varimax_loading_df_ord$genes,20), tail(varimax_loading_df_ord$genes,20))
-row.names(strain_markers)[1:25][row.names(strain_markers)[1:25] %in% top_soup_genes]
-varimax_genes_strain[varimax_genes_strain%in% top_soup_genes]
+strain_markers$X[1:25][strain_markers$X[1:25] %in% top_soup_genes]
 #its hard to claim b2m and pck1.
+strain_markers[1:25,]

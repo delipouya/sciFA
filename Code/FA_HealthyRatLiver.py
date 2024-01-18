@@ -33,7 +33,7 @@ np.random.seed(0)
 
 data_file_path = '/home/delaram/sciFA//Data/inputdata_rat_set1_countData_2.h5ad'
 data = fproc.import_AnnData(data_file_path)
-data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num_genes HVGs
+data, gene_idx = fproc.get_sub_data(data, num_genes=10000,random=False) # subset the data to num_genes HVGs
 y, genes, num_clusters, num_genes = fproc.get_data_array(data)
 
 ### add the cluster annotations to teh metadata
@@ -68,7 +68,7 @@ x = sm.add_constant(x) ## adding the intercept
 row_sum_y = np.sum(y, axis=1)
 col_sum_y = np.sum(y, axis=0)
 
-
+### takes 6 mins to fit 10000 genes
 ### fit GLM to each gene
 glm_fit_dict = fglm.fit_poisson_GLM(y, x)
 resid_pearson = glm_fit_dict['resid_pearson'] 
@@ -127,7 +127,7 @@ covariate_vector = y_strain
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-num_pc = 25
+num_pc = 21
 fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_ratLiver['cell_type'], 
                legend_handles=True,
@@ -168,8 +168,7 @@ mean_importance_df_cell_type = fmatch.get_mean_importance_all_levels(y_cell_type
                                                                    mean='arithmatic',time_eff=True)
 # 
 ### concatenate mean_importance_df_protocol and mean_importance_df_cluster_line
-mean_importance_df = pd.concat([mean_importance_df_sample, mean_importance_df_strain, 
-                                mean_importance_df_cell_type], axis=0)
+mean_importance_df = pd.concat([ mean_importance_df_strain, mean_importance_df_cell_type], axis=0) #mean_importance_df_sample,
 fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', 
                                  color='coolwarm')
 
@@ -265,9 +264,11 @@ pca_scores_varimax_df.columns = ['F'+str(i) for i in range(1, pca_scores_varimax
 pca_scores_varimax_df.index = data.obs.index.values
 pca_scores_varimax_df_merged = pd.concat([data.obs, pca_scores_varimax_df], axis=1)
 ### save the pca_scores_varimax_df_merged to a csv file
-pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_ratliver_libReg.csv')
+pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_ratliver_libReg_'+
+                                    str(num_genes)+'.csv')
 ## save the varimax_loading_df and varimax_scores to a csv file
-varimax_loading_df.to_csv('../Results/varimax_loading_df_ratliver_libReg.csv')
+varimax_loading_df.to_csv('../Results/varimax_loading_df_ratliver_libReg_'+
+                          str(num_genes)+'.csv')
 
 ####################################
 #### evaluating bimodality score using simulated factors ####
@@ -282,8 +283,8 @@ silhouette_scores_km, vrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=Tr
 bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
 bimodality_scores = bimodality_index_scores
 ### calculate the average between the silhouette_scores_km, vrs_km and bimodality_index_scores
-bimodality_scores = np.mean([silhouette_scores_km, bimodality_index_scores], axis=0)
 
+#bimodality_scores = np.mean([silhouette_scores_km, bimodality_index_scores], axis=0)
 
 ### label dependent factor metrics
 ASV_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
