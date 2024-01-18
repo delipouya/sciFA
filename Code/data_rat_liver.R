@@ -111,3 +111,8 @@ strain_markers <- read.csv('~/sciFA/Results/strain_markers_ratliver_DE_strain_no
 strain_markers$X[1:25][strain_markers$X[1:25] %in% top_soup_genes]
 #its hard to claim b2m and pck1.
 strain_markers[1:25,]
+
+
+
+
+

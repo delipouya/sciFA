@@ -196,7 +196,9 @@ fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_c
 
 
 ### select the factors that are matched with any covariate level
-matched_factor_index = np.where(matched_factor_dist>0)[0] 
+matched_factor_index = np.where(matched_factor_dist>0)[0]
+## add index 19 to the matched_factor_index
+matched_factor_index = np.append(matched_factor_index, 19)
 ### subset mean_importance_df to the matched factors
 mean_importance_df_matched_sub = mean_importance_df.iloc[:,matched_factor_index] 
 ## subset x axis labels based on het matched factors
