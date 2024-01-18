@@ -9,18 +9,19 @@ import matplotlib.pyplot as plt
 #########################################################################
 ###################   Single Model Importance Evaluation  ##################
 #########################################################################
-
+residual_types = ['pearson', 'response', 'deviance']
+residual_types = ['pearson']
 ###### reading the importance matrix for each model in each residual type
 gini_list_dict = {}
-for residual_type in ['pearson', 'response', 'deviance']: #, 
+for residual_type in residual_types: 
     print(residual_type)
 
     ##### human liver benchmark
     #file = '/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/base/'
-    file = '/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/shuffle/imp/'
+    #file = '/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/shuffle/imp/'
     
     #### scMixology benchmark
-    #file = '/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/imp_v1/'
+    file = '/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/imp_v1/'
     #file = '/home/delaram/sciFA/Results/benchmark/'+residual_type+'/base/'
 
     imp_list = [pd.read_csv(file+f) for f in os.listdir(file) if f.startswith("importance_df")]
@@ -65,24 +66,6 @@ gini_list_dict
 #######################################################
 ##### scMixology base model
 #######################################################
-gini_list_dict_base = {'pearson': {'AUC': [0.16617428267212767],
-  'DecisionTree': [0.8634694436288269],
-  'KNeighbors_permute': [0.7299616364057296],
-  'LogisticRegression': [0.7331098541883921],
-  'RandomForest': [0.5995872216902686],
-  'XGB': [0.7138019685603496]},
- 'response': {'AUC': [0.16411161438426713],
-  'DecisionTree': [0.9040825379876202],
-  'KNeighbors_permute': [0.749900069363618],
-  'LogisticRegression': [0.7375359102106752],
-  'RandomForest': [0.6322951122806095],
-  'XGB': [0.7584341332796006]},
- 'deviance': {'AUC': [0.16335137161086283],
-  'DecisionTree': [0.8903115986861357],
-  'KNeighbors_permute': [0.7294318626628646],
-  'LogisticRegression': [0.7025766834234716],
-  'RandomForest': [0.6176133625207837],
-  'XGB': [0.7225796703025885]}}
 
 gini_list_dict_base ={'pearson': {'AUC': [0.39156280595818843, 0.39156280595818843],
   'DecisionTree': [0.9374897482243939, 0.9365028310136162],
@@ -141,7 +124,8 @@ for key, values in gini_list_dict.items():
     ### add a column for residual type
     gini_df['residual_type'] = key
     print(gini_df.head())
-    gini_df.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/gini_analysis/'+'imp_gini_df_'+key+'.csv')
+    #gini_df.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/gini_analysis/'+'imp_gini_df_'+key+'.csv')
+    gini_df.to_csv('/home/delaram/sciFA/Results/benchmark/gini_analysis/'+'imp_gini_df_'+key+'.csv')
 
 
 
@@ -150,17 +134,17 @@ for key, values in gini_list_dict.items():
 #########################################################################
 ###### reading the importance matrix for each mean and scale type in each residual type
 gini_list_dict = {}
-for residual_type in ['pearson', 'response', 'deviance']: #, 
+for residual_type in residual_types: #, 
     print(residual_type)
     
 
     ##### human liver benchmark
     #file = '/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/base/'
-    file = '/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/shuffle/meanimp/'
+    #file = '/home/delaram/sciFA/Results/benchmark_humanliver/'+residual_type+'/shuffle/meanimp/'
 
     #### scMixology benchmark
     #file = '/home/delaram/sciFA/Results/benchmark/'+residual_type+'/base/'
-    #file = '/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/meanimp/'
+    file = '/home/delaram/sciFA/Results/benchmark/'+residual_type+'/shuffle/meanimp/'
 
     imp_list = [pd.read_csv(file+f) for f in os.listdir(file) if f.startswith("meanimp_df")]
     factor_gini_meanimp_dict = {}
@@ -192,24 +176,6 @@ for residual_type in ['pearson', 'response', 'deviance']: #,
 #############################################
 ##### scMixology base model
 #############################################
-gini_list_dict_base = {'pearson': {'arithmatic_minmax': [0.34690793085824884],
-  'arithmatic_rank': [0.18927983539094634],
-  'arithmatic_standard': [0.722751974157659],
-  'geometric_minmax': [0.7348356506964893],
-  'geometric_rank': [0.22573728869098225],
-  'geometric_standard': [0.970277290098785]},
- 'response': {'arithmatic_minmax': [0.3533038250699997],
-  'arithmatic_rank': [0.20494524093986455],
-  'arithmatic_standard': [0.7229683894999508],
-  'geometric_minmax': [0.7993235537103558],
-  'geometric_rank': [0.23989593123466804],
-  'geometric_standard': [0.9808166459876209]},
- 'deviance': {'arithmatic_minmax': [0.3625877011815889],
-  'arithmatic_rank': [0.19228560998274272],
-  'arithmatic_standard': [0.7410427933633456],
-  'geometric_minmax': [0.7790450864214854],
-  'geometric_rank': [0.23205907186077762],
-  'geometric_standard': [0.9660402393992147]}}
 
 gini_list_dict_base ={'pearson': {'arithmatic_minmax': [0.4370696143830938],
   'arithmatic_rank': [0.21206342094782954],
@@ -289,6 +255,7 @@ for key, values in gini_list_dict.items():
     ### add a column for residual type
     gini_df['residual_type'] = key
     print(gini_df.head())
-    gini_df.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/gini_analysis/'+'meanimp_gini_df_'+key+'.csv')
+    #gini_df.to_csv('/home/delaram/sciFA/Results/benchmark_humanliver/gini_analysis/'+'meanimp_gini_df_'+key+'.csv')
+    gini_df.to_csv('/home/delaram/sciFA/Results/benchmark/gini_analysis/'+'meanimp_gini_df_'+key+'.csv')
 
 

@@ -1,3 +1,6 @@
+library(reshape2)
+library(data.table)
+
 
 #######################################################
 ##### Human liver base model
@@ -17,8 +20,6 @@ gini_base_imp = list(
                    'DecisionTree'= (0.8705934843417716),
                    'LogisticRegression'= (0.533822322964555),
                    'XGB'= (0.6682235875773687)))
-#######################################################
-
 
 gini_base_meanimp =list(
   'pearson'= list('arithmatic_minmax'= (0.43145743916258367),
@@ -41,9 +42,10 @@ gini_base_meanimp =list(
                    'geometric_minmax'= (0.7297170676765146),
                    'geometric_rank'= (0.26276100746128445),
                    'geometric_standard'= (0.3607843057745439)))
+#######################################################
+
 
 #### visulize gini distributions for the human liver data
-library(reshape2)
 setwd('/home/delaram/sciFA/Results/benchmark_humanliver/gini_analysis/')
 
 files_list_meanimp = list.files(pattern = 'meanimp_gini_*')
@@ -51,18 +53,18 @@ list_meanimp = lapply(files_list_meanimp, read.csv)
 names(list_meanimp) = files_list_meanimp
 lapply(list_meanimp, head)
 list_meanimp_merged = Reduce(rbind, list_meanimp)
-list_meanimp_merged = list_meanimp_merged[,-1]
+list_meanimp_merged = list_meanimp_merged(,-1)
 head(list_meanimp_merged)
 list_meanimp_merged_m = melt(list_meanimp_merged)
 head(list_meanimp_merged_m)
 
 
-files_list_imp = list.files(pattern = 'imp_gini_*')[1:3]
+files_list_imp = list.files(pattern = 'imp_gini_*')(1:3)
 list_imp = lapply(files_list_imp, read.csv)
 names(list_imp) = files_list_imp
 lapply(list_imp, dim)
 list_imp_merged = Reduce(rbind, list_imp)
-list_imp_merged = list_imp_merged[,-1]
+list_imp_merged = list_imp_merged(,-1)
 head(list_imp_merged)
 list_imp_merged_m = melt(list_imp_merged)
 head(list_imp_merged_m)
@@ -70,7 +72,6 @@ head(list_imp_merged_m)
 merged_all = rbind(list_imp_merged_m, list_meanimp_merged_m)
 
 ####################### formating the base datapints to be added to plot
-library(data.table)
 gini_base_imp_df = data.frame(rbindlist(gini_base_imp, fill=TRUE))
 gini_base_imp_df$residual_type = names(gini_base_imp)
 gini_base_imp_df_melt = melt(gini_base_imp_df)
@@ -92,6 +93,85 @@ ggplot(list_imp_merged_m, aes(x=reorder(variable, value), y=value, fill=residual
 
 
 ggplot(merged_all, aes(x=reorder(variable, value), y=value, fill=residual_type))+geom_boxplot()+
+  theme_classic()+theme(text = element_text(size=17))+xlab('')+coord_flip()+
+  scale_fill_brewer(palette = 'Set1')+ylab('Gini index')+
+  geom_point(data = merged_all_base, color = "red3", 
+             position =  position_dodge(width = .75), size = 1.3)
+#geom_point(aes(colour = Cell_line, shape = replicate, group = Cell_line),
+#           position = position_dodge(width = .75), size = 3)
+
+
+
+
+
+#######################################################
+########### scMixology ############################################
+#######################################################
+
+
+gini_base_imp =list(
+  'pearson'= list('AUC'= c(0.39156280595818843),
+              'DecisionTree'= c(0.9374897482243939),
+              'KNeighbors_permute'= c(0.7971112903948738),
+              'LogisticRegression'=c (0.6039708539658788),
+              'RandomForest'= c(0.6662242305163689),
+              'XGB'= c(0.8182990742252915)))
+
+gini_base_meanimp =list(
+  'pearson'= list('arithmatic_minmax'= (0.4370696143830938),
+              'arithmatic_rank'= (0.21206342094782954),
+              'arithmatic_standard'= (0.3395523214640297),
+              'geometric_minmax'= (0.8769434083699224),
+              'geometric_rank'= (0.24695374201171472),
+              'geometric_standard'= (0.3679443575769781)))
+
+#######################################################
+
+
+#### visulize gini distributions for the human liver data
+setwd('/home/delaram/sciFA/Results/benchmark/gini_analysis/')
+
+files_list_meanimp = list.files(pattern = 'meanimp_gini_*')
+list_meanimp = lapply(files_list_meanimp, read.csv)
+names(list_meanimp) = files_list_meanimp
+lapply(list_meanimp, head)
+list_meanimp_merged = Reduce(rbind, list_meanimp)
+list_meanimp_merged = list_meanimp_merged[,-1]
+head(list_meanimp_merged)
+list_meanimp_merged_m = melt(list_meanimp_merged)
+head(list_meanimp_merged_m)
+
+
+files_list_imp = list.files(pattern = 'imp_gini_*')[1]
+list_imp = lapply(files_list_imp, read.csv)
+names(list_imp) = files_list_imp
+lapply(list_imp, dim)
+list_imp_merged = Reduce(rbind, list_imp)
+list_imp_merged = list_imp_merged[,-1]
+head(list_imp_merged)
+list_imp_merged_m = melt(list_imp_merged)
+head(list_imp_merged_m)
+
+merged_all = rbind(list_imp_merged_m, list_meanimp_merged_m)
+table(merged_all$model)
+####################### formating the base datapints to be added to plot
+gini_base_imp_df = data.frame(rbindlist(gini_base_imp, fill=TRUE))
+gini_base_imp_df$residual_type = names(gini_base_imp)
+gini_base_imp_df_melt = melt(gini_base_imp_df)
+gini_base_imp_df_melt
+
+gini_base_meanimp_df = data.frame(rbindlist(gini_base_meanimp, fill=TRUE))
+gini_base_meanimp_df$residual_type = names(gini_base_meanimp)
+gini_base_meanimp_df_melt = melt(gini_base_meanimp_df)
+gini_base_meanimp_df_melt
+
+merged_all_base = rbind(gini_base_imp_df_melt, gini_base_meanimp_df_melt)
+merged_all_base$model = c(rep('single',6),rep('ensemble',6))
+merged_all_base = merged_all_base[!merged_all_base$variable %in% c('KNeighbors_permute',  'RandomForest'),]
+
+
+
+ggplot(merged_all, aes(x=reorder(variable, value), y=value, fill=model))+geom_boxplot()+
   theme_classic()+theme(text = element_text(size=17))+xlab('')+coord_flip()+
   scale_fill_brewer(palette = 'Set1')+ylab('Gini index')+
   geom_point(data = merged_all_base, color = "red3", 
