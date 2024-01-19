@@ -15,7 +15,8 @@ head(df)
 colnames(df)
 cols_to_remove = c('factor_gini_meanImp', 'factor_gini_AUC', 
                    'factor_entropy_meanImp', 'factor_entropy_AUC',
-                   'factor_simpon_meanImp', 'factor_simpson_AUC', 'dip_pval')
+                   'factor_simpon_meanImp', 'factor_simpson_AUC', 'dip_pval',
+                   "1-AUC_arith","1-AUC_geo", 'ASV_simpson','ASV_entropy' )
 df = df[,!colnames(df) %in% cols_to_remove]
 head(df)
 
@@ -39,7 +40,7 @@ ggplot(df_melt, aes(x=metric,y=R))+geom_boxplot(notch = TRUE, fill='maroon')+
 
 
 ggplot(df_melt, aes(x=metric,y=R,fill=metric_type))+
-  geom_boxplot(notch = TRUE)+
+  geom_boxplot(notch = TRUE)+xlab('')+
   coord_flip()+ylab('Correlation with overlap value')+
   theme(text = element_text(size=16))#+theme_classic()
 

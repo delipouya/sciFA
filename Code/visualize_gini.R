@@ -53,18 +53,18 @@ list_meanimp = lapply(files_list_meanimp, read.csv)
 names(list_meanimp) = files_list_meanimp
 lapply(list_meanimp, head)
 list_meanimp_merged = Reduce(rbind, list_meanimp)
-list_meanimp_merged = list_meanimp_merged(,-1)
+list_meanimp_merged = list_meanimp_merged[,-1]
 head(list_meanimp_merged)
 list_meanimp_merged_m = melt(list_meanimp_merged)
 head(list_meanimp_merged_m)
 
 
-files_list_imp = list.files(pattern = 'imp_gini_*')(1:3)
+files_list_imp = list.files(pattern = 'imp_gini_*')[1:3]
 list_imp = lapply(files_list_imp, read.csv)
 names(list_imp) = files_list_imp
 lapply(list_imp, dim)
 list_imp_merged = Reduce(rbind, list_imp)
-list_imp_merged = list_imp_merged(,-1)
+list_imp_merged = list_imp_merged[,-1]
 head(list_imp_merged)
 list_imp_merged_m = melt(list_imp_merged)
 head(list_imp_merged_m)

@@ -54,3 +54,27 @@ pheatmap::pheatmap(metrics_df_scale_max, cluster_rows=F, cluster_cols = F,
 metric_annot=data.frame(type=c(rep('specificity', 4), 'strength', rep('homogeneity', 4), rep('seperability', 16)))
 rownames(metric_annot) = colnames(metrics_df_scale)
 
+
+
+
+
+####################################################################
+############## Updated runtime analysis for shuffle analysis
+########################################################
+file = '/home/delaram/sciFA/Results/benchmark/pearson/time/'
+file = '/home/delaram/sciFA/Results/benchmark_humanliver/pearson/time//'
+time_list = lapply(list.files(file, pattern = "time_df*", full.names = T)[1:500], read.csv)
+time_list_df <- Reduce(rbind,imp_list)
+head(time_list_df)
+time_list_df = time_list_df[,-1]
+time_list_df_m = melt(time_list_df)
+head(time_list_df_m)
+
+ggplot(time_list_df_m, aes(y=value, x=variable))+geom_boxplot()+theme_classic()+coord_flip()+
+  #+scale_fill_brewer(palette = "Set2")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),text = element_text(size=17))+
+  ylab('Run Time (min)')+xlab('')+ggtitle('Model run time comparison')
+
+
+
+

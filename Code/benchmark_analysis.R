@@ -2,7 +2,21 @@ library(ggplot2)
 library(ggpubr)
 library(reshape2)
 library(ggplot2)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+scale_minMax <- function(x){
+  x_min = min(x)
+  x_max = max(x)
+  scaled = (x-x_min)/(x_max-x_min)
+  return(scaled)
+}
 
+scale_Max <- function(x){
+  x_max = max(x)
+  scaled = (x)/(x_max)
+  return(scaled)
+}
 ###############################################################################################
 ########################## importance evaluation for model comparison
 ################################################################################################
@@ -14,7 +28,6 @@ importance_df_m_merged_response = read.csv('/home/delaram/sciFA/Results/benchmar
 importance_df_m_merged_response$res = 'response'
 dim(importance_df_m_merged_response)
 
-
 importance_df_m_merged_deviance = read.csv('/home/delaram/sciFA/Results/benchmark/deviance//base/importance_df_melted_scMixology_deviance_baseline.csv')
 importance_df_m_merged_deviance$res = 'deviance'
 dim(importance_df_m_merged_deviance)
@@ -25,6 +38,7 @@ head(importance_df_residual_baseline)
 importance_df_residual_baseline$type = 'baseline'
 dim(importance_df_residual_baseline)
 
+file = '/home/delaram/sciFA/Results/benchmark/pearson/shuffle/imp_v1//'
 file = '/home/delaram/sciFA/Results/benchmark/pearson/shuffle/imp//'
 imp_list = lapply(list.files(file, pattern = "importance_df*", full.names = T)[1:500], read.csv)
 imp_shuffle_pearson <- Reduce(rbind,imp_list)
@@ -56,7 +70,9 @@ importance_df_residual_merged = rbind(importance_df_residual_baseline, importanc
 importance_df_residual_merged$importance_abs = abs(importance_df_residual_merged$importance)
 
 ggplot(importance_df_residual_merged, aes(y=importance_abs, x=model, fill=type))+geom_boxplot()+theme_classic()+
-  coord_flip()+ggtitle('model comparison pearson and response combined')
+  ggtitle('model comparison pearson and response combined')+scale_fill_brewer(palette = "Set2")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),text = element_text(size=17))+ylab('Feature Importance')
+
 ggplot(importance_df_residual_merged[importance_df_residual_merged$residual_type=='pearson',], 
        aes(y=importance_abs, x=model, fill=type))+geom_boxplot()+theme_classic()+
   coord_flip()+ggtitle('model comparison pearson ')
@@ -66,6 +82,35 @@ ggplot(importance_df_residual_merged[importance_df_residual_merged$residual_type
 ggplot(importance_df_residual_merged, aes(y=importance_abs, x=res, fill=type))+geom_boxplot()+theme_classic()+coord_flip()
 
 head(importance_df_residual_merged)
+
+################## ################## ################## ################## 
+##################  scaling the importance values
+importance_df_residual_merged
+head(importance_df_m_merged)
+imp_df_models<- split(importance_df_residual_merged, importance_df_residual_merged$model)
+head(imp_df_models[[1]])
+table(imp_df_models[[1]]$model)
+table(imp_df_models[[1]]$X)
+hist(imp_df_models$DecisionTree$importance)
+
+sapply(1:length(imp_df_models), function(i) {imp_df_models[[i]]$imp_scale <<- scale(imp_df_models[[i]]$importance, center = FALSE)}, simplify = F)
+sapply(1:length(imp_df_models), function(i) {imp_df_models[[i]]$imp_z_trans <<- scale(imp_df_models[[i]]$importance)}, simplify = F)
+sapply(1:length(imp_df_models), function(i) {imp_df_models[[i]]$imp_minmax <<- scale_minMax(imp_df_models[[i]]$importance)}, simplify = F)
+sapply(1:length(imp_df_models), function(i) {imp_df_models[[i]]$imp_max_scale <<- scale_Max(imp_df_models[[i]]$importance)}, simplify = F)
+
+head(imp_df_models$DecisionTree)
+
+importance_df_m_merged_shuffle_scale = Reduce(rbind, imp_df_models)
+ggplot(importance_df_m_merged_shuffle_scale, aes(x=model, y=imp_minmax, fill=type))+geom_boxplot()+
+  theme_classic()+coord_flip()+scale_fill_manual(values=c("#56B4E9", "maroon"))+
+  theme(text = element_text(size=18))+xlab('')
+
+ggplot(importance_df_m_merged_shuffle_scale, aes(y=imp_minmax, x=model, fill=type))+geom_boxplot()+theme_classic()+
+  ggtitle('')+scale_fill_brewer(palette = "Set2")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),text = element_text(size=17))+
+  ylab('Scaled Importance Score')+coord_flip()
+
+
 ########################################################################
 
 ########## splitting the baseline data frames
