@@ -113,7 +113,7 @@ rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 
-num_pc=29
+num_pc=5
 fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                legend_handles=True,
@@ -124,7 +124,7 @@ fplot.plot_pca(pca_scores_varimax, num_pc,
                cell_color_vec= colors_dict_scMix['cell_line'], 
                legend_handles=True,
                title='Varimax PCA of pearson residuals ',
-               plt_legend_list=plt_legend_protocol)
+               plt_legend_list=plt_legend_cell_line)
 
 
 ######## Applying promax rotation to the factor scores
@@ -134,20 +134,80 @@ pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['
 fplot.plot_pca(pca_scores_promax, 4, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                legend_handles=True,
-               title='Varimax PCA of pearson residuals ',
+               title='Promax PCA of pearson residuals ',
                plt_legend_list=plt_legend_protocol)
 
 fplot.plot_pca(pca_scores_promax, 4, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
                legend_handles=True,
-               title='Varimax PCA of pearson residuals ',
-               plt_legend_list=plt_legend_protocol)
+               title='Promax PCA of pearson residuals ',
+               plt_legend_list=plt_legend_cell_line)
 
 
 #### plot the loadings of the factors
 fplot.plot_factor_loading(varimax_loading, genes, 0, 4, fontsize=10, 
                     num_gene_labels=6,title='Scatter plot of the loading vectors', 
                     label_x=False, label_y=False)
+
+
+### calculate the correlation between each factor of varimax and promax factor scores
+factor_corr = np.zeros((pca_scores_varimax.shape[1], pca_scores_promax.shape[1]))
+for i in range(pca_scores_varimax.shape[1]):
+    for j in range(pca_scores_promax.shape[1]):
+        factor_corr[i,j] = np.corrcoef(pca_scores_varimax[:,i], pca_scores_promax[:,j])[0,1]
+factor_corr_df = pd.DataFrame(factor_corr)
+### set the row and column names of factor_corr_df as 'F1', 'F2', ...
+factor_corr_df.index = ['F'+str(i+1) for i in range(pca_scores_varimax.shape[1])]
+factor_corr_df.columns = ['F'+str(i+1) for i in range(pca_scores_promax.shape[1])]
+factor_corr_df.head()
+factor_corr_df = factor_corr_df.iloc[0:15,0:15]
+### visualize teh factor_corr_df as a heatmap without a function
+plt.figure(figsize=(15,12))
+### visualize the factor_corr_df factors 1 to 15
+plt.imshow(factor_corr_df, cmap='coolwarm')
+## set the x and y axis ticks labels as F1, F2, ...
+plt.xticks(np.arange(factor_corr_df.shape[1]), factor_corr_df.columns.values, rotation=90, fontsize=30)
+plt.yticks(np.arange(factor_corr_df.shape[0]), factor_corr_df.index.values, fontsize=30)
+
+plt.xlabel('Promax factors', fontsize=34)
+plt.ylabel('Varimax factors', fontsize=34)
+plt.title('Correlation between varimax and promax factors', fontsize=34)
+plt.show()
+
+### calculate the correlation between varimax and promax factors 0 to 30 (diagnoal of the factor_corr_df)
+factor_corr_diag = np.zeros(pca_scores_varimax.shape[1])
+for i in range(pca_scores_varimax.shape[1]):
+    factor_corr_diag[i] = np.corrcoef(pca_scores_varimax[:,i], pca_scores_promax[:,i])[0,1]
+### show the histogram of the factor_corr_diag
+plt.figure(figsize=(10,5))
+plt.hist(factor_corr_diag, bins=20)
+plt.xlabel('Correlation between varimax and promax factors', fontsize=20)
+plt.ylabel('Frequency', fontsize=20)
+plt.title('Histogram of the correlation between varimax and promax factors', fontsize=20)
+plt.show()
+
+
+### calculate the correlation between each factor of varimax and pca factor scores
+factor_corr = np.zeros((pca_scores_varimax.shape[1], pca_scores.shape[1]))
+for i in range(pca_scores_varimax.shape[1]):
+    for j in range(pca_scores.shape[1]):
+        factor_corr[i,j] = np.corrcoef(pca_scores_varimax[:,i], pca_scores[:,j])[0,1]
+factor_corr_df = pd.DataFrame(factor_corr)
+### set the row and column names of factor_corr_df as 'F1', 'F2', ...
+factor_corr_df.index = ['F'+str(i+1) for i in range(pca_scores_varimax.shape[1])]
+factor_corr_df.columns = ['F'+str(i+1) for i in range(pca_scores.shape[1])]
+factor_corr_df.head()
+factor_corr_df = factor_corr_df.iloc[0:15,0:15]
+### visualize teh factor_corr_df as a heatmap without a function
+plt.figure(figsize=(15,12))
+### visualize the factor_corr_df factors 1 to 15
+plt.imshow(factor_corr_df, cmap='coolwarm')
+## set the x and y axis ticks labels as F1, F2, ...
+plt.xticks(np.arange(factor_corr_df.shape[1]), factor_corr_df.columns.values, rotation=90, fontsize=30)
+plt.yticks(np.arange(factor_corr_df.shape[0]), factor_corr_df.index.values, fontsize=30)
+plt.xlabel('PCA factors', fontsize=34)
+plt.ylabel('Varimax factors', fontsize=34)
+plt.title('Correlation between varimax and PCA factors', fontsize=34)
 
 
 ####################################
@@ -168,6 +228,10 @@ factor_loading = rotation_results_varimax['rotloading']
 factor_scores = pca_scores_varimax
 
 
+########################
+factor_loading = rotation_results_promax['rotloading']
+factor_scores = pca_scores_promax
+
 
 ####################################
 #### Mean Importance score
@@ -184,6 +248,13 @@ fplot.plot_all_factors_levels_df(mean_importance_df,
                                  title='F-C Match: Feature importance scores', 
                                  color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
                                x_axis_tick_fontsize=32, y_axis_tick_fontsize=34)
+
+### only visualize teh first 15 factors
+fplot.plot_all_factors_levels_df(mean_importance_df.iloc[:,0:15],
+                                    title='F-C Match: Feature importance scores', 
+                                    color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                                x_axis_tick_fontsize=32, y_axis_tick_fontsize=34)
+
 ## getting rownnammes of the mean_importance_df
 all_covariate_levels = mean_importance_df.index.values
 
