@@ -183,6 +183,9 @@ factor_loading = rotation_results_varimax['rotloading']
 factor_scores = pca_scores_varimax
 
 
+
+
+
 ### find unique covariate levels
 y_cell_type_unique = np.unique(y_cell_type)
 
@@ -204,6 +207,34 @@ fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature i
 ## getting rownnammes of the mean_importance_df
 all_covariate_levels = mean_importance_df.index.values
 
+
+######################## run umap on factor scores
+import umap
+reducer = umap.UMAP()
+embedding = reducer.fit_transform(factor_scores)
+
+
+plt.figure()
+plt.rcParams['axes.facecolor'] = 'white'
+plt.scatter(embedding[:, 0], embedding[:, 1], c=colors_dict_humanLiver['cell_type'], s=1)
+### locate the legend outside of the plot
+plt.legend(handles=plt_legend_cell_type, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.) 
+
+
+#### project all factor_score onto the first two umap components in a loop
+plt.figure()
+plt.rcParams['axes.facecolor'] = 'white'
+for i in range(factor_scores.shape[1]):
+    plt.scatter(embedding[:, 0], embedding[:, 1], c=factor_scores[:,i], s=2, cmap='Spectral')
+    plt.colorbar(boundaries=np.arange(10)-0.5).set_ticks(np.arange(9))
+    plt.title('factor {}'.format(i))
+    plt.show()
+    plt.close()
+
+
+
+
+
 ##### Define global metrics for how well a factor analysis works on a dataset 
 #### given a threshold for the feature importance scores, calculate the percentage of the factors that are matched with any covariate level
 ### plot the histogram of all the values in mean importance scores
@@ -221,8 +252,8 @@ print('percent_matched_cov: ', percent_matched_cov)
 fplot.plot_matched_factor_dist(matched_factor_dist)
 fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
 
-
-
+#### print the factors that are not matched with any covariate level + 1
+print('factors that are not matched with any covariate level: ', np.where(matched_factor_dist==0)[0])
 ### select the factors that are matched with any covariate level
 matched_factor_index = np.where(matched_factor_dist>0)[0] 
 ### subset mean_importance_df to the matched factors
@@ -255,6 +286,30 @@ def plot_barplot(factor_libsize_correlation, x_labels=None, title=''):
 
 plot_barplot(factor_libsize_correlation, 
              title='Correlation of factors with library size')
+
+
+#### concatenate the factor scores with the metadata and umap embedding
+factor_scores_df = pd.DataFrame(factor_scores)
+print(factor_scores_df.shape)
+factor_scores_df.columns = ['factor_{}'.format(i) for i in range(factor_scores.shape[1])]
+factor_scores_df['SAMPLE'] = y_sample
+factor_scores_df['CELL_TYPE'] = y_cell_type
+factor_scores_df['umap_1'] = embedding[:,0]
+factor_scores_df['umap_2'] = embedding[:,1]
+print(factor_scores_df.shape)
+
+### add add the columns in the data.obs to the factor_scores_df as new columns
+for col in data.obs.columns:
+    factor_scores_df[col] = data.obs[col].values
+print(factor_scores_df.shape)
+print(factor_scores_df.head())
+
+### add rownames of data.obs to the factor_scores_df
+factor_scores_df['id'] = data.obs.index.values
+#### save the factor_scores_df as a csv file
+factor_scores_df.to_csv('/home/delaram/sciFA/Results/factor_scores_umap_df_humanlivermap.csv', index=False)
+### save loadings as a csv file
+pd.DataFrame(factor_loading).to_csv('/home/delaram/sciFA/Results/factor_loading_humanlivermap.csv', index=False)
 
 
 ####################################
