@@ -72,18 +72,20 @@ pca_loading.shape
 plt.plot(pca.explained_variance_ratio_)
 
 num_pc = 5
+title = 'PCA of pearson residuals - reg: lib size/protocol'
+title = ''
 ### make a dictionary of colors for each sample in y_sample
 fplot.plot_pca(pca_scores, num_pc, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
                legend_handles=True,
-               title='PCA of pearson residuals - reg: lib size/protocol',
+               title=title,
                plt_legend_list=plt_legend_cell_line)
 
 
 fplot.plot_pca(pca_scores, num_pc, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                legend_handles=True,
-               title='PCA of pearson residuals - reg: lib size/protocol',
+               title=title,
                plt_legend_list=plt_legend_protocol)
 
 
@@ -113,17 +115,18 @@ rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 
+title = 'Varimax PCA of pearson residuals '
 num_pc=5
 fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                legend_handles=True,
-               title='Varimax PCA of pearson residuals ',
+               title=title,
                plt_legend_list=plt_legend_protocol)
 
 fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_scMix['cell_line'], 
                legend_handles=True,
-               title='Varimax PCA of pearson residuals ',
+               title=title,
                plt_legend_list=plt_legend_cell_line)
 
 
@@ -251,8 +254,8 @@ fplot.plot_all_factors_levels_df(mean_importance_df,
 
 ### only visualize teh first 15 factors
 fplot.plot_all_factors_levels_df(mean_importance_df.iloc[:,0:15],
-                                    title='F-C Match: Feature importance scores', 
-                                    color='coolwarm',x_axis_fontsize=20, y_axis_fontsize=20, title_fontsize=22,
+                                    title='', 
+                                    color='coolwarm',x_axis_fontsize=35, y_axis_fontsize=35, title_fontsize=35,
                                 x_axis_tick_fontsize=32, y_axis_tick_fontsize=34)
 
 ## getting rownnammes of the mean_importance_df
@@ -304,12 +307,22 @@ factor_libsize_correlation = get_factor_libsize_correlation(factor_scores, libra
 ### create a barplot of the factor_libsize_correlation
 
 def plot_barplot(factor_libsize_correlation, x_labels=None, title=''):
-    plt.figure(figsize=(10,5))
+    plt.figure(figsize=(15,5))
     if x_labels is None:
-        x_labels = np.arange(factor_libsize_correlation.shape[0])
-    plt.bar(x_labels, factor_libsize_correlation)
-    plt.xticks(rotation=90)
-    plt.title(title)
+        ### set the x axis labels as F1, F2, ...
+        x_labels = ['F'+str(i+1) for i in range(factor_libsize_correlation.shape[0])]
+    ### set background color to white
+    plt.rcParams['axes.facecolor'] = 'white'
+    ## add y and x black axis 
+    plt.axhline(y=0, color='black', linewidth=2)
+    plt.bar(x_labels, factor_libsize_correlation, color='black')
+    ## set y range from 0 to 1
+    plt.ylim(-0.5,1)
+    plt.xticks(fontsize=25, rotation=90)
+    plt.yticks(fontsize=25)
+    plt.xlabel('Factors', fontsize=28)
+    plt.ylabel('Correlation with library size', fontsize=28)
+    plt.title(title, fontsize=26)
     plt.show()
 
 plot_barplot(factor_libsize_correlation, 
@@ -418,7 +431,8 @@ fplot.plot_metric_correlation_clustermap(all_metrics_df)
 fplot.plot_metric_dendrogram(all_metrics_df)
 fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metrics for all the factors')
 
-
+### plot the factors 0:15
+fplot.plot_metric_heatmap(all_metrics_scaled[0:15,:], factor_metrics, title='')
 ### subset all_merrics_scaled numpy array to only include the matched factors
 all_metrics_scaled_matched = all_metrics_scaled[matched_factor_index,:]
 fplot.plot_metric_heatmap(all_metrics_scaled_matched, factor_metrics, x_axis_label=x_labels_matched,

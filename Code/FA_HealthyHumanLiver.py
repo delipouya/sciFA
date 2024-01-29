@@ -27,7 +27,8 @@ data, gene_idx = fproc.get_sub_data(data, random=False) # subset the data to num
 y, genes, num_cells, num_genes = fproc.get_data_array(data)
 y_sample, y_cell_type = fproc.get_metadata_humanLiver(data)
 genes = data.var_names
-
+### save genes as a csv file
+pd.DataFrame(genes).to_csv('/home/delaram/sciFA/Results/genes_humanlivermap.csv', index=False)
 
 '''
 ### randomly subsample the cells to 2000 cells
