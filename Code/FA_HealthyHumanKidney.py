@@ -100,9 +100,10 @@ pca_scores_varimax_df = pd.DataFrame(pca_scores_varimax)
 pca_scores_varimax_df.columns = ['F'+str(i) for i in range(1, pca_scores_varimax_df.shape[1]+1)]
 pca_scores_varimax_df.index = data.obs.index.values
 pca_scores_varimax_df_merged = pd.concat([data.obs, pca_scores_varimax_df], axis=1)
+
+
 ### save the pca_scores_varimax_df_merged to a csv file
 pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_merged_kidneyMap.csv')
-
 ## save the varimax_loading_df and varimax_scores to a csv file
 varimax_loading_df.to_csv('../Results/varimax_loading_df_kidneyMap.csv')
 
@@ -158,18 +159,17 @@ scatter_hist(x, y, ax, ax_histx, ax_histy)
 
 
 ######## Applying promax rotation to the factor scores
-rotation_results_promax = rot.promax_rotation(pca_loading.T)
-promax_loading = rotation_results_promax['rotloading']
-pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['rotmat'])
-fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanKidney['strain'])
-fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanKidney['cluster'])
+#rotation_results_promax = rot.promax_rotation(pca_loading.T)
+#promax_loading = rotation_results_promax['rotloading']
+#pca_scores_promax = rot.get_rotated_scores(pca_scores, rotation_results_promax['rotmat'])
+#fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanKidney['strain'])
+#fplot.plot_pca(pca_scores_promax, 9, cell_color_vec= colors_dict_humanKidney['cluster'])
 
 
 ########################
 factor_loading = pca_loading
 factor_scores = pca_scores
 ########################
-
 
 factor_loading = rotation_results_varimax['rotloading']
 factor_scores = pca_scores_varimax
@@ -209,8 +209,11 @@ all_covariate_levels = mean_importance_df.index.values
 ### choosing a threshold for the feature importance scores
 threshold = fmatch.get_otsu_threshold(mean_importance_df.values.flatten())
 
-fplot.plot_histogram(mean_importance_df.values.flatten(), xlabel='Feature importance scores',
-                        title='F-C Match: Feature importance scores', threshold=threshold)
+fplot.plot_histogram(mean_importance_df.values.flatten(), xlabel='Feature importance score',
+                        title='Feature importance distribution', threshold=threshold,
+                        save=True, save_path='./histogram_imp_kidneyMap.pdf',
+                        xlabel_fontsize=21, ylabel_fontsize=20, title_fontsize=22,
+                   xticks_fontsize=18,yticks_fontsize=16)
 
 matched_factor_dist, percent_matched_fact = fmatch.get_percent_matched_factors(mean_importance_df, threshold)
 matched_covariate_dist, percent_matched_cov = fmatch.get_percent_matched_covariate(mean_importance_df, threshold=threshold)
@@ -228,8 +231,17 @@ mean_importance_df_matched = mean_importance_df.iloc[:,matched_factor_index]
 x_labels_matched = mean_importance_df_matched.columns.values
 
 fplot.plot_all_factors_levels_df(mean_importance_df_matched, x_axis_label=x_labels_matched,
-                                 title='F-C Match: Feature importance scores', color='coolwarm')
+                                 title='', color='coolwarm', 
+                                 x_axis_fontsize=40, y_axis_fontsize=39, title_fontsize=40,
+                               x_axis_tick_fontsize=36, y_axis_tick_fontsize=38)
 
+
+### save the plot to a pdf file without the function name
+fplot.plot_all_factors_levels_df(mean_importance_df_matched, x_axis_label=x_labels_matched,
+                                    title='', color='coolwarm',
+                                    x_axis_fontsize=40, y_axis_fontsize=39, title_fontsize=40,
+                                    x_axis_tick_fontsize=36, y_axis_tick_fontsize=38, 
+                                    save=True, save_path='~/mean_importance_df_matched_kidneyMap.pdf')
 
 ####################################
 #### evaluating bimodality score using simulated factors ####

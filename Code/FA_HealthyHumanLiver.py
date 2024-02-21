@@ -105,7 +105,7 @@ rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
 
-num_pc = 30
+num_pc = 20
 fplot.plot_pca(pca_scores_varimax, num_pc, cell_color_vec= colors_dict_humanLiver['sample'],
                legend_handles=True,
                title='varimax-PCA of pearson residual',

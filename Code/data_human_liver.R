@@ -1,11 +1,19 @@
 load('~/HumanLiver/extra_files/inst/liver/HumanLiver.RData')
 load('~/HumanLiver/extra_files/inst/liver/HumanLiver_savedRes.RData')
 HumanLiverSeurat = UpdateSeuratObject(HumanLiverSeurat)
-seurat_obj <- HumanLiverSeurat
 
+##### calculating the mt percentage
+#HumanLiverSeurat[["percent.mt"]] <- PercentageFeatureSet(HumanLiverSeurat, pattern = "^MT-")
+mt_indices = grep('^MT-',rownames(HumanLiverSeurat))
+sum_MT_conuts = colSums(GetAssayData(HumanLiverSeurat, layer = 'counts')[mt_indices,])
+sum_counts = colSums(GetAssayData(HumanLiverSeurat, layer = 'counts'))
+HumanLiverSeurat[["percent.mt"]]  = sum_MT_conuts/sum_counts
 
+################################################################
+################ Saving the object to be used in Python
 seur <- CreateSeuratObject(GetAssayData(HumanLiverSeurat, 'counts'))
 seur@meta.data = HumanLiverSeurat@meta.data
+
 
 # The following 13086 features requested have not been scaled
 annotations=c('Hep1','abT cell','Hep2','infMac','Hep3','Hep4','plasma cell',
@@ -29,6 +37,7 @@ dim(seur)
 
 SaveH5Seurat(seur, filename ='~/sciFA/Data/HumanLiverAtlas.h5Seurat' ,overwrite = TRUE)
 Convert('~/sciFA/Data/HumanLiverAtlas.h5Seurat', dest = "h5ad")
+################################################################################
 
 
 
@@ -52,28 +61,43 @@ qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
 library(ggplot2)
-tsne_df_merged_2 = tsne_df_merged[,-c(44:50)]
-ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=cell_type))+geom_point()+theme_classic()+scale_color_manual(values = col_vector)
-ggplot(tsne_df_merged_2, aes(umap_1,umap_2,color=cell_type))+geom_point()+theme_classic()+scale_color_manual(values = col_vector)
+colnames(tsne_df_merged)
+tsne_df_merged_2 = tsne_df_merged[,-c(45:51)]
+#tsne_df_merged_2 = tsne_df_merged
+ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=cell_type))+geom_point(size=2)+theme_classic()+scale_color_manual(values = col_vector)
+ggplot(tsne_df_merged_2, aes(umap_1,umap_2,color=cell_type))+geom_point(size=0.6)+theme_classic()+scale_color_manual(values = col_vector)
 
+ggplot(tsne_df_merged_2, aes(factor_2,factor_3,color=cell_type))+
+  geom_point(size=0.6)+theme_classic()+scale_color_manual(values = col_vector)+xlab('F3')+ylab('F4')
+
+ggplot(tsne_df_merged_2, aes(factor_8,factor_12,color=cell_type))+
+  geom_point(size=0.6)+theme_classic()+scale_color_manual(values = col_vector)+xlab('F9')+ylab('F13')
+
+ggplot(tsne_df_merged_2, aes(factor_20,factor_23,color=cell_type))+
+  geom_point(size=0.8)+theme_classic()+scale_color_manual(values = col_vector)+xlab('F21')+ylab('F24')
+
+ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=factor_9))+geom_point(size=0.6,alpha=0.6)+
+  theme_classic()+scale_color_viridis_b(option='plasma',direction = -1)
 ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=factor_18))+geom_point(alpha=0.7)+
   theme_classic()+scale_color_viridis_b(direction = -1)
 ggplot(tsne_df_merged_2, aes(umap_1,umap_2,color=factor_29))+geom_point(alpha=0.7)+
   theme_classic()+scale_color_viridis_b(direction = -1)
 
-qc_columns = c('total_counts', 'total_features' , 'S.Score', 'G2M.Score')
+qc_columns = c('total_counts', 'total_features' , 'percent.mt','S.Score', 'G2M.Score')
 factor_cols = paste0('factor_', 0:29)
 factor_cols = paste0('factor_',c(0, 9, 18, 19, 21, 25, 27, 28, 29))
 
-tsne_df_merged_3 = tsne_df_merged_2[, c(qc_columns, factor_cols)]
+c(qc_columns, factor_cols) %in% colnames(tsne_df_merged_2)
+tsne_df_merged_3 = tsne_df_merged_2[, colnames(tsne_df_merged_2) %in% c(qc_columns, factor_cols)]
 head(tsne_df_merged_3)
-
+colnames(cor(tsne_df_merged_3))
 cor_mat = cor(tsne_df_merged_3)[qc_columns, factor_cols]
 library(pheatmap)
 # make the color pallete
 clrsp <- colorRampPalette(c("darkgreen", "white", "purple"))   
 clrs <- clrsp(200) 
 breaks1 <- seq(-1, 1, length.out = 200)
+colnames(cor_mat) = paste0('F',c(0, 9, 18, 19, 21, 25, 27, 28, 29)+1)
 pheatmap(cor_mat, cluster_cols = F, breaks = breaks1, color =  clrs, display_numbers = T)
 
 
@@ -92,7 +116,7 @@ get_gprofiler_enrich <- function(markers, model_animal_name){
 
 
 genes = read.csv('/home/delaram/sciFA/Results/genes_humanlivermap.csv')
-df = data.frame(gene= genes$X0,factor=factor_loading$X19)
+df = data.frame(gene= genes$X0,factor=factor_loading$X29)
 model_animal_name ='hsapiens'
 
 df_pos = df[order(df$factor, decreasing = T),]
@@ -121,4 +145,6 @@ ggplot(enrich_res_neg, aes(y=term_name,x=log_p))+geom_bar(stat = 'identity')+xla
   theme_classic()+ylab('')+ggtitle(paste0('(negative loading)'))
 
 
+ggplot(factor_scores, aes(x=cell_type, y=factor_18, fill=cell_type))+geom_boxplot()+
+  coord_flip()+scale_fill_manual(values = col_vector)+theme_classic()+xlab('')+ylab('F19 Score')
 

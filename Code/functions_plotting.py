@@ -476,8 +476,9 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None,
 
 
 def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",x_axis_label=None,
-                               x_axis_fontsize=38, y_axis_fontsize=38, title_fontsize=38,
-                               x_axis_tick_fontsize=33, y_axis_tick_fontsize=36, figsize_x=None, figsize_y=None):
+                               x_axis_fontsize=40, y_axis_fontsize=40, title_fontsize=40,
+                               x_axis_tick_fontsize=36, y_axis_tick_fontsize=38, figsize_x=None, 
+                               figsize_y=None, save=False, save_path='./file.pdf'):
     '''
     colors: SV: 'RdPu', AUC/: 'YlOrBr', wilcoxon: rocket_r, featureImp: coolwarm
     plot the score of all the factors for all the covariate levels
@@ -510,7 +511,18 @@ def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",x_axis_l
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     ax.tick_params(axis='x', labelsize=x_axis_tick_fontsize)
     ax.tick_params(axis='y', labelsize=y_axis_tick_fontsize)
+
+
+    ### increase the legend fontsize and make teh legened bar smaller
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=32)
+    cbar.ax.yaxis.label.set_size(32)
     plt.show()
+
+    if save:
+        fig.savefig(save_path, bbox_inches='tight')
+
+
 
 def plot_all_factors_levels(SV_all_factors, covariate_levels, title='', color='RdPu'):
     ''' 
@@ -644,7 +656,10 @@ def plot_matched_covariate_dist(matched_covariate_dist, covariate_levels , title
 
 
 
-def plot_histogram(values, xlabel='scores',title='', bins=100,threshold=None) -> None:
+def plot_histogram(values, xlabel='scores',title='', bins=100,threshold=None, 
+                   save=False, save_path='./file.pdf',
+                   xlabel_fontsize=20, ylabel_fontsize=20, title_fontsize=20,
+                   xticks_fontsize=16,yticks_fontsize=16 ) -> None:
       '''
       plot the histogram of a list of values
       values: list of values
@@ -659,9 +674,17 @@ def plot_histogram(values, xlabel='scores',title='', bins=100,threshold=None) ->
       plt.xlabel(xlabel)
       plt.ylabel('Frequency')
       plt.title(title)
+      ### increase the fontsize of the x and y ticks
+      plt.xticks(fontsize=xticks_fontsize)
+      plt.yticks(fontsize= yticks_fontsize)
+      ### increase the fontsize of the x and y labels
+      plt.xlabel(xlabel, fontsize= xlabel_fontsize)
+      plt.ylabel('Frequency', fontsize= ylabel_fontsize)
+      plt.title(title, fontsize= title_fontsize)
+      if save:
+            plt.savefig(save_path, bbox_inches='tight')
+
       plt.show()
-
-
 
 def plot_violinplot(data_df, title='', xlab='', ylab='values', fontsize=14) -> None:
     '''
