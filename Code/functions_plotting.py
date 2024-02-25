@@ -445,7 +445,9 @@ def plot_metric_dendrogram(all_metrics_df, distance='ward') -> None:
 
 
 def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None,
-                           title='Scaled factor metrics for all factors'):
+                           title='Scaled factor metrics for all factors', xticks_fontsize=30,
+                           yticks_fontsize=30, legend_fontsize=25, save=False, 
+                           save_path='./file.pdf') -> None:
     '''
     plot the heatmap of the scaled factor metrics for all the factors using seaborn
     all_metrics_scaled: the scaled factor metrics for all the factors
@@ -460,17 +462,28 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None,
     all_metrics_scaled_df.columns = factor_metrics
 
 
-    g = sns.clustermap(all_metrics_scaled_df.T, cmap='YlGnBu', figsize=(all_metrics_scaled.shape[0]+3, all_metrics_scaled.shape[1]+2),  #viridis, coolwarm
+    g = sns.clustermap(all_metrics_scaled_df.T, cmap='YlGnBu', 
+                       figsize=(all_metrics_scaled.shape[0]+3, all_metrics_scaled.shape[1]+2),  #viridis, coolwarm
                             linewidths=.5, linecolor='white', annot=True, fmt='.2f', cbar=True,
                             col_cluster=False, row_cluster=False) # annot=False, fmt='.4g'
-    plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = 30)
-    plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = 30)
+    
+    
+    ## increease fint size of the legend bar
+    cbar = g.ax_heatmap.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=legend_fontsize)
+    cbar.ax.yaxis.label.set_size(legend_fontsize)
+
+    plt.setp(g.ax_heatmap.get_xticklabels(),rotation=40, ha="right", fontsize = xticks_fontsize)
+    plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize = yticks_fontsize)
+
     ## add F1, F2, ... to the heatmap x axis
     if x_axis_label is None:
          x_axis_label = ['F'+str(i) for i in range(1, all_metrics_scaled.shape[0]+1)]
     g.ax_heatmap.set_xticklabels(x_axis_label)
     g.ax_heatmap.set_yticklabels(factor_metrics)
-
+    
+    if save:
+        plt.savefig(save_path, bbox_inches='tight')
     plt.show()
 
 
@@ -478,6 +491,7 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None,
 def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",x_axis_label=None,
                                x_axis_fontsize=40, y_axis_fontsize=40, title_fontsize=40,
                                x_axis_tick_fontsize=36, y_axis_tick_fontsize=38, figsize_x=None, 
+                               legend_fontsize=32,
                                figsize_y=None, save=False, save_path='./file.pdf'):
     '''
     colors: SV: 'RdPu', AUC/: 'YlOrBr', wilcoxon: rocket_r, featureImp: coolwarm
@@ -515,8 +529,8 @@ def plot_all_factors_levels_df(all_factors_df, title='', color="YlOrBr",x_axis_l
 
     ### increase the legend fontsize and make teh legened bar smaller
     cbar = ax.collections[0].colorbar
-    cbar.ax.tick_params(labelsize=32)
-    cbar.ax.yaxis.label.set_size(32)
+    cbar.ax.tick_params(labelsize=legend_fontsize)
+    cbar.ax.yaxis.label.set_size(legend_fontsize)
     plt.show()
 
     if save:
@@ -628,30 +642,42 @@ def plot_annotated_metric_heatmap(all_metrics_scaled, factor_metrics):
 
 #### Visualizing global metrics for how well a factor analysis works on a dataset
 ### visualize the distribution of the matched factors
-def plot_matched_factor_dist(matched_factor_dist, title=''):
+def plot_matched_factor_dist(matched_factor_dist, title='', save=False, save_path='./file.pdf'):
       plt.figure(figsize=(np.round(len(matched_factor_dist)/3),4))
       plt.bar(np.arange(len(matched_factor_dist)), matched_factor_dist)
       ### add F1, F2, ... to the xticks
-      plt.xticks(np.arange(len(matched_factor_dist)), ['F'+str(i) for i in range(1, len(matched_factor_dist)+1)])
+      plt.xticks(np.arange(len(matched_factor_dist)), 
+                 ['F'+str(i) for i in range(1, len(matched_factor_dist)+1)])
       ### make the xticks vertical and set the fontsize to 14
-      plt.xticks(rotation=90, fontsize=12)
+      plt.xticks(rotation=90, fontsize=18)
       #plt.xlabel('Number of matched covariates')
-      plt.ylabel('Number of matched covariate levels')
+      ## set y ticks as digits and remove the decimal points and half points
+      plt.yticks(np.arange(0, max(matched_factor_dist)+1, 1)) 
+      plt.ylabel('Number of matched covariate levels', fontsize=18)
       plt.title(title)
+      
+      if save:
+        plt.savefig(save_path, bbox_inches='tight')
       plt.show()
 
 
-def plot_matched_covariate_dist(matched_covariate_dist, covariate_levels , title=''):
+def plot_matched_covariate_dist(matched_covariate_dist, covariate_levels , title='',
+                                save=False, save_path='./file.pdf'):
       plt.figure(figsize=(np.round(len(matched_covariate_dist)/3),4))
       plt.bar(np.arange(len(matched_covariate_dist)), matched_covariate_dist)
       ### add covariate levels to the xticks
       plt.xticks(np.arange(len(matched_covariate_dist)), covariate_levels)
 
       ### make the xticks vertical and set the fontsize to 14
-      plt.xticks(rotation=90, fontsize=12)
+      plt.xticks(rotation=90, fontsize=18)
       #plt.xlabel('Number of matched factors')
-      plt.ylabel('Number of matched factors')
+      ## set y ticks as digits and remove the decimal points and half points
+      plt.yticks(np.arange(0, max(matched_covariate_dist)+1, 1), fontsize=19) 
+      plt.ylabel('Number of matched factors', fontsize=18)
       plt.title(title)
+      
+      if save:
+        plt.savefig(save_path, bbox_inches='tight')
       plt.show()
 
 

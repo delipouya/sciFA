@@ -204,7 +204,11 @@ mean_importance_df.shape
 
 mean_importance_df = mean_importance_df_cell_type
 
-fplot.plot_all_factors_levels_df(mean_importance_df, title='F-C Match: Feature importance scores', color='coolwarm')
+fplot.plot_all_factors_levels_df(mean_importance_df,
+                                 color='coolwarm', title='',
+                                 x_axis_fontsize=40, y_axis_fontsize=39, title_fontsize=40,
+                                 x_axis_tick_fontsize=36, y_axis_tick_fontsize=40, 
+                                 save=True, save_path='../Plots/mean_importance_df_matched_human_liver.pdf')
 ## getting rownnammes of the mean_importance_df
 all_covariate_levels = mean_importance_df.index.values
 
@@ -250,8 +254,10 @@ matched_covariate_dist, percent_matched_cov = fmatch.get_percent_matched_covaria
 
 print('percent_matched_fact: ', percent_matched_fact)
 print('percent_matched_cov: ', percent_matched_cov)
-fplot.plot_matched_factor_dist(matched_factor_dist)
-fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels)
+fplot.plot_matched_factor_dist(matched_factor_dist, save=True, 
+                               save_path='../Plots/num_matched_factor_humanliver.pdf')
+fplot.plot_matched_covariate_dist(matched_covariate_dist, covariate_levels=all_covariate_levels,
+                                  save=True, save_path='../Plots/num_matched_cov_humanliver.pdf')
 
 #### print the factors that are not matched with any covariate level + 1
 print('factors that are not matched with any covariate level: ', np.where(matched_factor_dist==0)[0])

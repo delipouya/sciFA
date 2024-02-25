@@ -48,8 +48,7 @@ meta_data['cluster']=meta_data['cluster'].astype(int)
 
 ### check if meta_data['cluster'] and annotation_data['cluster_value'] have the same data type
 print('meta_data[cluster] data type: ', meta_data['cluster'].dtype)
-print('annotation_data[cluster_value] data type: ', annotation_data['cluster_value'].dtype
-        )
+print('annotation_data[cluster_value] data type: ', annotation_data['cluster_value'].dtype)
 
 ### add the cluster annotations to the metadata 
 meta_data = pd.merge(meta_data, annotation_data, how='left', left_on='cluster', right_on='cluster_value')
@@ -97,20 +96,20 @@ plt.plot(pca.explained_variance_ratio_)
 
 ### make a dictionary of colors for each sample in y_sample
 fplot.plot_pca(pca_scores, 4, 
-               cluster_color_vec= colors_dict_ratLiver['cell_type'], 
+               cell_color_vec= colors_dict_ratLiver['cell_type'], 
                legend_handles=True,
                title='PCA of gene expression data',
                plt_legend_list=plt_legend_cell_type)
 
 fplot.plot_pca(pca_scores, 4, 
-               cluster_color_vec= colors_dict_ratLiver['sample'], 
+               cell_color_vec= colors_dict_ratLiver['sample'], 
                legend_handles=True,
                title='PCA of gene expression data',
                plt_legend_list=plt_legend_sample)
 
 
 fplot.plot_pca(pca_scores, 4, 
-               cluster_color_vec= colors_dict_ratLiver['strain'], 
+               cell_color_vec= colors_dict_ratLiver['strain'], 
                legend_handles=True,
                title='PCA of gene expression data',
                plt_legend_list=plt_legend_strain)
@@ -138,6 +137,28 @@ fplot.plot_pca(pca_scores_varimax, num_pc,
                legend_handles=True,
                title='PCA of gene expression data',
                plt_legend_list=plt_legend_strain)
+
+
+
+### convert the varimax_loading to a dataframe
+varimax_loading_df = pd.DataFrame(varimax_loading)
+### name columns F1 to F30
+varimax_loading_df.columns = ['F'+str(i) for i in range(1, varimax_loading_df.shape[1]+1)]
+varimax_loading_df.index = genes
+
+### concatenate the pca_scores_varimax with the data.obs dataframe in a separate dataframe
+pca_scores_varimax_df = pd.DataFrame(pca_scores_varimax)
+pca_scores_varimax_df.columns = ['F'+str(i) for i in range(1, pca_scores_varimax_df.shape[1]+1)]
+pca_scores_varimax_df.index = data.obs.index.values
+pca_scores_varimax_df_merged = pd.concat([data.obs, pca_scores_varimax_df], axis=1)
+
+
+### save the pca_scores_varimax_df_merged to a csv file
+pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_merged_ratLiver.csv')
+## save the varimax_loading_df and varimax_scores to a csv file
+varimax_loading_df.to_csv('../Results/varimax_loading_df_ratLiver.csv')
+
+
 
 
 
@@ -205,7 +226,11 @@ mean_importance_df_matched_sub = mean_importance_df.iloc[:,matched_factor_index]
 x_labels_matched = mean_importance_df_matched_sub.columns.values
 
 fplot.plot_all_factors_levels_df(mean_importance_df_matched_sub, x_axis_label=x_labels_matched,
-                                 title='F-C Match: Feature importance scores', color='coolwarm')
+                                   color='coolwarm', title='',
+                                 x_axis_fontsize=45, y_axis_fontsize=44, title_fontsize=40,
+                                 x_axis_tick_fontsize=39, y_axis_tick_fontsize=41, 
+                                 legend_fontsize=38,
+                                 save=True, save_path='../Plots/mean_importance_df_matched_ratliver.pdf')
 
 
 
@@ -216,16 +241,21 @@ a_cov_level = 'DA'#all_covariate_levels[0]
 x_labels = None
 if x_labels is None:
       x_labels = mean_importance_df.columns.values
-plt.figure(figsize=(10,5))
+plt.figure(figsize=(12,5))
 a_cov_level_score = mean_importance_df.loc[a_cov_level,:]
 ### sort x_labels and a_cov_level_score based on a_cov_level_score
 a_cov_level_score_sorted, x_labels_sorted = zip(*sorted(zip(a_cov_level_score, x_labels), reverse=True))
 plt.bar(x_labels_sorted, a_cov_level_score_sorted)
 ### add title 
-plt.title('Sorted factor feature importance scores for '+a_cov_level)
-plt.xticks(rotation=90)
-plt.show()
+plt.title('Sorted factor feature importance scores for Stimulated covariate', fontsize=22)
+### decrease title font size
 
+plt.xticks(rotation=90, fontsize=22)
+### increase y axis ticks size
+plt.yticks(fontsize=25)
+plt.savefig('../Plots/sorted_factor_feature_importance_scores_'+a_cov_level+'.pdf')
+plt.show()
+### save the plot
 
 
 #### calculate the correlation of factors with library size
@@ -288,21 +318,47 @@ bimodality_scores = bimodality_index_scores
 
 #bimodality_scores = np.mean([silhouette_scores_km, bimodality_index_scores], axis=0)
 
+#### Scaled variance
+### calculate the number of levels in the covariate vectors cell_type sample and sex
+num_levels_cell_type = len(np.unique(y_cell_type))
+num_levels_sample = len(np.unique(y_sample))
+num_levels_strain = len(np.unique(y_strain))
+print('num_levels_cell_type: ', num_levels_cell_type)
+print('num_levels_sample: ', num_levels_sample)
+print('num_levels_strain: ', num_levels_strain)
+
+#SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
 ### label dependent factor metrics
-ASV_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
-ASV_geo_strain = fmet.get_ASV_all(factor_scores, y_strain, mean_type='geometric')
-ASV_geo_cluster = fmet.get_ASV_all(factor_scores, covariate_vector=y_cluster, mean_type='geometric')
+#ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
 
+ASV_all_arith_stim = fmet.get_ASV_all(factor_scores, y_strain, mean_type='arithmetic')
 
-ASV_simpson_sample = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
-ASV_simpson_strain = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_strain)))
-ASV_simpson_cluster = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cluster)))
+#SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
+### label dependent factor metrics
+#ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
 
+### calculate diversity metrics
+## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
+## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level
+#factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+#factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df_cell_type) ## calculated for each factor in the importance matrix
+#factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
 
-### calculate ASV based on entropy on the scaled variance per covariate for each factor
-ASV_entropy_sample = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
-ASV_entropy_strain = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_strain)))
-ASV_entropy_cluster = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cluster)))
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
+factor_simpson_meanimp_cell_type = fmet.get_all_factors_simpson(mean_importance_df_cell_type) 
+factor_simpson_meanimp_sample = fmet.get_all_factors_simpson(mean_importance_df_sample) 
+
+#### label free factor metrics
+factor_variance_all = fmet.get_factor_variance_all(factor_scores)
+
+### calculate diversity metrics
+## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
+## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level
+factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
+
+### calculate the average of the simpson index and entropy index
+factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy_meanimp], axis=0)
 
 
 
@@ -316,32 +372,6 @@ plt.colorbar()
 plt.show()
 
 
-## calculate correlation between all ASV scores
-ASV_list = [ASV_geo_sample, ASV_simpson_sample, ASV_entropy_sample, 
-            ASV_geo_strain, ASV_simpson_strain, ASV_entropy_strain,
-            ASV_geo_cluster, ASV_simpson_cluster, ASV_entropy_cluster]
-
-ASV_names = ['ASV_geo_sample', 'ASV_simpson_sample', 'ASV_entropy_sample', 
-            'ASV_geo_strain', 'ASV_simpson_strain', 'ASV_entropy_strain',
-            'ASV_geo_cluster', 'ASV_simpson_cluster', 'ASV_entropy_cluster']
-
-### calculate the correlation between all ASV scores without a function
-ASV_corr = np.zeros((len(ASV_list), len(ASV_list)))
-for i in range(len(ASV_list)):
-    for j in range(len(ASV_list)):
-        ASV_corr[i,j] = np.corrcoef(ASV_list[i], ASV_list[j])[0,1]
-ASV_corr_df = pd.DataFrame(ASV_corr)
-### set the row and column names of ASV_corr_df
-ASV_corr_df.index = ASV_names
-ASV_corr_df.columns = ASV_names
-
-### plot the heatmap of ASV_corr_df without a function
-plt.figure(figsize=(10,10))
-plt.imshow(ASV_corr_df, cmap='coolwarm')
-plt.xticks(np.arange(len(ASV_names)), ASV_names, rotation=90)
-plt.yticks(np.arange(len(ASV_names)), ASV_names)
-plt.colorbar()
-plt.show()
 ### calculate diversity metrics
 ## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
 ## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level

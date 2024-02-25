@@ -258,24 +258,32 @@ bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
 bimodality_scores = np.mean([silhouette_scores_km, vrs_km, bimodality_index_scores], axis=0)
 
 #### Scaled variance
-SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
+### calculate the number of levels in the covariate vectors cell_type sample and sex
+num_levels_cell_type = len(np.unique(y_cell_type))
+num_levels_sample = len(np.unique(y_sample))
+num_levels_sex = len(np.unique(y_sex))
+print('num_levels_cell_type: ', num_levels_cell_type)
+print('num_levels_sample: ', num_levels_sample)
+print('num_levels_sex: ', num_levels_sex)
+### if num levels is more than 2, then use simpson index, if num levels is 2 then use arithmatic ASV 
+
+#SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
 ### label dependent factor metrics
-ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
+#ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
 
-ASV_all_geo_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='geometric')
-ASV_all_geo_sex = fmet.get_ASV_all(factor_scores, y_sex, mean_type='geometric')
-ASV_all_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
-
+ASV_all_arith_sex = fmet.get_ASV_all(factor_scores, y_sex, mean_type='arithmetic')
 
 ### calculate diversity metrics
 ## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
 ## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level
-factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
-factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
-factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
+#factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+#factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df_cell_type) ## calculated for each factor in the importance matrix
+#factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
 
-### calculate the average of the simpson index and entropy index
-factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy_meanimp], axis=0)
+factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
+factor_simpson_meanimp_cell_type = fmet.get_all_factors_simpson(mean_importance_df_cell_type) 
+factor_simpson_meanimp_sample = fmet.get_all_factors_simpson(mean_importance_df_sample) 
+
 
 
 #### label free factor metrics
@@ -294,18 +302,23 @@ fplot.plot_all_factors_levels_df(AUC_all_factors_df_1,
 ##### Factor metrics #####
 ####################################
 
-all_metrics_dict = {'silhouette_km':silhouette_scores_km, 'vrs_km':vrs_km, 'silhouette_gmm':silhouette_scores_gmm, 
+all_metrics_dict = {'silhouette_km':silhouette_scores_km, 
+                    'vrs_km':vrs_km, 
+                    'silhouette_gmm':silhouette_scores_gmm, 
                     'bimodality_index':bimodality_index_scores,
-                    'factor_variance':factor_variance_all, 'ASV_geo_cell':ASV_all_geo_cell, 
-                    'factor_simpson_meanimp':factor_simpson_meanimp, 'factor_entropy_meanimp':factor_entropy_meanimp}
+                    'factor_variance':factor_variance_all,
+                      'ASV_geo_cell':ASV_all_geo_cell, 
+                    'factor_simpson_meanimp':factor_simpson_meanimp, 
+                    'factor_entropy_meanimp':factor_entropy_meanimp}
 
 
-all_metrics_dict = {'bimodality':bimodality_scores, 
-                    'specificity':1-factor_simpson_entropy_meanimp,
-                    'effect_size': factor_variance_all,
-                    'homogeneity_cell':ASV_all_geo_cell,
-                    'homogeneity_sex':ASV_all_geo_sex,
-                    'homogeneity_sample':ASV_all_geo_sample}
+all_metrics_dict = {'Bimodality':bimodality_scores, 
+                    ## calculate 1 - factor_simpson_meanimp
+                    'Specificity':[1-x for x in factor_simpson_meanimp],
+                    'Effect size': factor_variance_all,
+                    'Homogeneity (cell type)':factor_simpson_meanimp_cell_type,
+                    'homogeneity (sex)':ASV_all_arith_sex,
+                    'homogeneity (sample)':factor_simpson_meanimp_sample}
 
 ### check the length of all the metrics
 
@@ -323,7 +336,9 @@ fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metr
 ### subset all_merrics_scaled numpy array to only include the matched factors
 all_metrics_scaled_matched = all_metrics_scaled[matched_factor_index,:]
 fplot.plot_metric_heatmap(all_metrics_scaled_matched, factor_metrics, x_axis_label=x_labels_matched,
-                          title='Scaled metrics for all the factors')
+                          title='Scaled metrics for all the factors', xticks_fontsize=30,
+                           yticks_fontsize=33, legend_fontsize=25, save=True, 
+                           save_path='./all_metrics_scaled_matched_kidneyMap.pdf')
 
 ## subset x axis labels based on het matched factors
 x_labels_matched = mean_importance_df_matched.columns.values
