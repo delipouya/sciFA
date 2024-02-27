@@ -14,12 +14,12 @@ scale_Max <- function(x){
   return(scaled)
 }
 
-importance_df_runtime = read.csv('/home/delaram/sciFA/Results/importance_df_melted_scMixology_varimax_shuffle_merged_1000allIncluded_RunTime.csv')
+importance_df_runtime = read.csv('/home/delaram/sciFA/Results/results2023/importance_df_melted_scMixology_varimax_shuffle_merged_1000allIncluded_RunTime.csv')
 importance_df_runtime = importance_df_runtime[,-1]
 colnames(importance_df_runtime) =  c("LogisticReg",  "DecisionTree", "RandomForest","XGB" ,"KNNpermute")
 runtime_df = melt(importance_df_runtime)
 ggplot(runtime_df, aes(y=variable, x=value))+geom_boxplot()+theme_classic()+
-  theme(text = element_text(size=18))+xlab('')+xlab('time (min)')+ylab('')
+  theme(text = element_text(size=18))+xlab('')+xlab('Run time (min)')+ylab('')
 
 
 
@@ -67,10 +67,11 @@ time_list = lapply(list.files(file, pattern = "time_df*", full.names = T)[1:500]
 time_list_df <- Reduce(rbind,imp_list)
 head(time_list_df)
 time_list_df = time_list_df[,-1]
+head(time_list_df)
 time_list_df_m = melt(time_list_df)
 head(time_list_df_m)
 
-ggplot(time_list_df_m, aes(y=value, x=variable))+geom_boxplot()+theme_classic()+coord_flip()+
+ggplot(time_list_df_m, aes(y=value, x=model))+geom_boxplot()+theme_classic()+coord_flip()+
   #+scale_fill_brewer(palette = "Set2")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),text = element_text(size=17))+
   ylab('Run Time (min)')+xlab('')+ggtitle('Model run time comparison')

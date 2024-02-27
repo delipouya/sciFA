@@ -103,16 +103,18 @@ head(imp_df_models$DecisionTree)
 importance_df_m_merged_shuffle_scale = Reduce(rbind, imp_df_models)
 ggplot(importance_df_m_merged_shuffle_scale, aes(x=model, y=imp_minmax, fill=type))+geom_boxplot()+
   theme_classic()+coord_flip()+scale_fill_manual(values=c("#56B4E9", "maroon"))+
-  theme(text = element_text(size=18))+xlab('')
-
+  theme(text = element_text(size=18),legend.title =element_blank())+xlab('')
+  
 ggplot(importance_df_m_merged_shuffle_scale, aes(y=imp_minmax, x=model, fill=type))+geom_boxplot()+theme_classic()+
-  ggtitle('')+scale_fill_brewer(palette = "Set2")+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),text = element_text(size=17))+
-  ylab('Scaled Importance Score')+coord_flip()
+  ggtitle('')+scale_fill_brewer(palette = "Set3")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size=17),legend.title =element_blank())+
+  ylab('Scaled Importance Score')+coord_flip()+xlab("")
 
-
+################################################################################
 ########################################################################
-
+######################################## DONT RUN ########################################
+################################################################################
 ########## splitting the baseline data frames
 table(importance_df_residual_baseline$residual_type)
 table(importance_df_residual_baseline$model)
@@ -148,8 +150,12 @@ for (residual_type in residual_type_names){
     write.csv(res_df_model,paste0('~/sciFA/Results/benchmark/analysis/imp/shuffle_df_',residual_type, '_', model_type,'.csv'))
   }
 }
-########################################
+########################################################################################################################
+########################################################################################################################
 
+residual_type_names = names(table(importance_df_residual_baseline$residual_type))
+model_type_names = names(table(importance_df_residual_baseline$model))
+model_type_names = c("AUC","DecisionTree","LogisticRegression","XGB")
 thr = 0.05
 cov_level_names =c("b'CELseq2'", "b'Dropseq'", "b'sc_10X'", "H1975","H2228","HCC827" )
 summary_df = data.frame(matrix(nrow = length(residual_type_names)*length(model_type_names),ncol = length(cov_level_names)))
@@ -207,12 +213,12 @@ ggplot(summary_df_m_imp, aes(y=value,x=Var2))+geom_boxplot()+
 
 meanimp_df_merged_pearson = read.csv('~/sciFA/Results/benchmark/pearson/base/meanimp_df_scMixology_pearson_baseline.csv')
 meanimp_df_merged_pearson$res = 'pearson'
-meanimp_df_merged_response = read.csv('~/sciFA/Results/benchmark/response/base/meanimp_df_scMixology_response_baseline.csv')
-meanimp_df_merged_response$res = 'response'
-meanimp_df_merged_deviance = read.csv('~/sciFA/Results/benchmark/deviance/base/meanimp_df_scMixology_deviance_baseline.csv')
-meanimp_df_merged_deviance$res = 'deviance'
+#meanimp_df_merged_response = read.csv('~/sciFA/Results/benchmark/response/base/meanimp_df_scMixology_response_baseline.csv')
+#meanimp_df_merged_response$res = 'response'
+#meanimp_df_merged_deviance = read.csv('~/sciFA/Results/benchmark/deviance/base/meanimp_df_scMixology_deviance_baseline.csv')
+#meanimp_df_merged_deviance$res = 'deviance'
 
-meanimp_df_residual_baseline = rbind(rbind(meanimp_df_merged_response, meanimp_df_merged_pearson),meanimp_df_merged_deviance) #
+#meanimp_df_residual_baseline = rbind(rbind(meanimp_df_merged_response, meanimp_df_merged_pearson),meanimp_df_merged_deviance) #
 meanimp_df_residual_baseline = meanimp_df_merged_pearson
 head(meanimp_df_residual_baseline)
 meanimp_df_residual_baseline$type = 'baseline'
@@ -250,6 +256,11 @@ head(meanimp_residual_merged_m)
 ggplot2::ggplot(meanimp_residual_merged_m, aes(y=value, x=res, fill=type))+geom_boxplot()+
   theme_classic()+coord_flip()+ylab('Mean importance value')
 
+
+#############################################################################
+#############################################################################
+################### DON:T RUNNN ########################
+#############################################################################
 ###################### Comparing mean importance benchmark - residuals,mean,scale comparison 
 
 meanimp_df_residual_baseline_m = melt(meanimp_df_residual_baseline)
@@ -302,8 +313,8 @@ for (residual_type in residual_type_names){
   }
 }
 
-
-
+#############################################################################
+#############################################################################
 thr = 0.05
 summary_df = data.frame(matrix(nrow = length(residual_type_names)*length(mean_type_names)*length(scale_type_names),
                   ncol = 6))
@@ -370,16 +381,18 @@ summary_df_m_both$mean_type[1:36] = mean_type
 summary_df_m_both$scale_type[1:36] = scale_type
 head(summary_df_m_both)
 
-summary_df_m_both
+table(summary_df_m_both$Var2)
+summary_df_m_both$Var2[summary_df_m_both$Var2 == 'arithmatic-standard'] = 'sciRED'
+
 ggplot(summary_df_m_both, aes(y=value,x=reorder(Var2, value), fill=model_type))+geom_boxplot()+
-  theme_classic()+scale_fill_brewer(palette = 'Set1')+
+  theme_classic()+scale_fill_brewer(name='',palette = 'Set1')+
   coord_flip()+theme(text = element_text(size=17))+xlab('')+
   ylab('Average #sig matched factors per covariate level')+
   #geom_ribbon(aes(ymin = 0, ymax = 3), fill = "grey70") +
   geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
   #geom_hline(yintercept=3, color = "red", size=1, linetype="dashed")+
-  geom_area(mapping = aes(y = ifelse(value>0 & value< 3 , 1, 0)), fill = "grey70") +
-  ggtitle(paste0('pvalue threshold=',thr))
+  geom_area(mapping = aes(y = ifelse(value>0 & value< 3 , 1, 0)), fill = "grey70")
+  #ggtitle(paste0('pvalue threshold=',thr))
 
 
 summary_df_m_both$cov=ifelse(summary_df_m_both$Var1 %in% c('H1975', 'H2228', 'HCC827'), 'cell', 'protocol')

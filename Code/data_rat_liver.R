@@ -94,6 +94,23 @@ varimax_loading_df_ord[varimax_loading_df_ord$genes=='Itgal',]
 
 varimax_genes_strain = c(head(varimax_loading_df_ord$genes,20), tail(varimax_loading_df_ord$genes,20))
 varimax_genes_strain[varimax_genes_strain%in% top_soup_genes]
+head(varimax_loading_df_ord,20)
+varimax_loading_vis = rbind(head(varimax_loading_df_ord,20),tail(varimax_loading_df_ord,20))
+varimax_loading_vis$genes <- factor(varimax_loading_vis$genes, levels=varimax_loading_vis$genes)
+ggplot(varimax_loading_vis,aes(x=genes, y=factor, color=factor))+geom_point(size=3)+theme_bw()+
+  theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 90, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 17, angle = 90, hjust = .5, vjust = .5, face = "plain"),
+        legend.text = element_text(hjust = 1,angle = 90),
+        legend.position="top", legend.direction="horizontal")+
+  scale_color_gradient(name='Factor\nScore')+
+  #scale_colour_gradientn(colours=c("red", "blue"))+
+  scale_color_gradient2(name='',midpoint = 0, low = "goldenrod", mid = "white",
+                        high = "grey8", space = "Lab" )+
+  ylab('Factor score')+xlab('')
+
+ 
 
 ###### create table for manuscript figures
 table_to_vis = data.frame(head(varimax_loading_df_ord,20))
@@ -155,7 +172,7 @@ head(strain_markers)
 strain_markers$ambient = ifelse(strain_markers$X %in% top_soup_genes, 'ambientRNA','')
 head(strain_markers)
 strain_markers$log_pval_adj = -log10(strain_markers$p_val_adj)
-ggplot(strain_markers, aes(avg_log2FC, log_pval_adj, color=ambient))+geom_point(size=1.3,alpha=0.7)+theme_classic()+
+ggplot(strain_markers, aes(avg_log2FC, log_pval_adj, color=ambient))+geom_point(size=3,alpha=0.7)+theme_classic()+
   scale_color_manual(values = c('grey30','red'))+
   geom_text(data=subset(strain_markers, log_pval_adj> 40 & ambient=='ambientRNA' &(log_pval_adj > 2 | log_pval_adj <(-2))),
             aes(avg_log2FC, log_pval_adj,label=X),check_overlap = T,cex=4,col='black',fontface='bold',vjust = -0.3, nudge_y = 1.7)+

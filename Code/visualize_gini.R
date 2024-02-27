@@ -92,9 +92,16 @@ ggplot(list_imp_merged_m, aes(x=reorder(variable, value), y=value, fill=residual
              position =  position_dodge(width = .75), size = 2)
 
 
+merged_all$variable = as.character(merged_all$variable)
+merged_all$variable[merged_all$variable=='arithmatic_standard'] = 'sciRED'
+
+merged_all_base$variable = as.character(merged_all_base$variable)
+table(merged_all$variable)
+merged_all_base$variable[merged_all_base$variable=='arithmatic_standard']='sciRED'
+
 ggplot(merged_all, aes(x=reorder(variable, value), y=value, fill=residual_type))+geom_boxplot()+
   theme_classic()+theme(text = element_text(size=17))+xlab('')+coord_flip()+
-  scale_fill_brewer(palette = 'Set1')+ylab('Gini index')+
+  scale_fill_brewer(name='Residual Type',palette = 'Set1')+ylab('Gini index')+
   geom_point(data = merged_all_base, color = "red3", 
              position =  position_dodge(width = .75), size = 1.3)
 #geom_point(aes(colour = Cell_line, shape = replicate, group = Cell_line),
@@ -154,6 +161,10 @@ head(list_imp_merged_m)
 
 merged_all = rbind(list_imp_merged_m, list_meanimp_merged_m)
 table(merged_all$model)
+table(merged_all$variable)
+merged_all$variable = as.character(merged_all$variable)
+merged_all$variable[merged_all$variable=='arithmatic_standard'] = 'sciRED'
+
 ####################### formating the base datapints to be added to plot
 gini_base_imp_df = data.frame(rbindlist(gini_base_imp, fill=TRUE))
 gini_base_imp_df$residual_type = names(gini_base_imp)
@@ -169,7 +180,9 @@ merged_all_base = rbind(gini_base_imp_df_melt, gini_base_meanimp_df_melt)
 merged_all_base$model = c(rep('single',6),rep('ensemble',6))
 merged_all_base = merged_all_base[!merged_all_base$variable %in% c('KNeighbors_permute',  'RandomForest'),]
 
-
+merged_all_base$variable = as.character(merged_all_base$variable)
+table(merged_all$variable)
+merged_all_base$variable[merged_all_base$variable=='arithmatic_standard']='sciRED'
 
 ggplot(merged_all, aes(x=reorder(variable, value), y=value, fill=model))+geom_boxplot()+
   theme_classic()+theme(text = element_text(size=17))+xlab('')+coord_flip()+
@@ -178,3 +191,5 @@ ggplot(merged_all, aes(x=reorder(variable, value), y=value, fill=model))+geom_bo
              position =  position_dodge(width = .75), size = 1.3)
 #geom_point(aes(colour = Cell_line, shape = replicate, group = Cell_line),
 #           position = position_dodge(width = .75), size = 3)
+
+

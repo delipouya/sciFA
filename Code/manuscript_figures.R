@@ -17,18 +17,24 @@ ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F18, color=sex))+geom_point
   xlab('Factor-1')+ylab('Factor-18')+scale_color_manual(values=c('palevioletred', 'skyblue'))
 
 library(RColorBrewer)
-n <- 60
+n <- length(table(pca_scores_varimax_df_merged$Cell_Types_Broad))+10
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+col_vector[grep("#666666",col_vector)[2]] = 'cadetblue3'#'aquamarine4'
+col_vector=="#999999"
+'#B3B3B3'
 
-ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F18, color=sampleID))+geom_point(size=0.3)+theme_classic()+
+ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F18, color=Cell_Types_Broad))+geom_point(size=0.6)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
         axis.title.y = element_text(color = "grey20", size = 17, angle = 90, hjust = .5, vjust = .5, face = "plain"), 
         legend.text=element_text(size=12),#legend.title =element_text(size=16),
-        legend.background = element_blank(),legend.position="none",
-        legend.box.background = element_rect(colour = "black"), legend.title=element_blank())+
+        legend.background = element_blank(),
+        #legend.position="none",
+        #legend.box.background = element_rect(colour = "black"), 
+        legend.title=element_blank())+
+  
   xlab('Factor-1')+ylab('Factor-18')+scale_color_manual(values=col_vector)
 
 
@@ -37,7 +43,28 @@ pca_scores_varimax_df_merged = read.csv('~/sciFA//Results/pca_scores_varimax_df_
 varimax_loading_df = read.csv('~/sciFA/Results/varimax_loading_df_lupusPBMC.csv')
 
 head(pca_scores_varimax_df_merged)
-ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F9>(-25),], aes(x = F1, y = F9, color=cell))+geom_point(size=0.7)+theme_classic()+
+
+########### Factor-9 outlier detection 
+hist(pca_scores_varimax_df_merged$F9)
+outlier_f9 = pca_scores_varimax_df_merged$F9< (-20)
+pca_scores_varimax_df_merged$F9[outlier_f9]
+sum(outlier_f9) #1
+hist(pca_scores_varimax_df_merged$F9)
+
+########### Factor-2 outlier detection 
+hist(pca_scores_varimax_df_merged$F2)
+outlier_f2 = pca_scores_varimax_df_merged$F2< (-25)
+pca_scores_varimax_df_merged$F2[outlier_f2]
+sum(outlier_f2) #3
+hist(pca_scores_varimax_df_merged$F2)
+
+sum(outlier_f9 | outlier_f2) #3
+sum(outlier_f9 & outlier_f2)  #1 one of the outliers is joint
+
+pca_scores_varimax_df_merged = pca_scores_varimax_df_merged[!outlier_f9 & !outlier_f2,]
+
+
+ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F9, color=cell))+geom_point(size=0.7)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
@@ -50,7 +77,9 @@ ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F9>(-25),], aes
   scale_color_manual(values = col_vector)+
   xlab('Factor-1')+ylab('Factor-9')
 
-ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F2>(-35),], aes(x = F1, y = F2, color=stim))+geom_point(size=0.6)+theme_classic()+
+
+
+ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F2, color=stim))+geom_point(size=0.6)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
@@ -63,7 +92,7 @@ ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F2>(-35),], aes
 
 
 
-ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F2>(-35),], aes(x = cell, y = F2, color=cell))+geom_boxplot()+theme_classic()+
+ggplot(pca_scores_varimax_df_merged, aes(x = cell, y = F2, color=cell))+geom_boxplot()+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
@@ -75,7 +104,7 @@ ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F2>(-35),], aes
   ylab('Factor-2')+scale_color_manual(values=col_vector)+coord_flip()
 
 
-ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F9>(-25),], aes(x = cell, y = F2, color=cell))+geom_boxplot()+theme_classic()+
+ggplot(pca_scores_varimax_df_merged[!is.na(pca_scores_varimax_df_merged$cell),], aes(x = cell, y = F9, color=cell))+geom_boxplot()+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
@@ -87,7 +116,47 @@ ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F9>(-25),], aes
   ylab('Factor-9')+scale_color_manual(values=col_vector)+coord_flip()
 
 
+ggplot(pca_scores_varimax_df_merged[!is.na(pca_scores_varimax_df_merged$cell),], aes(x = F2, y = F9, color=cell))+
+  geom_point(alpha=0.6,size=1)+theme_classic()+
+  theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 18, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 18, angle = 90, hjust = .5, vjust = .5, face = "plain"), 
+        legend.text=element_text(size=12),#legend.title =element_text(size=16),
+        legend.background = element_blank(),
+        #legend.box.background = element_rect(colour = "black"), 
+        legend.title=element_blank())+xlab('Factor-2')+
+  ylab('Factor-9')+
+  geom_abline(linetype="dashed",size=1,colour="red")+
+  #geom_smooth(method = "lm", se = FALSE, size=1.3)+
+  scale_color_manual(values=col_vector)
 
+
+varimax_loading_df_ord = varimax_loading_df[order(varimax_loading_df$F9, decreasing = T),]
+varimax_loading_df_ord = data.frame(genes=varimax_loading_df_ord$X,factor=varimax_loading_df_ord$F9)
+varimax_loading_vis = head(varimax_loading_df_ord, 30)
+varimax_loading_vis$genes
+varimax_loading_vis$genes = gsub('-ENS.*', '',varimax_loading_vis$genes)
+varimax_loading_vis$genes
+varimax_loading_vis$genes <- factor(varimax_loading_vis$genes, levels=varimax_loading_vis$genes)
+
+ggplot(varimax_loading_vis,aes(x=genes, y=factor, color=factor))+geom_point(size=3)+theme_bw()+
+  theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 90, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 16, angle = 90, hjust = .5, vjust = .5, face = "plain"),
+        legend.text = element_text(hjust = 1,angle = 0),
+        legend.position="right", legend.direction="vertical")+
+  scale_color_gradient(name='Factor\nScore')+
+  #scale_colour_gradientn(colours=c("red", "blue"))+
+  scale_color_gradient2(name='',midpoint = 0, low = "aquamarine3", mid = "white",
+                        high = "sienna2", space = "Lab" )+
+  ylab('Factor-9 loading')+xlab('')
+factor2_pbmc_loading_dotplot
+
+
+plot(varimax_loading_df$F2, varimax_loading_df$F9)
+############### ############### ############### ############### ############### ############### 
 ############### rat liver figure scatter plots
 library(Seurat)
 pca_scores_varimax_df_merged = read.csv('~/sciFA//Results/pca_scores_varimax_df_merged_ratLiver.csv')
@@ -134,6 +203,7 @@ dim(pca_scores_varimax_df_merged)
 
 head(pca_scores_varimax_df_merged)
 head(merged_df)
+
 ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F6, color=strain))+geom_point(size=1)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
@@ -145,7 +215,7 @@ ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F6, color=strain))+geom_poi
         legend.title=element_blank())+
   xlab('Factor-1')+ylab('Factor-6')+scale_color_manual(values=c('goldenrod', 'grey50'))
 
-ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F20, color=strain))+geom_point(size=1)+theme_classic()+
+ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F20, color=strain))+geom_point(size=3)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
@@ -156,17 +226,17 @@ ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F20, color=strain))+geom_po
         legend.title=element_blank())+
   xlab('Factor-1')+ylab('Factor-20')+scale_color_manual(values=c('goldenrod', 'grey50'))
 
-
-ggplot(merged_df, aes(UMAP_1,UMAP_2,color=F19))+geom_point(alpha=0.7,size=1)+
-  theme_classic()+#scale_color_viridis_b(name = "Factor-20\nScore",direction = +1, values = rescale(c(rep(0, 50),51:100)))+
+### remove 8 outlier cells for making the color scheme more clear: sum(pca_scores_varimax_df_merged$F19>20)
+ggplot(merged_df[merged_df$F19<20,], aes(UMAP_1,UMAP_2,color=F19))+geom_point(alpha=0.7,size=1)+
+  theme_classic()+scale_color_viridis_b(name = "Factor-20\nScore",direction = +1)+
   theme(axis.text.x = element_text(size = 16), axis.text.y = element_text(size = 16),
-        axis.title.y = element_text(size = 18), axis.title.x = element_text(size = 18))+
-  scale_color_stepsn(colours =c(rep('#440154FF',1),
-                                '#404688FF', '#3B528BFF','#365D8DFF','#31688EFF', '#2C728EFF',
-                                '#287C8EFF','#24868EFF','#21908CFF','#1F9A8AFF', '#20A486FF',
-                                rep('#21908CFF',1), rep('#ffcf20FF',1)))
+        axis.title.y = element_text(size = 18), axis.title.x = element_text(size = 18))
+  #scale_color_stepsn(colours =c(rep('#440154FF',1),
+   #                             '#404688FF', '#3B528BFF','#365D8DFF','#31688EFF', '#2C728EFF',
+    #                            '#287C8EFF','#24868EFF','#21908CFF','#1F9A8AFF', '#20A486FF',
+     #                           rep('#21908CFF',1), rep('#ffcf20FF',1)))
 
-merged_df[merged_df$F19>15,]
+
 
 library(RColorBrewer)
 n <- length(names(table(pca_scores_varimax_df_merged$annotation)))
@@ -211,11 +281,3 @@ ggplot(pca_scores_varimax_df_merged, aes(x = annotation, y = F20, color=annotati
   +ylab('Factor-20')+scale_color_manual(values=col_vector)+coord_flip()
 
 
-
-
-############### rat liver figure scatter plots
-pca_scores_varimax_df_merged = read.csv('~/sciFA//Results/pca_scores_varimax_df_merged_ratLiver.csv')
-varimax_loading_df = read.csv('~/sciFA/Results/varimax_loading_df_ratLiver.csv')
-
-'/home/delaram/sciFA/Results/factor_scores_umap_df_humanlivermap.csv'
-'/home/delaram/sciFA/Results/factor_loading_humanlivermap.csv'
