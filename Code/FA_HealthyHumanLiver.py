@@ -249,6 +249,12 @@ threshold = fmatch.get_otsu_threshold(mean_importance_df.values.flatten())
 fplot.plot_histogram(mean_importance_df.values.flatten(), xlabel='Feature importance scores',
                         title='F-C Match: Feature importance scores', threshold=threshold)
 
+fplot.plot_histogram(mean_importance_df.values.flatten(), xlabel='Feature importance score',
+                        title='Feature importance distribution', threshold=threshold,
+                        save=True, save_path='../Plots/histogram_imp_humanliver.pdf',
+                        xlabel_fontsize=21, ylabel_fontsize=20, title_fontsize=22,
+                   xticks_fontsize=18,yticks_fontsize=16)
+
 matched_factor_dist, percent_matched_fact = fmatch.get_percent_matched_factors(mean_importance_df, threshold)
 matched_covariate_dist, percent_matched_cov = fmatch.get_percent_matched_covariate(mean_importance_df, threshold=threshold)
 

@@ -123,35 +123,71 @@ get_gprofiler_enrich <- function(markers, model_animal_name){
   return(gostres)
 }
 
-
+factor_loading = read.csv('/home/delaram/sciFA/Results/factor_loading_humanlivermap.csv')
 genes = read.csv('/home/delaram/sciFA/Results/genes_humanlivermap.csv')
 df = data.frame(gene= genes$X0,factor=factor_loading$X29)
 model_animal_name ='hsapiens'
 
 df_pos = df[order(df$factor, decreasing = T),]
+df_neg = df[order(df$factor, decreasing = F),]
+
 head(df_pos,10)
+head(df_neg,10)
 num_genes = 200
 
-enrich_res = get_gprofiler_enrich(markers=df_pos$gene[1:num_genes], model_animal_name)
-head(enrich_res$result,10)
-enrich_res_pos = data.frame(enrich_res$result)
-enrich_res_pos = enrich_res_pos[1:20,]
-enrich_res_pos = enrich_res_pos[,colnames(enrich_res_pos) %in% c('term_name', 'p_value')]
-enrich_res_pos$log_p = -log(enrich_res_pos$p_value)
-ggplot(enrich_res_pos, aes(y=term_name,x=log_p))+geom_bar(stat = 'identity')+xlab('-log(p value)')+
-  theme_classic()+ylab('')+ggtitle(paste0('(positive loading)'))
+table_to_vis = df_pos[1:20,]
+rownames(table_to_vis) = NULL
+colnames(table_to_vis) = c('Gene', 'Score')
+table_to_vis$Score = round(table_to_vis$Score, 3)
+library(gridExtra)
+dev.off()
+tt2 <- ttheme_minimal()
+gridExtra::grid.table(table_to_vis, theme=tt2)
 
-
-df_neg = df[order(df$factor, decreasing = F),]
-head(df_neg,10)
-enrich_res = get_gprofiler_enrich(markers=df_neg$gene[1:num_genes], model_animal_name)
+######## pos enrichment
+enrich_res = get_gprofiler_enrich(markers=df_pos$gene[1:num_genes], 
+                                  model_animal_name = model_animal_name )#'gp__SEA8_T0ld_VHU'
+######## neg enrichment
+enrich_res = get_gprofiler_enrich(markers=df_neg$gene[1:num_genes], 
+                                  model_animal_name = model_animal_name )#'gp__SEA8_T0ld_VHU'
 head(enrich_res$result,30)
-enrich_res_neg = data.frame(enrich_res$result)
-enrich_res_neg = enrich_res_neg[1:20,]
-enrich_res_neg = enrich_res_neg[,colnames(enrich_res_neg) %in% c('term_name', 'p_value')]
-enrich_res_neg$log_p = -log(enrich_res_neg$p_value)
-ggplot(enrich_res_neg, aes(y=term_name,x=log_p))+geom_bar(stat = 'identity')+xlab('-log(p value)')+
-  theme_classic()+ylab('')+ggtitle(paste0('(negative loading)'))
+enrich_res_pos = data.frame(enrich_res$result)
+enrich_res_pos = enrich_res_pos[,!colnames(enrich_res_pos)%in%'evidence_codes']
+enrich_res_pos$log_p = -log(as.numeric(enrich_res_pos$p_value))
+enrich_res_pos = enrich_res_pos[order(enrich_res_pos$log_p, decreasing = T),]
+View(data.frame(1:nrow(enrich_res_pos),enrich_res_pos$term_name, enrich_res_pos$intersection))
+
+#enrich_res_pos = enrich_res_pos[c(1,3,4,5,8,9,11,14,16,19,20,22,27,29,38,41,45,47),]## positive - F29 (=F30) - human liver dataset
+enrich_res_pos = enrich_res_pos[c(1,3,4,5,8,9,11,14,16,19,20,22,29,45,47),] ## positive - F29 (=F30) - human liver dataset
+#enrich_res_pos = enrich_res_pos[c(1,2,3,6,7,8,13,15,17,18,30),]## positive - F9 (=F10) - human liver dataset
+#enrich_res_pos = enrich_res_pos[c(2,5,8,10,12,14,15,19,20,46,54),]## positive - F18 (=F19) - human liver dataset
+#enrich_res_pos = enrich_res_pos[c(1, 3, 4, 6, 7, 11, 12, 15,20),]## positive - F28 (=F29) - human liver dataset
+
+enrich_res_pos = enrich_res_pos[,colnames(enrich_res_pos) %in% c('term_name', 'log_p')]
+
+enrich_res_pos$term_name = gsub('metabolic process', 'metabolism',enrich_res_pos$term_name)
+enrich_res_pos$term_name = gsub('Binding and ', '',enrich_res_pos$term_name)
+enrich_res_pos$term_name = gsub('Classical ', '',enrich_res_pos$term_name)
+enrich_res_pos$term_name = gsub('endoplasmic reticulum ', 'ER ',enrich_res_pos$term_name)
+enrich_res_pos$term_name = gsub('cellular ', '',enrich_res_pos$term_name)
+enrich_res_pos$term_name
+#enrich_res_pos$term_name[16] = 'FCGR dependent phagocytosis' ## positive - F29 (=F30) - human liver dataset
+enrich_res_pos$term_name
+
+enrich_res_pos$term_name <- factor(enrich_res_pos$term_name, levels =  enrich_res_pos$term_name[length(enrich_res_pos$term_name):1])
+
+title = ''#'stim'#'Male'
+fill_color='#80B1D3'
+ggplot(enrich_res_pos, aes(y=term_name,x=log_p))+geom_bar(stat = 'identity',fill=fill_color,color='grey3')+xlab('-log(p value)')+
+  theme_classic()+ylab('')+ggtitle(title)+
+  scale_fill_manual(values = c(fill_color))+
+  theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 14, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 17, angle = 90, hjust = .5, vjust = .5, face = "plain"))
+
+c("#1F78B4","#7570B3",'#B15928', '#F0027F')
+c('#80B1D3','#DECBE4',"#FDC086", "#E78AC3")
 
 
 # start from: 0 ---> factor_9, factor_18, factor_29
@@ -182,14 +218,41 @@ ggplot(tsne_df_merged_2, aes(umap_1,umap_2,color=factor_28))+geom_point(alpha=0.
   theme_classic()+scale_color_viridis_b(direction = +1)
 
 
-"#7FC97F" "#BEAED4" "#FDC086" "#FFFF99" "#386CB0" "#F0027F" "#BF5B17" "#666666" "#1B9E77" "#D95F02" "#7570B3" "#E7298A" "#66A61E"
-"#E6AB02" "#A6761D" "#666666" "#A6CEE3" "#1F78B4" "#B2DF8A" "#33A02C" "#FB9A99" "#E31A1C" "#FDBF6F" "#FF7F00" "#CAB2D6" "#6A3D9A"
-"#FFFF99" "#B15928" "#FBB4AE" "#B3CDE3" "#CCEBC5" "#DECBE4" "#FED9A6" "#FFFFCC" "#E5D8BD" "#FDDAEC" "#F2F2F2" "#B3E2CD" "#FDCDAC"
-"#CBD5E8" "#F4CAE4" "#E6F5C9" "#FFF2AE" "#F1E2CC" "#CCCCCC" "#E41A1C" "#377EB8" "#4DAF4A" "#984EA3" "#FF7F00" "#FFFF33" "#A65628"
-"#F781BF" "#999999" "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3" "#A6D854" "#FFD92F" "#E5C494" "#B3B3B3" "#8DD3C7" "#FFFFB3" "#BEBADA"
-"#FB8072" "#80B1D3" "#FDB462" "#B3DE69" "#FCCDE5" "#D9D9D9" "#BC80BD" "#CCEBC5" "#FFED6F"
-#table_to_vis[2,]$Gene = 'APOBEC3A'
 library(gridExtra)
+###########################################################################
+######################## visualizing factor loadings 
+###########################################################################
+factor_loading = read.csv('/home/delaram/sciFA/Results/factor_loading_humanlivermap.csv')
+genes = read.csv('/home/delaram/sciFA/Results/genes_humanlivermap.csv')
+df = data.frame(genes= genes$X0,factor=factor_loading$X29)
+varimax_loading_df_ord = df[order(df$factor, decreasing = T),]
+varimax_loading_vis = head(varimax_loading_df_ord, 20)
+varimax_loading_vis$genes
+varimax_loading_vis$genes = gsub('-ENS.*', '',varimax_loading_vis$genes)
+varimax_loading_vis$genes
+varimax_loading_vis = varimax_loading_vis[order(varimax_loading_vis$factor, decreasing = T),]
+varimax_loading_vis$genes <- factor(varimax_loading_vis$genes, levels=varimax_loading_vis$genes)
+#
+head(varimax_loading_vis)
+col_vis = "#1F78B4"
+ggplot(varimax_loading_vis, aes(y=factor, x=genes, color=factor))+geom_point(size=3)+theme_bw()+
+  theme(axis.text.x = element_text(color = "grey20", size = 11, angle = 90, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 11, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 16, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 15, angle = 90, hjust = .5, vjust = .5, face = "plain"),
+        legend.text = element_text(hjust = 1,angle = 0),
+        legend.position="right", legend.direction="vertical")+
+  scale_color_gradient()+
+  #scale_colour_gradientn(colours=c("red", "blue"))+
+  scale_color_gradient2(name='',midpoint = 0, low = "white", mid = "white",
+                        high = col_vis, space = "Lab" )+
+  ylab('Loading')+xlab('')
+#humanliver_f30_dotplot_v2
+
+c("#1F78B4","#7570B3",'#B15928', '#F0027F')
+c('#80B1D3')
+
+
 
 
 genes = read.csv('/home/delaram/sciFA/Results/genes_humanlivermap.csv')
@@ -202,3 +265,16 @@ dev.off()
 tt2 <- ttheme_minimal()
 gridExtra::grid.table(markers_vis, theme=tt2)
 gridExtra::grid.table(markers_vis)
+
+
+
+
+
+
+"#7FC97F" "#BEAED4" "#FDC086" "#FFFF99" "#386CB0" "#F0027F" "#BF5B17" "#666666" "#1B9E77" "#D95F02" "#7570B3" "#E7298A" "#66A61E"
+"#E6AB02" "#A6761D" "#666666" "#A6CEE3" "#1F78B4" "#B2DF8A" "#33A02C" "#FB9A99" "#E31A1C" "#FDBF6F" "#FF7F00" "#CAB2D6" "#6A3D9A"
+"#FFFF99" "#B15928" "#FBB4AE" "#B3CDE3" "#CCEBC5" "#DECBE4" "#FED9A6" "#FFFFCC" "#E5D8BD" "#FDDAEC" "#F2F2F2" "#B3E2CD" "#FDCDAC"
+"#CBD5E8" "#F4CAE4" "#E6F5C9" "#FFF2AE" "#F1E2CC" "#CCCCCC" "#E41A1C" "#377EB8" "#4DAF4A" "#984EA3" "#FF7F00" "#FFFF33" "#A65628"
+"#F781BF" "#999999" "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3" "#A6D854" "#FFD92F" "#E5C494" "#B3B3B3" "#8DD3C7" "#FFFFB3" "#BEBADA"
+"#FB8072" "#80B1D3" "#FDB462" "#B3DE69" "#FCCDE5" "#D9D9D9" "#BC80BD" "#CCEBC5" "#FFED6F"
+#table_to_vis[2,]$Gene = 'APOBEC3A'
