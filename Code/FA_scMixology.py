@@ -36,8 +36,9 @@ data.obs['sample'] = y_sample.to_numpy()
 
 colors_dict_scMix = fplot.get_colors_dict_scMix(y_protocol, y_cell_line)
 
-plt_legend_cell_line = fplot.get_legend_patch(y_sample, colors_dict_scMix['cell_line'] )
+plt_legend_cell_line = fplot.get_legend_patch(y_cell_line, colors_dict_scMix['cell_line'] )
 plt_legend_protocol = fplot.get_legend_patch(y_sample, colors_dict_scMix['protocol'] )
+
 
 
 ####################################
@@ -81,7 +82,7 @@ fplot.plot_pca(pca_scores, num_pc,
                title=title,
                plt_legend_list=plt_legend_cell_line)
 
-
+### make a dictionary of colors for each sample in y_sample
 fplot.plot_pca(pca_scores, num_pc, 
                cell_color_vec= colors_dict_scMix['protocol'], 
                legend_handles=True,
@@ -330,6 +331,10 @@ plot_barplot(factor_libsize_correlation,
 
 
 
+
+
+
+
 ####################################
 #### evaluating bimodality score using simulated factors ####
 ####################################
@@ -413,11 +418,12 @@ all_metrics_dict = {#'silhouette_km':silhouette_scores_km,
                     'factor_entropy_meanimp':[1-x for x in factor_entropy_meanimp]}
 
 
-all_metrics_dict = {'bimodality':bimodality_scores, 
-                    'specificity':[1-x for x in factor_simpson_entropy_meanimp],
-                    'effect_size': factor_variance_all,
-                    'homogeneity_cell':ASV_simpson_cell,
-                    'homogeneity_sample':ASV_simpson_sample}
+all_metrics_dict = {'Bimodality':bimodality_scores, 
+                    'Specificity':[1-x for x in factor_simpson_entropy_meanimp],
+                    'Effect size': factor_variance_all,
+                    'Homogeneity (cell line)':ASV_simpson_cell,
+                    'Homogeneity (sample)':ASV_simpson_sample}
+
 
 ### check the length of all the metrics
 
@@ -440,4 +446,5 @@ fplot.plot_metric_heatmap(all_metrics_scaled_matched, factor_metrics, x_axis_lab
 
 ## subset x axis labels based on het matched factors
 x_labels_matched = mean_importance_df_matched.columns.values
+
 

@@ -5,7 +5,7 @@ df = read.csv('~/sciFA/metric_overlap_corr_df_sim20.csv')
 df = read.csv('~/sciFA/metric_overlap_corr_df_sim20_v2.csv')
 df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_v3_nov1.csv')
 df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_Jan2024.csv')
-df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_Jan2024_v2.csv')
+df = read.csv('~/sciFA/Results//metric_overlap_corr_df_sim100_Jan2024_v2.csv')
 
 
 df = data.frame(t(df))
@@ -15,8 +15,10 @@ head(df)
 colnames(df)
 cols_to_remove = c('factor_gini_meanImp', 'factor_gini_AUC', 
                    'factor_entropy_meanImp', 'factor_entropy_AUC',
-                   'factor_simpon_meanImp', 'factor_simpson_AUC', 'dip_pval',
-                   "1-AUC_arith","1-AUC_geo", 'ASV_simpson','ASV_entropy' )
+                   'factor_simpon_meanImp', 'factor_simpson_AUC', 'dip_pval'
+                   #"1-AUC_arith","1-AUC_geo"
+                   #'ASV_simpson','ASV_entropy'
+                   )
 df = df[,!colnames(df) %in% cols_to_remove]
 head(df)
 
@@ -36,13 +38,22 @@ df_melt$metric_type[df_melt$metric %in% effect_size_metric]='effect size'
 
 
 ggplot(df_melt, aes(x=metric,y=R))+geom_boxplot(notch = TRUE, fill='maroon')+
-  coord_flip()+ylab('Correlation with overlap value')+theme(text = element_text(size=16))
+  coord_flip()+ylab('Correlation with overlap value')+
+  theme(text = element_text(size=16),
+        axis.text.x = element_text(color = "grey20", size = 16, angle = 0, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 15, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 15, angle = 90, hjust = .5, vjust = .5, face = "plain"))
 
 
 ggplot(df_melt, aes(x=metric,y=R,fill=metric_type))+
   geom_boxplot(notch = TRUE)+xlab('')+
   coord_flip()+ylab('Correlation with overlap value')+
-  theme(text = element_text(size=16))#+theme_classic()
+  theme(text = element_text(size=16),
+      axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
+      axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+      axis.title.x = element_text(color = "grey20", size = 14, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+      axis.title.y = element_text(color = "grey20", size = 14, angle = 90, hjust = .5, vjust = .5, face = "plain"))
 
 
 df.t = data.frame(t(data.frame(df)))

@@ -67,7 +67,8 @@ library(ggplot2)
 colnames(tsne_df_merged)
 tsne_df_merged_2 = tsne_df_merged[,-c(45:51)]
 #tsne_df_merged_2 = tsne_df_merged
-ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=cell_type))+geom_point(size=2)+theme_classic()+scale_color_manual(values = col_vector)
+ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=CELL_TYPE))+geom_point(size=1.3)+
+  theme_classic()+scale_color_manual(values = col_vector)
 ggplot(tsne_df_merged_2, aes(umap_1,umap_2,color=cell_type))+geom_point(size=1)+theme_classic()+scale_color_manual(values = col_vector)
 
 ggplot(tsne_df_merged_2, aes(factor_2,factor_3,color=cell_type))+
@@ -203,9 +204,9 @@ factor_scores$CELL_TYPE = gsub('hepatic ', '', factor_scores$CELL_TYPE)
 
 table(factor_scores$CELL_TYPE)
 
-ggplot(factor_scores, aes(x=CELL_TYPE, y=factor_28, fill=CELL_TYPE))+geom_boxplot()+
-  scale_fill_manual(values = col_vector)+theme_classic()+xlab('')+ylab('F29 Score')+
-  theme(axis.text.x = element_text(size = 13, angle = 90), axis.text.y = element_text(size = 15),
+ggplot(factor_scores, aes(x=CELL_TYPE, y=factor_9, fill=CELL_TYPE))+geom_boxplot()+
+  scale_fill_manual(values = col_vector)+theme_classic()+xlab('')+ylab('F10 Score')+
+  theme(axis.text.x = element_text(size = 13.5, angle = 90), axis.text.y = element_text(size = 15),
         axis.title.y = element_text(size = 15))
 
 ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=factor_28))+geom_point(alpha=0.9,size=1.3)+
@@ -213,6 +214,10 @@ ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=factor_28))+geom_point(alpha=0.
   theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 14),
         axis.title.y = element_text(size = 16), axis.title.x = element_text(size = 16))
   
+ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=CELL_TYPE))+geom_point(size=3)+
+  theme_classic()+scale_color_manual(values = col_vector)+
+  theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 14),
+        axis.title.y = element_text(size = 16), axis.title.x = element_text(size = 16))
 
 ggplot(tsne_df_merged_2, aes(umap_1,umap_2,color=factor_28))+geom_point(alpha=0.7,size=0.8)+
   theme_classic()+scale_color_viridis_b(direction = +1)
@@ -224,7 +229,7 @@ library(gridExtra)
 ###########################################################################
 factor_loading = read.csv('/home/delaram/sciFA/Results/factor_loading_humanlivermap.csv')
 genes = read.csv('/home/delaram/sciFA/Results/genes_humanlivermap.csv')
-df = data.frame(genes= genes$X0,factor=factor_loading$X29)
+df = data.frame(genes= genes$X0,factor=factor_loading$X18)
 varimax_loading_df_ord = df[order(df$factor, decreasing = T),]
 varimax_loading_vis = head(varimax_loading_df_ord, 20)
 varimax_loading_vis$genes
@@ -234,10 +239,10 @@ varimax_loading_vis = varimax_loading_vis[order(varimax_loading_vis$factor, decr
 varimax_loading_vis$genes <- factor(varimax_loading_vis$genes, levels=varimax_loading_vis$genes)
 #
 head(varimax_loading_vis)
-col_vis = "#1F78B4"
+col_vis = '#B15928'#"#7570B3"#"#1F78B4"
 ggplot(varimax_loading_vis, aes(y=factor, x=genes, color=factor))+geom_point(size=3)+theme_bw()+
   theme(axis.text.x = element_text(color = "grey20", size = 11, angle = 90, hjust = .5, vjust = .5, face = "plain"),
-        axis.text.y = element_text(color = "grey20", size = 11, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.text.y = element_text(color = "grey20", size = 10, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 16, angle = 0, hjust = .5, vjust = 0, face = "plain"),
         axis.title.y = element_text(color = "grey20", size = 15, angle = 90, hjust = .5, vjust = .5, face = "plain"),
         legend.text = element_text(hjust = 1,angle = 0),
@@ -271,10 +276,10 @@ gridExtra::grid.table(markers_vis)
 
 
 
-"#7FC97F" "#BEAED4" "#FDC086" "#FFFF99" "#386CB0" "#F0027F" "#BF5B17" "#666666" "#1B9E77" "#D95F02" "#7570B3" "#E7298A" "#66A61E"
-"#E6AB02" "#A6761D" "#666666" "#A6CEE3" "#1F78B4" "#B2DF8A" "#33A02C" "#FB9A99" "#E31A1C" "#FDBF6F" "#FF7F00" "#CAB2D6" "#6A3D9A"
-"#FFFF99" "#B15928" "#FBB4AE" "#B3CDE3" "#CCEBC5" "#DECBE4" "#FED9A6" "#FFFFCC" "#E5D8BD" "#FDDAEC" "#F2F2F2" "#B3E2CD" "#FDCDAC"
-"#CBD5E8" "#F4CAE4" "#E6F5C9" "#FFF2AE" "#F1E2CC" "#CCCCCC" "#E41A1C" "#377EB8" "#4DAF4A" "#984EA3" "#FF7F00" "#FFFF33" "#A65628"
+c("#7FC97F" ,"#BEAED4", "#FDC086", "#FFFF99", "#386CB0", "#F0027F", "#BF5B17", "#666666", "#1B9E77", "#D95F02", "#7570B3", "#E7298A","#66A61E",
+"#E6AB02", "#A6761D", "#666666", "#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00", "#CAB2D6", "#6A3D9A",
+"#FFFF99", "#B15928", "#FBB4AE", "#B3CDE3", "#CCEBC5", "#DECBE4", "#FED9A6", "#FFFFCC", "#E5D8BD", "#FDDAEC", "#F2F2F2", "#B3E2CD", "#FDCDAC",
+"#CBD5E8", "#F4CAE4", "#E6F5C9", "#FFF2AE" "#F1E2CC" "#CCCCCC" "#E41A1C" "#377EB8" "#4DAF4A" "#984EA3" "#FF7F00" "#FFFF33" "#A65628"
 "#F781BF" "#999999" "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3" "#A6D854" "#FFD92F" "#E5C494" "#B3B3B3" "#8DD3C7" "#FFFFB3" "#BEBADA"
-"#FB8072" "#80B1D3" "#FDB462" "#B3DE69" "#FCCDE5" "#D9D9D9" "#BC80BD" "#CCEBC5" "#FFED6F"
+"#FB8072" "#80B1D3" "#FDB462" "#B3DE69" "#FCCDE5" "#D9D9D9" "#BC80BD" "#CCEBC5" "#FFED6F")
 #table_to_vis[2,]$Gene = 'APOBEC3A'

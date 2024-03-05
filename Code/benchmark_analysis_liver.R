@@ -72,7 +72,9 @@ ggplot(importance_df_residual_merged, aes(y=importance_abs, x=res, fill=type))+g
 
 head(importance_df_residual_merged)
 ########################################################################
-
+########################################################################
+################################ DO NOT RUN ################################ 
+########################################################################
 ########## splitting the baseline data frames
 table(importance_df_residual_baseline$residual_type)
 table(importance_df_residual_baseline$model)
@@ -110,7 +112,8 @@ for (residual_type in residual_type_names){
   }
 }
 ########################################
-
+########################################################################
+########################################################################
 thr = 0.05
 cov_level_names =names(table(importance_df_residual_shuffle$covariate_level))
 # [1] "abT cell"                "central venous LSEC"     "cholangiocyte"           "erythroid cell"          "gdT cell1"               "gdT cell2"              
@@ -235,6 +238,9 @@ residual_type_names = names(table(meanimp_df_residual_baseline_m$residual_type))
 mean_type_names = names(table(meanimp_df_residual_baseline_m$mean_type))
 scale_type_names = names(table(meanimp_df_residual_baseline_m$scale_type))
 
+#######################################################################
+################################ DO NOT RUN ################################ 
+########################################################################
 for (residual_type in residual_type_names){
   res_df = meanimp_df_residual_baseline_m[meanimp_df_residual_baseline_m$residual_type==residual_type,]
   for (mean_type in mean_type_names){
@@ -271,6 +277,8 @@ for (residual_type in residual_type_names){
   }
 }
 
+#######################################################################
+########################################################################
 
 table(meanimp_df_residual_shuffle_m$X)
 thr = 0.05
@@ -362,17 +370,25 @@ table(summary_df_m_meanimp$res_type)
 class(summary_df_m_both$Var2_sub)
 table(summary_df_m_both$Var2_sub)
 summary_df_m_both$Var2_sub[summary_df_m_both$Var2_sub=='arithmatic-standard']='sciRED'
+table(summary_df_m_both$Var2_sub)
 
-ggplot(summary_df_m_both, aes(y=value,x=reorder(Var2_sub, value), fill=res_type))+geom_boxplot()+
+summary_df_m_both2 = summary_df_m_both
+summary_df_m_both2 = summary_df_m_both2[summary_df_m_both2$model_type=='single' | 
+                                          summary_df_m_both2$Var2_sub=='sciRED',]
+summary_df_m_both2 = summary_df_m_both2[summary_df_m_both2$model_type=='ensemble' | 
+                                          summary_df_m_both2$Var2_sub=='sciRED',]
+
+table(summary_df_m_both2$Var2_sub)
+ggplot(summary_df_m_both2, aes(y=value,x=reorder(Var2_sub, value), fill=res_type))+geom_boxplot()+
   theme_classic()+scale_fill_brewer(palette = 'Set1')+
   coord_flip()+theme(text = element_text(size=17),
-                     axis.text.y = element_text(size=17.5),axis.text.x = element_text(size=18)
+                     axis.text.y = element_text(size=19.5),axis.text.x = element_text(size=18)
                      )+xlab('')+
   ylab('Average #sig matched factors per covariate level')+
   #geom_ribbon(aes(ymin = 0, ymax = 3), fill = "grey70") +
   geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
-  geom_hline(yintercept=2, color = "red", size=1, linetype="dashed")+
-  geom_hline(yintercept=3, color = "red", size=1, linetype="dashed")+
+  #geom_hline(yintercept=2, color = "red", size=1, linetype="dashed")+
+  #geom_hline(yintercept=3, color = "red", size=1, linetype="dashed")+
   geom_area(mapping = aes(y = ifelse(value>0 & value< 3 , 1, 0)), fill = "grey70")
   #ggtitle(paste0('pvalue threshold=',thr))
 

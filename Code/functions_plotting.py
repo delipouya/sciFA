@@ -9,7 +9,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 import random
 random.seed(0)
 
-
+'''
 plt_legend_protocol = [mpatches.Patch(color='palegreen', label='sc_10X'),
             mpatches.Patch(color='yellow', label='CELseq2'),
             mpatches.Patch(color='pink', label='Dropseq')]
@@ -20,7 +20,7 @@ plt_legend_cl = [mpatches.Patch(color='springgreen', label='HCC827'),
                         mpatches.Patch(color='orchid', label='H2228')]
 
 plt_legend_dict = {'protocol': plt_legend_protocol, 'cell_line': plt_legend_cl}
-
+'''
 ### make a legend patch given a numpy array of covariates and their colors for each sample 
 def get_legend_patch(y_sample, sample_color):
     '''

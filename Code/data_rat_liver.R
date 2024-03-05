@@ -19,7 +19,12 @@ table(meta_data2$strain)
 merged_samples_cellb@meta.data <- meta_data2
 head(merged_samples_cellb@meta.data)
 
-cbind(umap_df)
+merged_df = cbind(umap_df, meta_data2)
+head(merged_df)
+ggplot(merged_df, aes(UMAP_1,UMAP_2,color=annotation))+geom_point(size=3)+
+  theme_classic()+scale_color_manual(values = col_vector)+
+  theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 14),
+        axis.title.y = element_text(size = 16), axis.title.x = element_text(size = 16))
 
 ################################################################################# 
 ########################### soupX decomtamination fraction

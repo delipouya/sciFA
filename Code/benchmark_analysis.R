@@ -383,10 +383,14 @@ head(summary_df_m_both)
 
 table(summary_df_m_both$Var2)
 summary_df_m_both$Var2[summary_df_m_both$Var2 == 'arithmatic-standard'] = 'sciRED'
-
-ggplot(summary_df_m_both, aes(y=value,x=reorder(Var2, value), fill=model_type))+geom_boxplot()+
-  theme_classic()+scale_fill_brewer(name='',palette = 'Set1')+
-  coord_flip()+theme(text = element_text(size=17))+xlab('')+
+summary_df_m_both2 = summary_df_m_both
+summary_df_m_both2 = summary_df_m_both[summary_df_m_both$model_type=='ensemble' | summary_df_m_both$Var2=='sciRED',]
+ggplot(summary_df_m_both2, aes(y=value,x=reorder(Var2, value), fill=model_type))+geom_boxplot()+
+  theme_classic()+#scale_fill_brewer(name='',palette = 'Set1')+
+  scale_fill_manual(values=c('#006699','#006699'))+
+  coord_flip()+theme(text = element_text(size=17),
+                     axis.title.x = element_text(size=15),
+                     axis.text.y = element_text(size=15))+xlab('')+
   ylab('Average #sig matched factors per covariate level')+
   #geom_ribbon(aes(ymin = 0, ymax = 3), fill = "grey70") +
   geom_hline(yintercept=1, color = "red", size=1, linetype="dashed")+
