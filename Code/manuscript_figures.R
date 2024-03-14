@@ -41,7 +41,7 @@ ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F18, color=Cell_Types_Broad
 ################ PBMC stimulated dataset figure scatter plots
 pca_scores_varimax_df_merged = read.csv('~/sciFA//Results/pca_scores_varimax_df_merged_lupusPBMC.csv')
 varimax_loading_df = read.csv('~/sciFA/Results/varimax_loading_df_lupusPBMC.csv')
-
+dim(pca_scores_varimax_df_merged)
 head(pca_scores_varimax_df_merged)
 
 ########### Factor-9 outlier detection 
@@ -62,7 +62,7 @@ sum(outlier_f9 | outlier_f2) #3
 sum(outlier_f9 & outlier_f2)  #1 one of the outliers is joint
 
 pca_scores_varimax_df_merged = pca_scores_varimax_df_merged[!outlier_f9 & !outlier_f2,]
-
+dim(pca_scores_varimax_df_merged)
 
 ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F9, color=cell))+geom_point(size=0.7)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
@@ -226,8 +226,23 @@ ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F20, color=strain))+geom_po
         legend.title=element_blank())+
   xlab('Factor-1')+ylab('Factor-20')+scale_color_manual(values=c('goldenrod', 'grey50'))
 
-### remove 8 outlier cells for making the color scheme more clear: sum(pca_scores_varimax_df_merged$F19>20)
-ggplot(merged_df[merged_df$F19<20,], aes(UMAP_1,UMAP_2,color=F19))+geom_point(alpha=0.7,size=1)+
+
+sum(pca_scores_varimax_df_merged$F20>9)
+pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F20<9,]
+ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F20<10,], aes(x = F1, y = F20, color=strain))+geom_point(size=1.6)+theme_classic()+
+  theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 17, angle = 90, hjust = .5, vjust = .5, face = "plain"), 
+        legend.text=element_text(size=12),#legend.title =element_text(size=16),
+        legend.background = element_blank(),
+        #legend.box.background = element_rect(colour = "black"), 
+        legend.title=element_blank())+
+  xlab('Factor-1')+ylab('Factor-20')+scale_color_manual(values=c('goldenrod', 'grey50'))
+
+### remove 8 outlier cells for making the color scheme more clear: sum(pca_scores_varimax_df_merged$F19>20)2
+sum(!merged_df$F20<(10))
+ggplot(merged_df[merged_df$F20<(10),], aes(UMAP_1,UMAP_2,color=F20))+geom_point(alpha=0.6,size=1)+
   theme_classic()+scale_color_viridis_b(name = "Factor-20\nScore",direction = +1)+
   theme(axis.text.x = element_text(size = 16), axis.text.y = element_text(size = 16),
         axis.title.y = element_text(size = 18), axis.title.x = element_text(size = 18))
@@ -244,7 +259,7 @@ qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
 
-ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F6, color=annotation))+geom_point(size=1)+theme_classic()+
+ggplot(pca_scores_varimax_df_merged[merged_df$F20<(10),], aes(x = F1, y = F6, color=annotation))+geom_point(size=1)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
@@ -257,11 +272,11 @@ ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F6, color=annotation))+geom
 
 
 
-ggplot(pca_scores_varimax_df_merged, aes(x = F1, y = F20, color=annotation))+geom_point(size=3)+theme_classic()+
-  theme(axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
-        axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
-        axis.title.x = element_text(color = "grey20", size = 17, angle = 0, hjust = .5, vjust = 0, face = "plain"),
-        axis.title.y = element_text(color = "grey20", size = 17, angle = 90, hjust = .5, vjust = .5, face = "plain"), 
+ggplot(pca_scores_varimax_df_merged[merged_df$F20<(10),], aes(x = F1, y = F20, color=annotation))+geom_point(size=1)+theme_classic()+
+  theme(axis.text.x = element_text(color = "grey20", size = 15, angle = 0, hjust = .5, vjust = .5, face = "plain"),
+        axis.text.y = element_text(color = "grey20", size = 15, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
+        axis.title.x = element_text(color = "grey20", size = 19, angle = 0, hjust = .5, vjust = 0, face = "plain"),
+        axis.title.y = element_text(color = "grey20", size = 19, angle = 90, hjust = .5, vjust = .5, face = "plain"), 
         legend.text=element_text(size=12),#legend.title =element_text(size=16),
         legend.background = element_blank(),
         #legend.box.background = element_rect(colour = "black"), 

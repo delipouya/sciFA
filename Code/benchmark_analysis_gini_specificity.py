@@ -259,3 +259,18 @@ for key, values in gini_list_dict.items():
     gini_df.to_csv('/home/delaram/sciFA/Results/benchmark/gini_analysis/'+'meanimp_gini_df_'+key+'.csv')
 
 
+
+#### evaluation of gini for random vectors
+import numpy as np
+#### define a numpy array of 0 and 1s with 20 length. include 5 ones and 15 zeros
+random_vector = np.random.choice([0, 1], size=(20), p=[3/4, 1/4])
+print(fmet.get_gini(random_vector))
+#### define a numpy array of 0 and 1s with 20 length. include 1 one and 19 zeros
+random_vector = np.random.choice([0, 1], size=(20), p=[19/20, 1/20])
+print(fmet.get_gini(random_vector))
+#### define a numpy array of 0 and 1s with 20 length. include half ones and half zeros
+random_vector = np.random.choice([0, 1], size=(20), p=[1/2, 1/2])
+print(fmet.get_gini(random_vector))
+### define a random vecotr randomly sampled from uniform distribution
+random_vector = np.random.uniform(0, 1, 20)
+print(fmet.get_gini(random_vector))

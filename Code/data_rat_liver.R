@@ -29,8 +29,8 @@ ggplot(merged_df, aes(UMAP_1,UMAP_2,color=annotation))+geom_point(size=3)+
 ################################################################################# 
 ########################### soupX decomtamination fraction
 ###########################  Saving output - DO NOT RUN !!! ########################### 
-merged_data_soupX <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_normed.rds')
-head(merged_data_soupX)
+#merged_data_soupX <- readRDS('~/RatLiver/Data/SoupX_data/TLH_decontaminated_merged_normed.rds')
+#head(merged_data_soupX)
 
 sample_names = list.dirs('~/RatLiver/Data/SoupX_data/SoupX_inputs/',recursive = FALSE, full.names = FALSE)
 
@@ -190,3 +190,13 @@ ggplot(strain_markers, aes(avg_log2FC, log_pval_adj, color=ambient))+geom_point(
         #legend.box.background = element_rect(colour = "black"), 
         legend.title=element_blank())+
   xlab('Average log2FC')+ylab('-log10(adj pvalue)')
+
+
+
+
+#sudo apt-get install libhdf5-dev
+install.packages("hdf5r")
+#merged_samples_cellb = readRDS('~/RatLiver/cell_browser/TLH_cellBrowser.rds')
+library(seuratDisk)
+SaveH5Seurat(merged_samples_cellb, filename ='~/sciFA/Data/ratliver_TLH_normalized' ,overwrite = TRUE)
+Convert('~/sciFA/Data/ratliver_TLH_normalized.h5Seurat', dest = "h5ad")

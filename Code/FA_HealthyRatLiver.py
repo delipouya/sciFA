@@ -126,7 +126,7 @@ covariate_vector = y_strain
 rotation_results_varimax = rot.varimax_rotation(pca_loading.T)
 varimax_loading = rotation_results_varimax['rotloading']
 pca_scores_varimax = rot.get_rotated_scores(pca_scores, rotation_results_varimax['rotmat'])
-num_pc = 21
+num_pc = 30
 fplot.plot_pca(pca_scores_varimax, num_pc, 
                cell_color_vec= colors_dict_ratLiver['cell_type'], 
                legend_handles=True,
@@ -253,7 +253,7 @@ plt.title('Sorted factor feature importance scores for Stimulated covariate', fo
 plt.xticks(rotation=90, fontsize=22)
 ### increase y axis ticks size
 plt.yticks(fontsize=25)
-plt.savefig('../Plots/sorted_factor_feature_importance_scores_'+a_cov_level+'.pdf')
+#plt.savefig('../Plots/sorted_factor_feature_importance_scores_'+a_cov_level+'.pdf')
 plt.show()
 ### save the plot
 

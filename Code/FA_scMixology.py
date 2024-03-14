@@ -350,27 +350,41 @@ bimodality_scores = bimodality_index_scores
 ### calculate the average between the silhouette_scores_km, vrs_km and bimodality_index_scores
 bimodality_scores = np.mean([silhouette_scores_km, bimodality_index_scores], axis=0)
 
+### correlation between silhouette_scores_km, vrs_km and bimodality_index_scores
+bimodality_corr = np.corrcoef([silhouette_scores_km, vrs_km, bimodality_index_scores])
+bimodality_corr_df = pd.DataFrame(bimodality_corr)
+bimodality_corr_df.index = ['silhouette_km', 'vrs_km', 'bimodality_index']
+bimodality_corr_df.columns = ['silhouette_km', 'vrs_km', 'bimodality_index']
+bimodality_corr_df
 
 ### label dependent factor metrics
 ASV_geo_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_line, mean_type='geometric')
+ASV_arith_cell = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_line, mean_type='arithmetic')
 ASV_geo_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='geometric')
+ASV_arith_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='arithmetic')
 
-
+#### chosen:
 ASV_simpson_sample = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
 ASV_simpson_cell = fmet.get_all_factors_simpson(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_line)))
 
+meanimp_simpson_sample = fmet.get_all_factors_simpson(mean_importance_df_protocol)
+meanimp_simpson_cell = fmet.get_all_factors_simpson(mean_importance_df_cell_line)
 
 ### calculate ASV based on entropy on the scaled variance per covariate for each factor
 ASV_entropy_sample = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_sample)))
 ASV_entropy_cell = fmet.get_factor_entropy_all(pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_cell_line)))
 
 ## calculate correlation between all ASV scores
-ASV_list = [ASV_geo_cell, ASV_geo_sample, 
+ASV_list = [ASV_geo_sample, ASV_geo_cell,
+            ASV_arith_sample,ASV_arith_cell, 
+            meanimp_simpson_sample, meanimp_simpson_cell,
             ASV_simpson_sample, ASV_simpson_cell,
             ASV_entropy_sample, ASV_entropy_cell]
-ASV_names = ['ASV_geo_cell',  'ASV_geo_sample', 
-             'ASV_simpson_sample', 'ASV_simpson_cell', 
-             'ASV_entropy_sample', 'ASV_entropy_cell']
+ASV_names = ['ASV_geo_sample', 'ASV_geo_cell',
+            'ASV_arith_sample','ASV_arith_cell', 
+            'meanimp_simpson_sample', 'meanimp_simpson_cell',
+            'ASV_simpson_sample', 'ASV_simpson_cell',
+            'ASV_entropy_sample', 'ASV_entropy_cell']
 
 
 ### calculate the correlation between all ASV scores without a function
@@ -382,18 +396,30 @@ ASV_corr_df = pd.DataFrame(ASV_corr)
 ### set the row and column names of ASV_corr_df
 ASV_corr_df.index = ASV_names
 ASV_corr_df.columns = ASV_names
+## make a heatmap of the ASV_corr_df
+plt.figure(figsize=(15,12))
+plt.imshow(ASV_corr_df, cmap='coolwarm')
+plt.xticks(np.arange(ASV_corr_df.shape[1]), ASV_corr_df.columns.values, rotation=90, fontsize=30)
+plt.yticks(np.arange(ASV_corr_df.shape[0]), ASV_corr_df.index.values, fontsize=30)
+plt.xlabel('ASV scores', fontsize=34)
+plt.ylabel('ASV scores', fontsize=34)
+plt.title('Correlation between ASV scores', fontsize=34)
+plt.show()
+## clustermapping the ASV_corr_df
+import seaborn as sns
+sns.clustermap(ASV_corr_df, cmap='coolwarm', figsize=(15,12), row_cluster=True, col_cluster=True)
+
+plt.show()
+
 
 
 ### calculate diversity metrics
 ## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
 ## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level
 factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
+#### chosen:
 factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
 factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
-
-### calculate the average of the simpson index and entropy index
-factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy_meanimp], axis=0)
-
 
 #### label free factor metrics
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
@@ -419,7 +445,7 @@ all_metrics_dict = {#'silhouette_km':silhouette_scores_km,
 
 
 all_metrics_dict = {'Bimodality':bimodality_scores, 
-                    'Specificity':[1-x for x in factor_simpson_entropy_meanimp],
+                    'Specificity':[1-x for x in factor_simpson_meanimp],
                     'Effect size': factor_variance_all,
                     'Homogeneity (cell line)':ASV_simpson_cell,
                     'Homogeneity (sample)':ASV_simpson_sample}

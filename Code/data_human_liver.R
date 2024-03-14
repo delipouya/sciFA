@@ -203,13 +203,14 @@ factor_scores$CELL_TYPE[factor_scores$CELL_TYPE=='portal Endothelial cell'] = 'p
 factor_scores$CELL_TYPE = gsub('hepatic ', '', factor_scores$CELL_TYPE)
 
 table(factor_scores$CELL_TYPE)
+head(factor_scores)
 
-ggplot(factor_scores, aes(x=CELL_TYPE, y=factor_9, fill=CELL_TYPE))+geom_boxplot()+
+ggplot(factor_scores, aes(x=CELL_TYPE, y=factor_26, fill=CELL_TYPE))+geom_boxplot()+
   scale_fill_manual(values = col_vector)+theme_classic()+xlab('')+ylab('F10 Score')+
   theme(axis.text.x = element_text(size = 13.5, angle = 90), axis.text.y = element_text(size = 15),
         axis.title.y = element_text(size = 15))
 
-ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=factor_28))+geom_point(alpha=0.9,size=1.3)+
+ggplot(tsne_df_merged_2, aes(tSNE_1,tSNE_2,color=factor_26))+geom_point(alpha=0.9,size=1.3)+
   theme_classic()+scale_color_viridis_b(name = "Factor-29\nScore",direction = +1)+
   theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 14),
         axis.title.y = element_text(size = 16), axis.title.x = element_text(size = 16))
@@ -229,17 +230,17 @@ library(gridExtra)
 ###########################################################################
 factor_loading = read.csv('/home/delaram/sciFA/Results/factor_loading_humanlivermap.csv')
 genes = read.csv('/home/delaram/sciFA/Results/genes_humanlivermap.csv')
-df = data.frame(genes= genes$X0,factor=factor_loading$X18)
-varimax_loading_df_ord = df[order(df$factor, decreasing = T),]
+df = data.frame(genes= genes$X0,factor=factor_loading$X17)
+varimax_loading_df_ord = df[order(df$factor, decreasing = F),]
 varimax_loading_vis = head(varimax_loading_df_ord, 20)
 varimax_loading_vis$genes
 varimax_loading_vis$genes = gsub('-ENS.*', '',varimax_loading_vis$genes)
 varimax_loading_vis$genes
-varimax_loading_vis = varimax_loading_vis[order(varimax_loading_vis$factor, decreasing = T),]
+varimax_loading_vis = varimax_loading_vis[order(varimax_loading_vis$factor, decreasing = F),]
 varimax_loading_vis$genes <- factor(varimax_loading_vis$genes, levels=varimax_loading_vis$genes)
 #
 head(varimax_loading_vis)
-col_vis = '#B15928'#"#7570B3"#"#1F78B4"
+col_vis = '#F0027F'#"#7570B3"#"#1F78B4"
 ggplot(varimax_loading_vis, aes(y=factor, x=genes, color=factor))+geom_point(size=3)+theme_bw()+
   theme(axis.text.x = element_text(color = "grey20", size = 11, angle = 90, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 10, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
@@ -249,8 +250,8 @@ ggplot(varimax_loading_vis, aes(y=factor, x=genes, color=factor))+geom_point(siz
         legend.position="right", legend.direction="vertical")+
   scale_color_gradient()+
   #scale_colour_gradientn(colours=c("red", "blue"))+
-  scale_color_gradient2(name='',midpoint = 0, low = "white", mid = "white",
-                        high = col_vis, space = "Lab" )+
+  scale_color_gradient2(name='',midpoint = 0, low = col_vis, mid = "white",
+                        high = "white", space = "Lab" )+
   ylab('Loading')+xlab('')
 #humanliver_f30_dotplot_v2
 

@@ -175,7 +175,7 @@ def get_a_factor_ASV(a_factor, covariate_vector, mean_type='geometric') -> float
         RSV = sp.stats.gmean(scaled_variance_all)
 
 
-    elif mean_type == 'arithmetic':
+    if mean_type == 'arithmetic':
         # calculate the arithmetic mean using the numpy mean function
         RSV = np.mean(scaled_variance_all)
 
@@ -349,7 +349,6 @@ def get_gmm_scores(factor_scores, num_groups=2, time_eff=True) -> list:
             vrs.append(get_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
             wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
             
-        
             
         silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
 
