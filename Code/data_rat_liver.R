@@ -193,9 +193,8 @@ ggplot(strain_markers, aes(avg_log2FC, log_pval_adj, color=ambient))+geom_point(
 
 
 
-
+remotes::install_github("mojaveazure/seurat-disk") #'rhdf5'
 #sudo apt-get install libhdf5-dev
-install.packages("hdf5r")
 #merged_samples_cellb = readRDS('~/RatLiver/cell_browser/TLH_cellBrowser.rds')
 library(seuratDisk)
 SaveH5Seurat(merged_samples_cellb, filename ='~/sciFA/Data/ratliver_TLH_normalized' ,overwrite = TRUE)

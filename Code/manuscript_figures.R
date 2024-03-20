@@ -242,8 +242,8 @@ ggplot(pca_scores_varimax_df_merged[pca_scores_varimax_df_merged$F20<10,], aes(x
 
 ### remove 8 outlier cells for making the color scheme more clear: sum(pca_scores_varimax_df_merged$F19>20)2
 sum(!merged_df$F20<(10))
-ggplot(merged_df[merged_df$F20<(10),], aes(UMAP_1,UMAP_2,color=F20))+geom_point(alpha=0.6,size=1)+
-  theme_classic()+scale_color_viridis_b(name = "Factor-20\nScore",direction = +1)+
+ggplot(merged_df[merged_df$F20<(10),], aes(UMAP_1,UMAP_2,color=abs(F20)))+geom_point(alpha=0.6,size=1)+
+  theme_classic()+scale_color_viridis_b(name = "Factor-20\nScore",direction = -1)+
   theme(axis.text.x = element_text(size = 16), axis.text.y = element_text(size = 16),
         axis.title.y = element_text(size = 18), axis.title.x = element_text(size = 18))
   #scale_color_stepsn(colours =c(rep('#440154FF',1),
@@ -272,7 +272,7 @@ ggplot(pca_scores_varimax_df_merged[merged_df$F20<(10),], aes(x = F1, y = F6, co
 
 
 
-ggplot(pca_scores_varimax_df_merged[merged_df$F20<(10),], aes(x = F1, y = F20, color=annotation))+geom_point(size=1)+theme_classic()+
+ggplot(pca_scores_varimax_df_merged[merged_df$F20<(10),], aes(x = F1, y = abs(F20), color=annotation))+geom_point(size=1)+theme_classic()+
   theme(axis.text.x = element_text(color = "grey20", size = 15, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 15, angle = 0, hjust = 1, vjust = 0, face = "plain"),  
         axis.title.x = element_text(color = "grey20", size = 19, angle = 0, hjust = .5, vjust = 0, face = "plain"),
