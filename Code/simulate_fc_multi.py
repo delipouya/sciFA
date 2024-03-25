@@ -77,17 +77,19 @@ for i in range(num_sim_rounds):
     likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
     bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
     dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
-    kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
-    outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
+    #kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
+    #outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
 
-    bimodality_metrics = ['bic_km', 'calinski_harabasz_km', 'davies_bouldin_km', 'silhouette_km', 'vrs_km', 'wvrs_km',
-                        'bic_gmm', 'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm', 'likelihood_ratio', 'bimodality_index',
-                            'dip_score', 'dip_pval', 'kurtosis', 'outlier_sum']
+    bimodality_metrics = ['bic_km', 'calinski_harabasz_km', 'davies_bouldin_km',
+                           'silhouette_km', 'vrs_km', 'wvrs_km',
+                        'bic_gmm', 'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm', 
+                        'likelihood_ratio', 'bimodality_index', 'dip_score']
     bimodality_scores = [bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
                                         silhouette_scores_km, vrs_km, wvrs_km,
                                         bic_scores_gmm, silhouette_scores_gmm,
-                                        vrs_gmm, wvrs_gmm, likelihood_ratio_scores, bimodality_index_scores,
-                                        dip_scores, pval_scores, kurtosis_scores, outlier_sum_scores]
+                                        vrs_gmm, wvrs_gmm, likelihood_ratio_scores, 
+                                        bimodality_index_scores,
+                                        dip_scores]
 
     #### Scaled variance
     SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, covariate_vector)
@@ -157,6 +159,15 @@ corr_df = pd.concat(corr_df_list, axis=1)
 ### name the columns as overlap + column number
 corr_df.columns = ['overlap_'+str(i) for i in range(corr_df.shape[1])]
 ### save as a csv file
-corr_df.to_csv('metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_Jan2024_v2.csv')
+corr_df.to_csv('/home/delaram/sciFA/Results/simulation/metric_overlap_corr_df_sim'+str(num_sim_rounds)+'_March2024.csv')
 
 ### visaulize the results using visualize_simulation.R
+
+
+### print bic km scores
+
+print('bic gmm scores: ', bic_scores_gmm)
+print('likelihood ratio scores: ', likelihood_ratio_scores)
+print('bimodality index scores: ', bimodality_index_scores)
+print(davies_bouldin_scores_km)
+print(calinski_harabasz_scores_km)

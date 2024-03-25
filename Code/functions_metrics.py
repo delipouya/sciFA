@@ -61,15 +61,16 @@ def get_gini(x):
     return total / (len(x)**2 * np.mean(x))
 
 
-def get_all_factors_gini(mean_importance_df) -> list:
+def get_all_factors_gini(mean_importance_df) -> float:
     '''
     calculate the gini score for the mean importance matrix
     mean_importance_df: dataframe of mean importance of each factor for each covariate level
     '''
     
     ### convert the mean_importance_df to a one dimensional numpy array
-    mean_importance_df = mean_importance_df.to_numpy().flatten()
-    gini = get_gini(mean_importance_df)
+    ### apply gini to each row of the mean_importance_df (each covariate level) and 
+    ## then take the mean for the whole matrix    
+    gini = mean_importance_df.apply(get_gini, axis=0).mean()
     return gini
 
 
@@ -310,7 +311,11 @@ def get_kmeans_scores(factor_scores, num_groups=2, time_eff=True) -> list:
             davies_bouldin_scores.append(davies_bouldin_score(factor_scores[:,i].reshape(-1,1), labels))
             wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
 
-        
+    ## reverse davies_bouldin_scores in a way that lower values indicate better-defined clusters (reverse)
+    davies_bouldin_scores = [1/x for x in davies_bouldin_scores]
+    ### scale davies_bouldin_scores between 0 and 1
+    davies_bouldin_scores = fproc.get_scaled_vector(davies_bouldin_scores)
+
     if not time_eff:    
         return bic_scores, calinski_harabasz_scores, davies_bouldin_scores, silhouette_scores, vrs, wvrs
     

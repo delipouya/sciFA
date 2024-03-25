@@ -168,6 +168,9 @@ def get_mean_importance_level(importance_df_a_level, scale, mean) -> np.array:
     if scale == 'rank':
         ### replace each row of the importance_df_np with its rank
         importance_df_np = np.apply_along_axis(ss.rankdata, 1, importance_df_np)
+        ### for each row, devide ranks to n (number of factors) to get a value between 0 and 1
+        #importance_df_np = importance_df_np/importance_df_np.shape[1]
+
 
 
     
