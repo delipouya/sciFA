@@ -23,6 +23,7 @@ import time
 np.random.seed(0)
 
 num_sim_rounds = 100
+#num_sim_rounds = 2
 num_factors = 10
 num_mixtures = 2 ## each gaussian represents a covariate level 
 num_samples = 10000
@@ -71,22 +72,22 @@ for i in range(num_sim_rounds):
         match_score_mat_meanImp_list.append(fsim.get_pairwise_match_score_matrix(mean_importance_df,i))
     match_score_mat_meanImp_flat = fsim.convert_matrix_list_to_vector(match_score_mat_meanImp_list)
 
-    bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
+    calinski_harabasz_scores_km, davies_bouldin_scores_km, silhouette_scores_km,\
         vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=False)
-    bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores, time_eff=False)
+    silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores, time_eff=False)
     likelihood_ratio_scores = fmet.get_likelihood_ratio_test_all(factor_scores)
     bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
     dip_scores, pval_scores = fmet.get_dip_test_all(factor_scores)
     #kurtosis_scores = fmet.get_factor_kurtosis_all(factor_scores)
     #outlier_sum_scores = fmet.get_outlier_sum_statistic_all(factor_scores)
 
-    bimodality_metrics = ['bic_km', 'calinski_harabasz_km', 'davies_bouldin_km',
+    bimodality_metrics = ['calinski_harabasz_km', 'davies_bouldin_km',
                            'silhouette_km', 'vrs_km', 'wvrs_km',
-                        'bic_gmm', 'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm', 
+                        'silhouette_gmm', 'vrs_gmm', 'wvrs_gmm', 
                         'likelihood_ratio', 'bimodality_index', 'dip_score']
-    bimodality_scores = [bic_scores_km, calinski_harabasz_scores_km, davies_bouldin_scores_km,
+    bimodality_scores = [ calinski_harabasz_scores_km, davies_bouldin_scores_km,
                                         silhouette_scores_km, vrs_km, wvrs_km,
-                                        bic_scores_gmm, silhouette_scores_gmm,
+                                        silhouette_scores_gmm,
                                         vrs_gmm, wvrs_gmm, likelihood_ratio_scores, 
                                         bimodality_index_scores,
                                         dip_scores]
@@ -164,10 +165,7 @@ corr_df.to_csv('/home/delaram/sciFA/Results/simulation/metric_overlap_corr_df_si
 ### visaulize the results using visualize_simulation.R
 
 
-### print bic km scores
 
-print('bic gmm scores: ', bic_scores_gmm)
-print('likelihood ratio scores: ', likelihood_ratio_scores)
-print('bimodality index scores: ', bimodality_index_scores)
-print(davies_bouldin_scores_km)
-print(calinski_harabasz_scores_km)
+bimodality_scores_df = pd.DataFrame(bimodality_scores).T
+bimodality_scores_df.columns = bimodality_metrics
+print(bimodality_scores_df.head())

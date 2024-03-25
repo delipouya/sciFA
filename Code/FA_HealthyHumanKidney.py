@@ -262,7 +262,7 @@ bimodality_scores = np.mean([silhouette_scores_km, vrs_km, bimodality_index_scor
 num_levels_cell_type = len(np.unique(y_cell_type))
 num_levels_sample = len(np.unique(y_sample))
 num_levels_sex = len(np.unique(y_sex))
-print('num_levels_cell_type: ', num_levels_cell_type)
+print('num_levels_cell_type: ', num_levels_cell_type)scr
 print('num_levels_sample: ', num_levels_sample)
 print('num_levels_sex: ', num_levels_sex)
 ### if num levels is more than 2, then use simpson index, if num levels is 2 then use arithmatic ASV 

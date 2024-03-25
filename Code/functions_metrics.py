@@ -283,12 +283,11 @@ def get_weighted_variance_reduction_score(a_factor, labels) -> float:
 
 def get_kmeans_scores(factor_scores, num_groups=2, time_eff=True) -> list:
     '''
-    fit a kmeans model to each factor and calculate the bic, aic, and silhouette scores for all the factors
+    fit a kmeans model to each factor and calculate the and silhouette scores for all the factors
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     num_groups: number of groups to fit the kmeans model
 
     '''
-    bic_scores = []
     #aic_scores = []
     silhouette_scores = []
     calinski_harabasz_scores = []
@@ -305,7 +304,6 @@ def get_kmeans_scores(factor_scores, num_groups=2, time_eff=True) -> list:
 
             
         if not time_eff:
-            bic_scores.append(kmeans.inertia_)
             #aic_scores.append(kmeans.inertia_)
             calinski_harabasz_scores.append(calinski_harabasz_score(factor_scores[:,i].reshape(-1,1), labels))
             davies_bouldin_scores.append(davies_bouldin_score(factor_scores[:,i].reshape(-1,1), labels))
@@ -317,7 +315,7 @@ def get_kmeans_scores(factor_scores, num_groups=2, time_eff=True) -> list:
     davies_bouldin_scores = fproc.get_scaled_vector(davies_bouldin_scores)
 
     if not time_eff:    
-        return bic_scores, calinski_harabasz_scores, davies_bouldin_scores, silhouette_scores, vrs, wvrs
+        return calinski_harabasz_scores, davies_bouldin_scores, silhouette_scores, vrs, wvrs
     
     return silhouette_scores, vrs
 
@@ -325,11 +323,10 @@ def get_kmeans_scores(factor_scores, num_groups=2, time_eff=True) -> list:
 
 def get_gmm_scores(factor_scores, num_groups=2, time_eff=True) -> list:
     '''
-    fit a gaussian mixture model to each factor and calculate the bic, aic, and silhouette scores for all the factors
+    fit a gaussian mixture model to each factor and calculate the silhouette scores for all the factors
     factor_scores: numpy array of the factor scores for all the cells (n_cells, n_factors)
     num_groups: number of groups to fit the gaussian mixture model
     '''
-    bic_scores = []
     silhouette_scores = []
     vrs = []
     wvrs = []
@@ -350,7 +347,6 @@ def get_gmm_scores(factor_scores, num_groups=2, time_eff=True) -> list:
 
         if not time_eff:
             #aic_scores.append(gmm.aic(factor_scores[:,i].reshape(-1,1)))
-            bic_scores.append(gmm.bic(factor_scores[:,i].reshape(-1,1)))
             vrs.append(get_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
             wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
             
@@ -358,7 +354,7 @@ def get_gmm_scores(factor_scores, num_groups=2, time_eff=True) -> list:
         silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
 
     if not time_eff:
-        return bic_scores, silhouette_scores, vrs, wvrs #, means, cov_list, weights
+        return silhouette_scores, vrs, wvrs #, means, cov_list, weights
     return silhouette_scores
         
 
