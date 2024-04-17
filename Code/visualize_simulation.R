@@ -7,6 +7,8 @@ df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_v3_nov1.csv')
 df = read.csv('~/sciFA/Code/metric_overlap_corr_df_sim100_Jan2024.csv')
 df = read.csv('~/sciFA/Results//metric_overlap_corr_df_sim100_Jan2024_v2.csv')
 df = read.csv('~/sciFA/Results/simulation//metric_overlap_corr_df_sim100_March2024.csv')
+df = read.csv('~/sciFA/Results/simulation//metric_overlap_corr_df_sim100_April2024.csv')
+df = read.csv('~/sciFA/Results/simulation//metric_overlap_corr_df_sim100_April2024_v2.csv')
 
 
 df = data.frame(t(df))
@@ -26,6 +28,7 @@ head(df)
 df_melt = melt(t(df))
 colnames(df_melt) = c('metric', 'overlap', 'R')
 df_melt$metric = gsub('factor_','',df_melt$metric)
+names(table(df_melt$metric))
 df_melt$R = as.numeric(df_melt$R)
 head(df_melt)
 bimodality_metric=c( "bic_km","calinski_harabasz_km", "davies_bouldin_km","silhouette_km",
@@ -33,6 +36,7 @@ bimodality_metric=c( "bic_km","calinski_harabasz_km", "davies_bouldin_km","silho
    "vrs_gmm","wvrs_gmm","likelihood_ratio","bimodality_index","dip_score",
    "kurtosis","outlier_sum" )
 
+bimodality_metric = c('bimodality_index', 'calinski_harabasz','davies_bouldin', 'dip_score', "silhouette","wvrs" )
 heterogeneity_metric=c("ASV_arith","ASV_geo","1-AUC_arith","1-AUC_geo",'ASV_simpson','ASV_entropy')
 effect_size_metric=c('variance')
 specificity_metric = c('entropy_meanImp',  'simpon_meanImp')
@@ -64,10 +68,12 @@ ggplot(df_melt, aes(x=metric,y=R,fill=metric_type))+
       axis.title.y = element_text(color = "grey20", size = 14, angle = 90, hjust = .5, vjust = .5, face = "plain"))
 
 names(table(df_melt$metric_type))
-df_melt_sub = df_melt[df_melt$metric_type== "Homogeneity",]
-ggplot(df_melt, aes(x=metric,y=R,fill=metric_type))+
-  geom_boxplot(notch = TRUE)+xlab('')+
-  coord_flip()+ylab('Correlation with overlap value')+
+df_melt_sub = df_melt[df_melt$metric_type== "Separability",] # "Homogeneity"  "Separability" "Specificity"
+table(df_melt_sub$metric)
+df_melt_sub = df_melt_sub[df_melt_sub$metric %in% c('ASV_arith','ASV_geo'),]
+ggplot(df_melt_sub, aes(x=metric,y=R,fill=metric_type))+
+  geom_boxplot(notch = TRUE)+xlab('')+scale_fill_manual(values = c('maroon'))+ #'cyan3' 'maroon' 'orange'
+  coord_flip()+ylab('Correlation with overlap value')+ylim(-1, 1)+
   theme(text = element_text(size=16),
         axis.text.x = element_text(color = "grey20", size = 13, angle = 0, hjust = .5, vjust = .5, face = "plain"),
         axis.text.y = element_text(color = "grey20", size = 13, angle = 0, hjust = 1, vjust = 0, face = "plain"),  

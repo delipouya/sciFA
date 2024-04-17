@@ -444,7 +444,7 @@ def plot_metric_dendrogram(all_metrics_df, distance='ward') -> None:
 
 
 
-def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None,
+def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None, annot=True,
                            title='Scaled factor metrics for all factors', xticks_fontsize=30,
                            yticks_fontsize=30, legend_fontsize=25, save=False, 
                            save_path='./file.pdf') -> None:
@@ -460,12 +460,20 @@ def plot_metric_heatmap(all_metrics_scaled, factor_metrics, x_axis_label=None,
     ### remove numbers from heatmap cells
     all_metrics_scaled_df = pd.DataFrame(all_metrics_scaled)
     all_metrics_scaled_df.columns = factor_metrics
-
-
+    """
+    if annot == False:
+        ### make an annotation dataframe with the same shape as all_metrics_scaled_df with values as empty strings
+        annot_df = pd.DataFrame(np.empty(all_metrics_scaled_df.T.shape), dtype=str)
+        g = sns.clustermap(all_metrics_scaled_df.T, cmap='YlGnBu', 
+                        figsize=(all_metrics_scaled.shape[0]+3, all_metrics_scaled.shape[1]+2),  #viridis, coolwarm
+                                linewidths=.5, linecolor='white', annot=annot_df,cbar=True,
+                                col_cluster=False, row_cluster=False) # annot=False, fmt='.4g'  
+    """
+    
     g = sns.clustermap(all_metrics_scaled_df.T, cmap='YlGnBu', 
-                       figsize=(all_metrics_scaled.shape[0]+3, all_metrics_scaled.shape[1]+2),  #viridis, coolwarm
-                            linewidths=.5, linecolor='white', annot=True, fmt='.2f', cbar=True,
-                            col_cluster=False, row_cluster=False) # annot=False, fmt='.4g'
+                    figsize=(all_metrics_scaled.shape[0]+3, all_metrics_scaled.shape[1]+2),  #viridis, coolwarm
+                            linewidths=.5, linecolor='white', annot=annot, fmt='.2f',cbar=True,
+                            col_cluster=False, row_cluster=False) # annot=False, fmt='.4g'  
     
     
     ## increease fint size of the legend bar

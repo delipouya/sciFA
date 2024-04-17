@@ -158,8 +158,13 @@ pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_merged_rat
 ## save the varimax_loading_df and varimax_scores to a csv file
 varimax_loading_df.to_csv('../Results/varimax_loading_df_ratLiver.csv')
 
-
-
+### read the varimax_loading_df and pca_scores_varimax_df_merged from the csv file
+varimax_loading_df = pd.read_csv('../Results/varimax_loading_df_ratLiver.csv', index_col=0)
+pca_scores_varimax_df_merged = pd.read_csv('../Results/pca_scores_varimax_df_merged_ratLiver.csv', index_col=0)
+### remove the first nine columns from the pca_scores_varimax_df_merged
+pca_scores_varimax_df_merged = pca_scores_varimax_df_merged.iloc[:,9:]
+### convert the varimax_loading_df to a numpy array
+pca_scores_varimax = pca_scores_varimax_df_merged.values
 
 
 
@@ -230,7 +235,7 @@ fplot.plot_all_factors_levels_df(mean_importance_df_matched_sub, x_axis_label=x_
                                  x_axis_fontsize=45, y_axis_fontsize=44, title_fontsize=40,
                                  x_axis_tick_fontsize=39, y_axis_tick_fontsize=41, 
                                  legend_fontsize=38,
-                                 save=True, save_path='../Plots/mean_importance_df_matched_ratliver.pdf')
+                                 save=False, save_path='../Plots/mean_importance_df_matched_ratliver.pdf')
 
 
 
@@ -329,9 +334,9 @@ print('num_levels_strain: ', num_levels_strain)
 
 #SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
 ### label dependent factor metrics
-#ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
-
-ASV_all_arith_stim = fmet.get_ASV_all(factor_scores, y_strain, mean_type='arithmetic')
+ASV_all_arith_strain = fmet.get_ASV_all(factor_scores, y_strain, mean_type='arithmetic')
+ASV_all_arith_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='arithmetic')
+ASV_all_arith_cell_type = fmet.get_ASV_all(factor_scores, y_cell_type, mean_type='arithmetic')
 
 #SV_all_factors = fmet.get_factors_SV_all_levels(factor_scores, y_cell_type) 
 ### label dependent factor metrics
@@ -344,23 +349,9 @@ ASV_all_arith_stim = fmet.get_ASV_all(factor_scores, y_strain, mean_type='arithm
 #factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df_cell_type) ## calculated for each factor in the importance matrix
 #factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
 
-factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
-factor_simpson_meanimp_cell_type = fmet.get_all_factors_simpson(mean_importance_df_cell_type) 
-factor_simpson_meanimp_sample = fmet.get_all_factors_simpson(mean_importance_df_sample) 
-
+factor_simpson_meanimp = fmet.get_all_factors_simpson_D_index(mean_importance_df) ## calculated for each factor in the importance matrix
 #### label free factor metrics
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
-
-### calculate diversity metrics
-## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
-## low simpson index (close to 0) indicate low diversity - meaning that the factor is specific to a covariate level
-factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
-factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
-
-### calculate the average of the simpson index and entropy index
-factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy_meanimp], axis=0)
-
-
 
 SV_strain_df = pd.DataFrame(fmet.get_factors_SV_all_levels(factor_scores, y_strain))
 ### plot the heatmap of SV_strain_df
@@ -378,14 +369,6 @@ plt.show()
 factor_gini_meanimp = fmet.get_all_factors_gini(mean_importance_df) ### calculated for the total importance matrix
 factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
 factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
-
-### calculate the average of the simpson index and entropy index
-factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy_meanimp], axis=0)
-
-
-#### label free factor metrics
-factor_variance_all = fmet.get_factor_variance_all(factor_scores)
-
 
 ####################################
 ##### Factor metrics #####
@@ -415,23 +398,12 @@ all_metrics_dict = {#'silhouette_km':silhouette_scores_km,
                     'factor_entropy_meanimp':[1-x for x in factor_entropy_meanimp]}
 
 
-all_metrics_dict = {'silhouette_km':silhouette_scores_km, 
-                    'vrs_km':vrs_km, #'silhouette_gmm':silhouette_scores_gmm, 
-                    'bimodality_index':bimodality_index_scores,
-                    'factor_variance':factor_variance_all, 
-
-                    'homogeneity_cluster':ASV_simpson_cluster,
-                    'homogeneity_sample':ASV_simpson_sample,
-                
-                    'factor_simpson_meanimp':[1-x for x in factor_simpson_meanimp], 
-                    'factor_entropy_meanimp':[1-x for x in factor_entropy_meanimp]}
-
-
-all_metrics_dict = {'bimodality':bimodality_scores, 
-                    'specificity':[1-x for x in factor_simpson_entropy_meanimp],
-                    'effect_size': factor_variance_all,
-                    'homogeneity_cluster':ASV_simpson_cluster,
-                    'homogeneity_sample':ASV_simpson_sample}
+all_metrics_dict = {'Bimodality':bimodality_scores, 
+                    'Specificity':factor_simpson_meanimp,
+                    'Effect size': factor_variance_all,
+                    'Homogeneity (cell type)':ASV_all_arith_cell_type,
+                    'Homogeneity (strain)':ASV_all_arith_strain,
+                    'Homogeneity (sample)':ASV_all_arith_sample}
 
 ### check the length of all the metrics
 
@@ -449,6 +421,10 @@ fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics, title='Scaled metr
 ### subset all_merrics_scaled numpy array to only include the matched factors
 all_metrics_scaled_matched = all_metrics_scaled[matched_factor_index,:]
 fplot.plot_metric_heatmap(all_metrics_scaled_matched, factor_metrics, x_axis_label=x_labels_matched,
-                          title='Scaled metrics for all the factors')
+                          title='Scaled metrics for all the factors', 
+                          save=True, 
+                           xticks_fontsize=32,
+                           yticks_fontsize=34, legend_fontsize=25,
+                          save_path='../Plots/all_metrics_scaled_matched_ratliver_v2.pdf')
 
 

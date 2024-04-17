@@ -18,7 +18,7 @@ from sklearn.metrics import calinski_harabasz_score
 import diptest
 
 
-def get_factor_simpson_index(x):
+def get_factor_simpson_D_index(x):
     '''
     calculate the simpson index of a factor - "a single factor" specificity based on feature importance scores
     x: numpy array of the factor match scores based on feature importance
@@ -29,9 +29,25 @@ def get_factor_simpson_index(x):
     p_factor = x/np.sum(x)
     ### calculate the simpson diversity index
     simpson_diversity_index = np.sum(p_factor**2)
-    ### calculate the simpson index
-    simpson_index = 1 - simpson_diversity_index
-    return simpson_index
+    
+    return simpson_diversity_index
+
+
+
+def get_all_factors_simpson_D_index(mean_importance_df) -> list:
+    '''
+    calculate the simpson index of all the factors based on the mean importance matrix
+    mean_importance_df: dataframe of mean importance of each factor for each covariate level
+    '''
+    factor_simpson_D_all = []
+    for factor_i in range(mean_importance_df.shape[1]):
+        ### get the importance of the factor for each covariate level
+        x = mean_importance_df.iloc[:, factor_i]
+        
+        simpson_D_index = get_factor_simpson_D_index(x)
+        factor_simpson_D_all.append(simpson_D_index)
+    return factor_simpson_D_all
+
 
 
 def get_all_factors_simpson(mean_importance_df) -> list:
@@ -43,7 +59,8 @@ def get_all_factors_simpson(mean_importance_df) -> list:
     for factor_i in range(mean_importance_df.shape[1]):
         ### get the importance of the factor for each covariate level
         x = mean_importance_df.iloc[:, factor_i]
-        simpson_index = get_factor_simpson_index(x)
+        
+        simpson_index = 1 - get_factor_simpson_D_index(x)
         factor_simpson_all.append(simpson_index)
     return factor_simpson_all
 
@@ -59,6 +76,7 @@ def get_gini(x):
     for i, xi in enumerate(x[:-1], 1):
         total += np.sum(np.abs(xi - x[i:]))
     return total / (len(x)**2 * np.mean(x))
+
 
 
 def get_all_factors_gini(mean_importance_df) -> float:
@@ -288,37 +306,32 @@ def get_kmeans_scores(factor_scores, num_groups=2, time_eff=True) -> list:
     num_groups: number of groups to fit the kmeans model
 
     '''
-    #aic_scores = []
     silhouette_scores = []
     calinski_harabasz_scores = []
     davies_bouldin_scores = []
-    vrs = []
-    wvrs = []
+    #wvrs = []
 
     for i in range(factor_scores.shape[1]):
         kmeans = KMeans(n_clusters=num_groups, random_state=0).fit(factor_scores[:,i].reshape(-1,1))
         labels = kmeans.labels_
 
         silhouette_scores.append(silhouette_score(factor_scores[:,i].reshape(-1,1), labels))
-        vrs.append(get_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
+        
 
-            
         if not time_eff:
-            #aic_scores.append(kmeans.inertia_)
             calinski_harabasz_scores.append(calinski_harabasz_score(factor_scores[:,i].reshape(-1,1), labels))
             davies_bouldin_scores.append(davies_bouldin_score(factor_scores[:,i].reshape(-1,1), labels))
-            wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
+            #wvrs.append(get_weighted_variance_reduction_score(factor_scores[:,i].reshape(-1,1), labels))
 
-    ## reverse davies_bouldin_scores in a way that lower values indicate better-defined clusters (reverse)
-    davies_bouldin_scores = [1/x for x in davies_bouldin_scores]
-    ### scale davies_bouldin_scores between 0 and 1
-    davies_bouldin_scores = fproc.get_scaled_vector(davies_bouldin_scores)
+            ## reverse davies_bouldin_scores in a way that lower values indicate better-defined clusters (reverse)
+            davies_bouldin_scores = [1/x for x in davies_bouldin_scores]
+            ### scale davies_bouldin_scores between 0 and 1
+            davies_bouldin_scores = fproc.get_scaled_vector(davies_bouldin_scores)
 
     if not time_eff:    
-        return calinski_harabasz_scores, davies_bouldin_scores, silhouette_scores, vrs, wvrs
+        return silhouette_scores, calinski_harabasz_scores, davies_bouldin_scores
     
-    return silhouette_scores, vrs
-
+    return silhouette_scores
 
 
 def get_gmm_scores(factor_scores, num_groups=2, time_eff=True) -> list:
