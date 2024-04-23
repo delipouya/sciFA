@@ -221,8 +221,14 @@ pca_scores_varimax_df_merged.to_csv('../Results/pca_scores_varimax_df_merged_lup
 varimax_loading_df.to_csv('../Results/varimax_loading_df_lupusPBMC.csv')
 
 
-
-
+### read the varimax_loading_df and varimax_scores from a csv file
+varimax_loading_df = pd.read_csv('../Results/varimax_loading_df_lupusPBMC.csv', index_col=0)
+pca_scores_varimax_df = pd.read_csv('../Results/pca_scores_varimax_df_merged_lupusPBMC.csv', index_col=0)
+### remove the first column 8 of the dataframes
+pca_scores_varimax_df = pca_scores_varimax_df.iloc[:,8:]
+pca_scores_varimax_df
+### convert to numpy.ndarray
+pca_scores_varimax_2 = pca_scores_varimax_df.values
 
 ######## Applying promax rotation to the factor scores
 rotation_results_promax = rot.promax_rotation(pca_loading.T)
@@ -239,7 +245,7 @@ factor_scores = pca_scores
 
 ########################
 factor_loading = rotation_results_varimax['rotloading']
-factor_scores = pca_scores_varimax
+factor_scores =  pca_scores_varimax_2#  pca_scores_varimax
 
 ### find unique covariate levels
 y_cell_type_unique = np.unique(y_cell_type)
@@ -262,7 +268,7 @@ fplot.plot_all_factors_levels_df(mean_importance_df,
                                  color='coolwarm', title='',
                                  x_axis_fontsize=40, y_axis_fontsize=39, title_fontsize=40,
                                  x_axis_tick_fontsize=36, y_axis_tick_fontsize=38, 
-                                 save=True, save_path='../Plots/mean_importance_df_matched_PBMC.pdf')
+                                 save=False, save_path='../Plots/mean_importance_df_matched_PBMC.pdf')
 
 
 ### excluding "individuals" as a covariate
@@ -273,7 +279,7 @@ fplot.plot_all_factors_levels_df(mean_importance_df,
                                  color='coolwarm', title='',
                                  x_axis_fontsize=40, y_axis_fontsize=39, title_fontsize=40,
                                  x_axis_tick_fontsize=36, y_axis_tick_fontsize=40, 
-                                 save=True, save_path='../Plots/mean_importance_df_matched_PBMC.pdf')
+                                 save=False, save_path='../Plots/mean_importance_df_matched_PBMC.pdf')
 
 
 
@@ -383,7 +389,7 @@ varimax_loading_df.to_csv('../Results/varimax_loading_df_stimPBMC_libReg.csv')
 #      vrs_km, wvrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=False)
 #bic_scores_gmm, silhouette_scores_gmm, vrs_gmm, wvrs_gmm = fmet.get_gmm_scores(factor_scores, time_eff=False)
 
-silhouette_scores_km, vrs_km = fmet.get_kmeans_scores(factor_scores, time_eff=True)
+silhouette_scores, vrs = fmet.get_kmeans_scores(factor_scores, time_eff=True)
 # silhouette_scores_gmm = fmet.get_gmm_scores(factor_scores, time_eff=True)
 bimodality_index_scores = fmet.get_bimodality_index_all(factor_scores)
 ### calculate the average between the silhouette_scores_km, vrs_km and bimodality_index_scores
@@ -406,6 +412,8 @@ print('num_levels_sex: ', num_levels_stim)
 #ASV_all_arith = fmet.get_ASV_all(factor_scores, covariate_vector=y_cell_type, mean_type='arithmetic')
 
 ASV_all_arith_stim = fmet.get_ASV_all(factor_scores, y_stim, mean_type='arithmetic')
+ASV_all_arith_sample = fmet.get_ASV_all(factor_scores, y_sample, mean_type='arithmetic')
+ASV_all_arith_cell_type = fmet.get_ASV_all(factor_scores, y_cell_type, mean_type='arithmetic')
 
 ### calculate diversity metrics
 ## simpson index: High scores (close to 1) indicate high diversity - meaning that the factor is not specific to any covariate level
@@ -414,9 +422,7 @@ ASV_all_arith_stim = fmet.get_ASV_all(factor_scores, y_stim, mean_type='arithmet
 #factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df_cell_type) ## calculated for each factor in the importance matrix
 #factor_entropy_meanimp = fmet.get_factor_entropy_all(mean_importance_df)  ## calculated for each factor in the importance matrix
 
-factor_simpson_meanimp = fmet.get_all_factors_simpson(mean_importance_df) ## calculated for each factor in the importance matrix
-factor_simpson_meanimp_cell_type = fmet.get_all_factors_simpson(mean_importance_df_cell_type) 
-factor_simpson_meanimp_sample = fmet.get_all_factors_simpson(mean_importance_df_sample) 
+factor_simpson_meanimp = fmet.get_all_factors_simpson_D_index(mean_importance_df) ## calculated for each factor in the importance matrix
 
 #### label free factor metrics
 factor_variance_all = fmet.get_factor_variance_all(factor_scores)
@@ -436,13 +442,13 @@ factor_simpson_entropy_meanimp = np.mean([factor_simpson_meanimp, factor_entropy
 ##### Factor metrics #####
 ####################################
 
-all_metrics_dict = {'Bimodality':bimodality_scores, 
+all_metrics_dict = {'Bimodality': bimodality_index_scores,#bimodality_scores, 
                     ## calculate 1 - factor_simpson_meanimp
-                    'Specificity':[1-x for x in factor_simpson_meanimp],
+                    'Specificity': factor_simpson_meanimp,
                     'Effect size': factor_variance_all,
-                    'Homogeneity (cell type)':factor_simpson_meanimp_cell_type,
+                    'Homogeneity (cell type)':ASV_all_arith_cell_type,
                     'Homogeneity (stimulated)':ASV_all_arith_stim,
-                    'Homogeneity (sample)':factor_simpson_meanimp_sample}
+                    'Homogeneity (sample)':ASV_all_arith_sample}
 
 ### check the length of all the metrics
 
@@ -456,9 +462,9 @@ all_metrics_scaled = fmet.get_scaled_metrics(all_metrics_df)
 fplot.plot_metric_heatmap(all_metrics_scaled, factor_metrics,
                           title='Scaled metrics for all the factors', 
                           x_axis_label=None,
-                           title='Scaled factor metrics for all factors', xticks_fontsize=30,
+                           xticks_fontsize=30,
                            yticks_fontsize=30, legend_fontsize=25,
-                           save=True, save_path='../Plots/all_metrics_scaled_matched_pbmc.pdf')
+                           save=True, save_path='../Plots/all_metrics_scaled_matched_pbmc_v2.pdf')
 
 
 
